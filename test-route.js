@@ -1,6 +1,7 @@
-import { findStops, plan } from "./route.js";
+import { planByName } from "./route.js";
 
-const [, , a, b] = process.argv;
-const from = findStops(a), to = findStops(b);
-console.log(`from: ${from.length} stops, to: ${to.length} stops`);
-console.log(JSON.stringify(plan(from.map((s) => s.id), to.map((s) => s.id)), null, 2));
+// usage: node test-route.js "Karol Bagh" "Gandhi Darshan" [fastest|cheapest] [peak|offpeak] [avoid]
+const [, , a, b, preference = "fastest", period, avoid] = process.argv;
+const opts = { preference, avoidCrowded: avoid === "avoid" };
+if (period) opts.period = period;
+console.log(JSON.stringify(planByName(a, b, opts), null, 2));
