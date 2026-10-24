@@ -55,6 +55,15 @@ function assertBusLegs(legs) {
         ["ordinary", "ac"].includes(leg.busType),
         `busType must be ordinary or ac, got ${leg.busType}`
       );
+    } else if (leg.mode === "metro") {
+      assert.ok(typeof leg.route === "string", "metro leg must have line name");
+      assert.match(leg.route, /^metro:/, "metro route must be identifiable");
+      assert.ok(typeof leg.from === "string", "metro leg must have from");
+      assert.ok(typeof leg.to === "string", "metro leg must have to");
+      assert.ok(leg.stops >= 0, "metro stops must be non-negative");
+      assert.ok(leg.minutes >= 0, "metro minutes must be non-negative");
+      assert.ok(leg.fare >= 0, "metro fare must be non-negative");
+      assert.ok(leg.distanceKm >= 0, "metro distanceKm must be non-negative");
     } else if (leg.mode === "walk") {
       assert.ok(typeof leg.from === "string", "walk leg must have from");
       assert.ok(typeof leg.to === "string", "walk leg must have to");
@@ -393,6 +402,7 @@ describe("plan — offpeak period", () => {
       preference: "fastest",
       period: "offpeak",
     });
+
     assertValidRoute(result);
     assert.equal(result.period, "offpeak");
   });
@@ -400,5 +410,27 @@ describe("plan — offpeak period", () => {
   it("offpeak result marks period correctly", () => {
     const result = plan(["522"], ["441"], { period: "offpeak" });
     if (result) assert.equal(result.period, "offpeak");
+  });
+});
+
+describe("plan — metro journeys", () => {
+  it("routes between metro stations using metro hubs", () => {
+    const result = planByName("Karol Bagh Metro", "Mandi House Metro", {
+      preference: "fastest",
+      period: "offpeak",
+    });
+
+    assertValidRoute(result);
+    assert.ok(result.legs.some((leg) => leg.mode === "metro"));
+  });
+
+  it("supports bus-to-metro journeys", () => {
+    const result = planByName("Karol Bagh", "Rajiv Chowk Metro", {
+      preference: "fastest",
+      period: "offpeak",
+    });
+
+    assertValidRoute(result);
+    assert.ok(result.legs.some((leg) => leg.mode === "metro" || leg.mode === "bus"));
   });
 });

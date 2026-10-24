@@ -4,7 +4,7 @@
   "description": "Delhi public transit route planner with AI chat agent",
   "type": "module",
   "scripts": {
-    "test": "node --test route.test.js",
+    "test": "node --test route.test.js metro.test.js",
     "filter": "node filter-gtfs.js",
     "build-graph": "node build-graph.js",
     "route": "node test-route.js"

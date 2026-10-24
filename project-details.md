@@ -16,7 +16,7 @@ Commuters who mix bus, metro and rail have no single place to compare options. T
 
 - Delay and crowd data is sample data, as the problem allows. It is not live.
 
-- Modes: buses are implemented. Metro and rail are not yet; see progress below.
+- Modes: bus routing is built; a small, explicit Yellow/Blue/Violet metro layer is integrated. Rail is not covered.
 
 ## Team and responsibilities
 
@@ -77,10 +77,14 @@ routes
 
 Routing engine written (route.js): Dijkstra with a boarding cost, multi-stop name matching, readable legs
 
+- Metro merge implemented (merge-metro.js): explicit verified connections only, metro interchanges, and metro-to-bus walking transfers. The current graph contains 1,156 stops and 1,861 routes.
+
+- Routing tests cover bus, metro, bus-to-metro, topology, duplicate-edge prevention, and repeated-merge idempotence.
+
 ## In progress / next
 
 
-| Status Task [ ] Test the routing engine on real stop pairs (test- route.js) [ ] Cheapest route: fare rule in the engine [ ] Fare table research (data/fares.json) [ ] Sample delay and crowd data (data/delays.json) [ ] Metro: retry the DMRC download [ ] Metro: merge into the graph [ ] Express API (/stops, /route, /delays, /saved, /chat) [ ] Saved routes storage [ ] Frontend with map, route form, badges [ ] Saved-routes list in the UI [ ] Chat agent with tool calling | Owner Shlok Shlok (fare table from Shriyam) Shriyam Shriyam Shriyam Shlok Standby Standby Shrijan Shrijan Shlok |
+| Status Task [x] Test the routing engine on real stop pairs (test-route.js) [x] Cheapest route: fare rule in the engine [x] Sample delay and crowd data (data/delays.json) [x] Partial metro topology and merge [ ] Verify/replace metro data with a complete metro GTFS [ ] Express API (/stops, /route, /delays, /saved, /chat) [ ] Saved routes storage [ ] Frontend with map, route form, badges [ ] Saved-routes list in the UI [ ] Chat agent with tool calling | Owner Shlok Shlok Shriyam Shlok Shlok Standby Standby Shrijan Shrijan Shlok |
 | --- | --- |
 | [ ] Chat panel in the UI [ ] Test queries and demo script [ ] Deployment | Shrijan Shriyam Standby |
 
@@ -93,7 +97,7 @@ Routing engine written (route.js): Dijkstra with a boarding cost, multi-stop nam
 
 ## How it works
 
-- 1. Graph: every stop has a hub node, and every (stop, route) pair has its own node. Ride edges move along a route, boarding edges cost 5 minutes, alighting costs 0, and walking edges join stops within 200 m. The boarding cost makes a transfer cost something, so routes do not switch buses at every stop.
+- 1. Graph: every bus stop has an S: hub and each metro station has an M: hub. Every transit (stop, route) pair has its own R: node. Ride edges move along explicit consecutive connections, boarding edges add a fixed cost, alighting costs 0, and walking edges join nearby hubs.
 
 - 2. Routing: Dijkstra over that graph, started from every stop that matches the typed name.
 
@@ -136,7 +140,9 @@ json
 
 - The feed has no fares, so the cheapest mode uses a simplified fare rule.
 
-- Metro and rail are not covered yet.
+- Metro coverage is partial and static. No metro GTFS is present in this repository; incomplete station sequences are not connected directly.
+
+- Metro travel times and fares are approximate. The fare slabs in data/metro.json are historical 2023–2024 estimates, not current authoritative fares.
 
 - Delays and crowding are sample values.
 
@@ -164,7 +170,8 @@ npminstall
 # Download the Delhi bus GTFS and unzip it into ./gtfs-raw/
 # (large files are not stored in git, see below)
 nodefilter-gtfs.js # filters to the demo area, writes ./gtfs/
-nodebuild-graph.js # builds graph.json
+nodebuild-graph.js # builds the bus graph
+nodemerge-metro.js # adds the explicit metro layer without rebuilding the bus graph
 nodetest-route.js"Karol Bagh""Gandhi Darshan"
 ```
 
@@ -184,14 +191,14 @@ transit-assistant/
 ├── test-route.js # command-line test for the engine
 ├── server/ # (planned) Express API
 ├── client/ # (planned) React + Leaflet frontend
-└── data/ # (planned) sample delays, crowd levels, fares
+└── data/ # delays, fares, and partial metro topology
 ```
 
 ## Known limitations
 
 - Covers one part of Delhi, not the whole city.
 
-- Bus only until metro data is added.
+- Metro coverage is limited to selected central-Delhi stations and explicit connections.
 
 - No live data.
 

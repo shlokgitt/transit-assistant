@@ -30,7 +30,7 @@ const FARES = load("./data/fares.json", {
 const DELAYS = load("./data/delays.json", {});
 const METRO  = load("./data/metro.json",  {});
 
-// Metro fare slabs (DMRC 2023�2024 token fares, distance-based).
+// Historical DMRC 2023-2024 fare estimates, distance-based; not current fares.
 const METRO_FARE_SLABS = METRO.fareSlabs ?? [
   { maxKm: 2,   fare: 10 },
   { maxKm: 5,   fare: 20 },
@@ -102,6 +102,7 @@ class Heap {
 const r1 = (n) => Math.round(n * 10) / 10;
 const stopOf = (node) => node.split(":")[1];
 const nameOf = (id) => G.stops[id]?.name ?? `Stop ${id}`;
+const hubOf = (id) => (G.adj[`M:${id}`] ? `M:${id}` : `S:${id}`);
 
 function distanceKm(a, b) {
   const from = G.stops[a];
@@ -133,7 +134,7 @@ function busType(routeName) {
 }
 
 function fareForDistance(km, routeName) {
-  // Metro has its own distance-based slab table (DMRC 2023�2024 token fares).
+  // Metro has its own historical distance-based estimate table.
   if (isMetroRoute(routeName)) {
     for (const slab of METRO_FARE_SLABS) {
       if (slab.maxKm === null || km <= slab.maxKm) return slab.fare;
@@ -210,7 +211,7 @@ export function plan(fromIds, toIds, opts = {}) {
   if (!validFrom.length || !validTo.length) return null;
 
   const delays = DELAYS[period] || {};
-  const targets = new Set(validTo.map((id) => `S:${id}`));
+  const targets = new Set(validTo.map(hubOf));
 
   const dist = new Map();
   const states = new Map();
@@ -230,7 +231,7 @@ export function plan(fromIds, toIds, opts = {}) {
   }
 
   for (const id of validFrom) {
-    addState(`S:${id}`, null, 0, null, null);
+    addState(hubOf(id), null, 0, null, null);
   }
 
   let endKey = null;
@@ -350,7 +351,7 @@ export function plan(fromIds, toIds, opts = {}) {
   edges.reverse();
 
   const legs = [];
-  let currentBus = null;
+  let currentTransit = null;
   let totalMinutes = 0;
   let totalFare = 0;
   let totalDistanceKm = 0;
@@ -366,8 +367,10 @@ export function plan(fromIds, toIds, opts = {}) {
         minutes: r1(edge.minutes),
       });
     } else if (edge.type === "board") {
-      currentBus = {
-        mode: "bus",
+      const routeName = G.routes[edge.routeId];
+      const metro = isMetroRoute(routeName);
+      currentTransit = {
+        mode: metro ? "metro" : "bus",
         route: G.routes[edge.routeId],
         from: nameOf(stopOf(edge.from)),
         to: null,
@@ -376,24 +379,24 @@ export function plan(fromIds, toIds, opts = {}) {
         fare: 0,
         distanceKm: 0,
         delayMin: edge.boardDelayMin ?? Math.max(0, edge.minutes - 5),
-        crowd: delays[G.routes[edge.routeId]]?.crowd || "unknown",
-        busType: busType(G.routes[edge.routeId]),
+        crowd: metro ? "unknown" : delays[routeName]?.crowd || "unknown",
+        ...(metro ? {} : { busType: busType(routeName) }),
       };
-    } else if (edge.type === "ride" && currentBus) {
-      currentBus.stops++;
-      currentBus.minutes += edge.minutes;
-      currentBus.distanceKm += edge.legDistanceKm;
-    } else if (edge.type === "alight" && currentBus) {
-      currentBus.to = nameOf(stopOf(edge.to));
-      currentBus.fare = edge.fare;
-      currentBus.distanceKm = r1(currentBus.distanceKm);
+    } else if (edge.type === "ride" && currentTransit) {
+      currentTransit.stops++;
+      currentTransit.minutes += edge.minutes;
+      currentTransit.distanceKm += edge.legDistanceKm;
+    } else if (edge.type === "alight" && currentTransit) {
+      currentTransit.to = nameOf(stopOf(edge.to));
+      currentTransit.fare = edge.fare;
+      currentTransit.distanceKm = r1(currentTransit.distanceKm);
 
       totalFare += edge.fare;
-      totalDistanceKm += currentBus.distanceKm;
+      totalDistanceKm += currentTransit.distanceKm;
 
-      currentBus.minutes = r1(currentBus.minutes);
-      legs.push(currentBus);
-      currentBus = null;
+      currentTransit.minutes = r1(currentTransit.minutes);
+      legs.push(currentTransit);
+      currentTransit = null;
     }
   }
 
@@ -405,7 +408,7 @@ export function plan(fromIds, toIds, opts = {}) {
     totalDistanceKm: r1(totalDistanceKm),
     fareEstimate: true,
     fareNote:
-      "Estimated from straight-line stop distances and route-name bus classification; actual fares may differ.",
+      "Estimated from straight-line distances and static fare tables; bus classifications and metro fares may differ from current official fares.",
     legs,
   };
 }

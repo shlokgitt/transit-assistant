@@ -1,5 +1,5 @@
 {
-  "note": "Hand-curated DMRC metro station data for the central-Delhi bounding box (lat 28.58–28.68, lon 77.15–77.28). Covers Yellow, Blue, and Violet lines. Coordinates sourced from public references; treat as approximate. Travel times are representative averages (2–3 min/hop underground). Fare slabs are official DMRC 2023–2024 token fares (distance-based). No live feed — this is static data.",
+  "note": "Hand-curated partial DMRC metro data for the central-Delhi bounding box (lat 28.58–28.68, lon 77.15–77.28). No metro GTFS is present in this repository, so ride connections are explicit and only listed where the adjacent station relationship is verified from the curated source. Coordinates and travel times are approximate. Fare slabs are historical 2023–2024 estimates, not current authoritative fares.",
   "fareSlabs": [
     { "maxKm": 2,  "fare": 10 },
     { "maxKm": 5,  "fare": 20 },
@@ -39,22 +39,38 @@
       "id": "Yellow",
       "name": "Yellow Line",
       "color": "#FFFF00",
-      "sequence": ["Y-KSG","Y-CHC","Y-CHB","Y-NDL","Y-RJC","Y-PTC","Y-CST","Y-UDB","Y-LKM","Y-JRB"],
-      "travelMinutes": [2.5, 2.0, 2.0, 2.0, 2.5, 2.0, 1.5, 2.0, 2.5]
+      "connections": [
+        ["Y-KSG","Y-CHC",2.5],
+        ["Y-CHC","Y-CHB",2.0],
+        ["Y-CHB","Y-NDL",2.0],
+        ["Y-NDL","Y-RJC",2.0],
+        ["Y-RJC","Y-PTC",2.5],
+        ["Y-PTC","Y-CST",2.0],
+        ["Y-CST","Y-UDB",1.5],
+        ["Y-UDB","Y-LKM",2.0],
+        ["Y-LKM","Y-JRB",2.5]
+      ]
     },
     {
       "id": "Blue",
       "name": "Blue Line",
       "color": "#0000FF",
-      "sequence": ["B-KRB","B-RJP","B-JHD","B-RKA","B-RJC","B-BRK","B-MDH","B-PGM","B-IDP"],
-      "travelMinutes": [2.0, 2.0, 2.0, 2.5, 2.0, 2.0, 2.0, 2.0]
+      "connections": [
+        ["B-KRB","B-RJP",2.0],
+        ["B-RJP","B-JHD",2.0],
+        ["B-JHD","B-RKA",2.0],
+        ["B-RKA","B-RJC",2.5],
+        ["B-RJC","B-BRK",2.0],
+        ["B-BRK","B-MDH",2.0],
+        ["B-MDH","B-PGM",2.0],
+        ["B-PGM","B-IDP",2.0]
+      ]
     },
     {
       "id": "Violet",
       "name": "Violet Line",
       "color": "#9B59B6",
-      "sequence": ["V-KSG","V-MDH","V-CST"],
-      "travelMinutes": [5.0, 4.0]
+      "connections": []
     }
   ],
   "interchanges": [
