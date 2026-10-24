@@ -16,7 +16,7 @@ Commuters who mix bus, metro and rail have no single place to compare options. T
 
 - Delay and crowd data is sample data, as the problem allows. It is not live.
 
-- Modes: bus routing is built; a small, explicit Yellow/Blue/Violet metro layer is integrated. Rail is not covered.
+- Modes: bus routing is built; metro routing is generated from the extracted DMRC GTFS feed in `metro/`. Rail is not covered.
 
 ## Team and responsibilities
 
@@ -77,14 +77,16 @@ routes
 
 Routing engine written (route.js): Dijkstra with a boarding cost, multi-stop name matching, readable legs
 
-- Metro merge implemented (merge-metro.js): explicit verified connections only, metro interchanges, and metro-to-bus walking transfers. The current graph contains 1,156 stops and 1,861 routes.
+- Metro GTFS converter implemented (`scripts/build-metro-data.js`): 262 stations, 12 lines, and 616 route-adjacent connections derived from trip stop sequences and scheduled times.
 
-- Routing tests cover bus, metro, bus-to-metro, topology, duplicate-edge prevention, and repeated-merge idempotence.
+- Metro merge implemented (`merge-metro.js`): validates a candidate graph before replacement, creates a timestamped backup, preserves bus edges, and adds metro-to-bus walking transfers. The current graph contains 1,396 stops and 1,870 routes.
+
+- Routing tests cover bus, metro, bus-to-metro, GTFS parsing, platform/parent stations, malformed data, topology, duplicate-edge prevention, and repeated-merge idempotence.
 
 ## In progress / next
 
 
-| Status Task [x] Test the routing engine on real stop pairs (test-route.js) [x] Cheapest route: fare rule in the engine [x] Sample delay and crowd data (data/delays.json) [x] Partial metro topology and merge [ ] Verify/replace metro data with a complete metro GTFS [ ] Express API (/stops, /route, /delays, /saved, /chat) [ ] Saved routes storage [ ] Frontend with map, route form, badges [ ] Saved-routes list in the UI [ ] Chat agent with tool calling | Owner Shlok Shlok Shriyam Shlok Shlok Standby Standby Shrijan Shrijan Shlok |
+| Status Task [x] Test the routing engine on real stop pairs (test-route.js) [x] Cheapest route: fare rule in the engine [x] Sample delay and crowd data (data/delays.json) [x] Metro GTFS conversion and merge [ ] Refresh metro GTFS when a newer feed is available [ ] Express API (/stops, /route, /delays, /saved, /chat) [ ] Saved routes storage [ ] Frontend with map, route form, badges [ ] Saved-routes list in the UI [ ] Chat agent with tool calling | Owner Shlok Shlok Shriyam Shlok Shlok Standby Standby Shrijan Shrijan Shlok |
 | --- | --- |
 | [ ] Chat panel in the UI [ ] Test queries and demo script [ ] Deployment | Shrijan Shriyam Standby |
 
@@ -140,9 +142,9 @@ json
 
 - The feed has no fares, so the cheapest mode uses a simplified fare rule.
 
-- Metro coverage is partial and static. No metro GTFS is present in this repository; incomplete station sequences are not connected directly.
+- Metro coverage comes from a historical DMRC GTFS snapshot in `metro/`. Its calendar ends on 2025-12-31, so it is not current live data.
 
-- Metro travel times and fares are approximate. The fare slabs in data/metro.json are historical 2023–2024 estimates, not current authoritative fares.
+- Metro travel times are averages of scheduled consecutive-stop times from the feed. The feed provides no fare data, so metro fares are reported as unavailable rather than fabricated.
 
 - Delays and crowding are sample values.
 
@@ -171,7 +173,8 @@ npminstall
 # (large files are not stored in git, see below)
 nodefilter-gtfs.js # filters to the demo area, writes ./gtfs/
 nodebuild-graph.js # builds the bus graph
-nodemerge-metro.js # adds the explicit metro layer without rebuilding the bus graph
+nodescripts/build-metro-data.js # generates data/metro.json from ./metro/
+nodemerge-metro.js # validates and adds the metro layer without rebuilding the bus graph
 nodetest-route.js"Karol Bagh""Gandhi Darshan"
 ```
 
@@ -189,16 +192,18 @@ transit-assistant/
 ├── build-graph.js # builds graph.json from the filtered GTFS
 ├── route.js # Dijkstra routing engine
 ├── test-route.js # command-line test for the engine
+├── scripts/build-metro-data.js # reproducible metro GTFS converter
+├── metro/ # extracted DMRC GTFS source
 ├── server/ # (planned) Express API
 ├── client/ # (planned) React + Leaflet frontend
-└── data/ # delays, fares, and partial metro topology
+└── data/ # delays, fares, and generated metro topology
 ```
 
 ## Known limitations
 
 - Covers one part of Delhi, not the whole city.
 
-- Metro coverage is limited to selected central-Delhi stations and explicit connections.
+- Metro coverage is limited to the routes and stations present in the historical DMRC feed.
 
 - No live data.
 

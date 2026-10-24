@@ -30,15 +30,11 @@ const FARES = load("./data/fares.json", {
 const DELAYS = load("./data/delays.json", {});
 const METRO  = load("./data/metro.json",  {});
 
-// Historical DMRC 2023-2024 fare estimates, distance-based; not current fares.
-const METRO_FARE_SLABS = METRO.fareSlabs ?? [
-  { maxKm: 2,   fare: 10 },
-  { maxKm: 5,   fare: 20 },
-  { maxKm: 12,  fare: 30 },
-  { maxKm: 21,  fare: 40 },
-  { maxKm: 32,  fare: 50 },
-  { maxKm: null, fare: 60 },
-];
+// GTFS does not provide fares. Only use slabs explicitly supplied by the
+// dataset, never a fabricated fallback.
+const METRO_FARE_SLABS = Array.isArray(METRO.fareSlabs)
+  ? METRO.fareSlabs
+  : [];
 // Metro fare distance cap for the bucketing state space.
 // The highest metro slab boundary in the covered area is 21 km (well above
 // any journey within the bounding box), but we cap at 32 to be safe.
@@ -100,7 +96,13 @@ class Heap {
 }
 
 const r1 = (n) => Math.round(n * 10) / 10;
-const stopOf = (node) => node.split(":")[1];
+const stopOf = (node) => {
+  if (node.startsWith("R:")) {
+    const body = node.slice(2);
+    return body.slice(0, body.lastIndexOf(":"));
+  }
+  return node.slice(2);
+};
 const nameOf = (id) => G.stops[id]?.name ?? `Stop ${id}`;
 const hubOf = (id) => (G.adj[`M:${id}`] ? `M:${id}` : `S:${id}`);
 
@@ -408,7 +410,7 @@ export function plan(fromIds, toIds, opts = {}) {
     totalDistanceKm: r1(totalDistanceKm),
     fareEstimate: true,
     fareNote:
-      "Estimated from straight-line distances and static fare tables; bus classifications and metro fares may differ from current official fares.",
+      "Bus fares are estimates. Metro fares are unavailable unless explicitly supplied by the metro dataset.",
     legs,
   };
 }
