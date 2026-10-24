@@ -20,10 +20,16 @@ function assertValidRoute(result) {
   assert.ok(result !== null, "result should not be null");
   assert.ok(typeof result.totalMinutes === "number", "totalMinutes must be a number");
   assert.ok(result.totalMinutes >= 0, "totalMinutes must be non-negative");
-  assert.ok(typeof result.totalFare === "number", "totalFare must be a number");
-  assert.ok(result.totalFare >= 0, "totalFare must be non-negative");
+  assert.ok(
+    result.totalFare === null || typeof result.totalFare === "number",
+    "totalFare must be a number or null"
+  );
+  if (result.totalFare !== null) {
+    assert.ok(result.totalFare >= 0, "totalFare must be non-negative");
+  }
   assert.ok(Array.isArray(result.legs), "legs must be an array");
-  assert.ok(result.fareEstimate === true, "fareEstimate flag must be true");
+  assert.ok(typeof result.fareEstimate === "boolean", "fareEstimate must be boolean");
+  assert.ok(typeof result.fareAvailable === "boolean", "fareAvailable must be boolean");
   assert.ok(typeof result.fareNote === "string", "fareNote must be a string");
   assert.ok(
     ["fastest", "cheapest"].includes(result.preference),
@@ -62,8 +68,8 @@ function assertBusLegs(legs) {
       assert.ok(typeof leg.to === "string", "metro leg must have to");
       assert.ok(leg.stops >= 0, "metro stops must be non-negative");
       assert.ok(leg.minutes >= 0, "metro minutes must be non-negative");
-      assert.ok(leg.fare >= 0, "metro fare must be non-negative");
       assert.ok(leg.distanceKm >= 0, "metro distanceKm must be non-negative");
+      assert.equal(leg.fare, null, "metro fare should be explicit when unavailable");
     } else if (leg.mode === "walk") {
       assert.ok(typeof leg.from === "string", "walk leg must have from");
       assert.ok(typeof leg.to === "string", "walk leg must have to");
@@ -247,7 +253,12 @@ describe("plan — cheapest mode", () => {
       ...opts,
       preference: "cheapest",
     });
-    if (fastest && cheapest) {
+    if (
+      fastest &&
+      cheapest &&
+      typeof fastest.totalFare === "number" &&
+      typeof cheapest.totalFare === "number"
+    ) {
       assert.ok(
         cheapest.totalFare <= fastest.totalFare,
         `cheapest fare ${cheapest.totalFare} should be <= fastest fare ${fastest.totalFare}`
@@ -422,6 +433,8 @@ describe("plan — metro journeys", () => {
 
     assertValidRoute(result);
     assert.ok(result.legs.some((leg) => leg.mode === "metro"));
+    assert.equal(result.totalFare, null);
+    assert.equal(result.fareAvailable, false);
   });
 
   it("supports bus-to-metro journeys", () => {
@@ -432,5 +445,35 @@ describe("plan — metro journeys", () => {
 
     assertValidRoute(result);
     assert.ok(result.legs.some((leg) => leg.mode === "metro" || leg.mode === "bus"));
+  });
+
+  it("applies the Airport Express station-pair fare", () => {
+    const result = plan(["GTFS:49"], ["GTFS:154"], { period: "offpeak" });
+    assert.ok(result);
+    assert.equal(result.legs.length, 1);
+    assert.equal(result.legs[0].mode, "metro");
+    assert.equal(result.legs[0].fare, 64);
+    assert.equal(result.totalFare, 64);
+    assert.equal(result.fareAvailable, true);
+  });
+
+  it("applies Noida fare bands using ridden station edges", () => {
+    const result = plan(["GTFS:500"], ["GTFS:501"], { period: "offpeak" });
+    assert.ok(result);
+    assert.equal(result.legs[0].mode, "metro");
+    assert.equal(result.legs[0].stops, 1);
+    assert.equal(result.legs[0].fare, 10);
+  });
+
+  it("does not treat unavailable metro fares as zero in cheapest results", () => {
+    const result = plan(["GTFS:49"], ["GTFS:154"], {
+      period: "offpeak",
+      preference: "cheapest",
+    });
+    assert.ok(result);
+    assert.equal(result.totalFare, null);
+    assert.equal(result.fareAvailable, false);
+    assert.equal(result.fareEstimate, false);
+    assert.equal(result.cheapestConfirmed, false);
   });
 });

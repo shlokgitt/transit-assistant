@@ -1,5 +1,6 @@
 
 import fs from "node:fs";
+import { calculateMetroFare } from "./metro-fares.js";
 
 const G = JSON.parse(fs.readFileSync("./graph.json", "utf8"));
 
@@ -28,13 +29,6 @@ const FARES = load("./data/fares.json", {
 });
 
 const DELAYS = load("./data/delays.json", {});
-const METRO  = load("./data/metro.json",  {});
-
-// GTFS does not provide fares. Only use slabs explicitly supplied by the
-// dataset, never a fabricated fallback.
-const METRO_FARE_SLABS = Array.isArray(METRO.fareSlabs)
-  ? METRO.fareSlabs
-  : [];
 // Metro fare distance cap for the bucketing state space.
 // The highest metro slab boundary in the covered area is 21 km (well above
 // any journey within the bounding box), but we cap at 32 to be safe.
@@ -136,14 +130,6 @@ function busType(routeName) {
 }
 
 function fareForDistance(km, routeName) {
-  // Metro has its own historical distance-based estimate table.
-  if (isMetroRoute(routeName)) {
-    for (const slab of METRO_FARE_SLABS) {
-      if (slab.maxKm === null || km <= slab.maxKm) return slab.fare;
-    }
-    return 0;
-  }
-
   const type = busType(routeName);
   const slabs = FARES.bus?.[type] ?? [];
   for (const slab of slabs) {
@@ -171,7 +157,9 @@ function stateKey(node, activeBus) {
     activeBus.routeName
   );
 
-  return `${node}|${activeBus.routeId}|${bucket}`;
+  const stationCount =
+    activeBus.routeId === "metro:NoidaAqua" ? activeBus.stationCount : 0;
+  return `${node}|${activeBus.routeId}|${bucket}|${stationCount}`;
 }
 
 export function findStops(query) {
@@ -197,6 +185,7 @@ export function plan(fromIds, toIds, opts = {}) {
     preference = "fastest",
     period = periodFor(),
     avoidCrowded = false,
+    dayType = "weekday",
   } = opts;
 
   if (!["fastest", "cheapest"].includes(preference)) {
@@ -256,7 +245,7 @@ export function plan(fromIds, toIds, opts = {}) {
 
       let nextActive = activeBus;
       let minutes = baseMinutes;
-      let fare = 0;
+      let fare = null;
       let legDistanceKm = 0;
       let penalty = 0;
       // boardDelayMin is stored directly so the leg builder does not need to
@@ -280,6 +269,7 @@ export function plan(fromIds, toIds, opts = {}) {
           routeName,
           boardStop: stopOf(node),
           distanceKm: 0,
+          stationCount: 0,
         };
       } else if (type === "ride") {
         const fromStop = stopOf(node);
@@ -291,14 +281,28 @@ export function plan(fromIds, toIds, opts = {}) {
           nextActive = {
             ...activeBus,
             distanceKm: activeBus.distanceKm + legDistanceKm,
+            stationCount:
+              activeBus.routeId === "metro:NoidaAqua"
+                ? activeBus.stationCount + 1
+                : activeBus.stationCount,
           };
         }
       } else if (type === "alight") {
         if (activeBus) {
-          fare = fareForDistance(
-            activeBus.distanceKm,
-            activeBus.routeName
-          );
+          if (isMetroRoute(activeBus.routeName)) {
+            const metroFare = calculateMetroFare(
+              activeBus.routeId,
+              {
+                fromName: nameOf(activeBus.boardStop),
+                toName: nameOf(stopOf(nextNode)),
+                stationCount: activeBus.stationCount,
+                dayType,
+              }
+            );
+            fare = metroFare.amount;
+          } else {
+            fare = fareForDistance(activeBus.distanceKm, activeBus.routeName);
+          }
         }
 
         nextActive = null;
@@ -311,7 +315,9 @@ export function plan(fromIds, toIds, opts = {}) {
       const weight =
         minutes +
         penalty +
-        (preference === "cheapest" ? fare * FARE_PRIORITY : 0);
+        (preference === "cheapest" && fare !== null
+          ? fare * FARE_PRIORITY
+          : 0);
 
       const nextScore = score + weight;
 
@@ -357,6 +363,7 @@ export function plan(fromIds, toIds, opts = {}) {
   let totalMinutes = 0;
   let totalFare = 0;
   let totalDistanceKm = 0;
+  let fareAvailable = true;
 
   for (const edge of edges) {
     totalMinutes += edge.minutes;
@@ -391,9 +398,10 @@ export function plan(fromIds, toIds, opts = {}) {
     } else if (edge.type === "alight" && currentTransit) {
       currentTransit.to = nameOf(stopOf(edge.to));
       currentTransit.fare = edge.fare;
+      if (edge.fare === null) fareAvailable = false;
       currentTransit.distanceKm = r1(currentTransit.distanceKm);
 
-      totalFare += edge.fare;
+      if (edge.fare !== null) totalFare += edge.fare;
       totalDistanceKm += currentTransit.distanceKm;
 
       currentTransit.minutes = r1(currentTransit.minutes);
@@ -406,11 +414,13 @@ export function plan(fromIds, toIds, opts = {}) {
     preference,
     period,
     totalMinutes: r1(totalMinutes),
-    totalFare,
+    totalFare: fareAvailable ? totalFare : null,
     totalDistanceKm: r1(totalDistanceKm),
-    fareEstimate: true,
+    fareEstimate: fareAvailable,
+    fareAvailable,
     fareNote:
-      "Bus fares are estimates. Metro fares are unavailable unless explicitly supplied by the metro dataset.",
+      "Bus fares are estimates. Metro fares are available only for supported fare tables and reliable route calculations.",
+    cheapestConfirmed: preference !== "cheapest" || fareAvailable,
     legs,
   };
 }

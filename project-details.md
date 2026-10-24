@@ -144,7 +144,7 @@ json
 
 - Metro coverage comes from a historical DMRC GTFS snapshot in `metro/`. Its calendar ends on 2025-12-31, so it is not current live data.
 
-- Metro travel times are averages of scheduled consecutive-stop times from the feed. The feed provides no fare data, so metro fares are reported as unavailable rather than fabricated.
+- Metro travel times are averages of scheduled consecutive-stop times from the feed. Fare integration uses the manually structured `data/metro-fares/` references only for Airport Express matrix fares and Noida station-count fares. DMRC standard and Rapid Metro fares remain unavailable because reliable route-distance or verified fare rules are not yet available.
 
 - Delays and crowding are sample values.
 

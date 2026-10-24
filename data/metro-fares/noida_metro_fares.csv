@@ -1,0 +1,7 @@
+﻿stations_min,stations_max,weekday_fare_inr,sunday_holiday_fare_inr
+1,1,10,10
+2,2,15,10
+3,6,20,15
+7,9,30,20
+10,16,40,30
+17,,50,40

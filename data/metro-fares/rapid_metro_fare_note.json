@@ -1,0 +1,9 @@
+{
+  "operator": "Rapid Metro Gurgaon",
+  "fare_inr": 20,
+  "fare_type": "official_page_statement",
+  "statement": "DMRC's official Rapid Metro page states ₹20 from Sikanderpur to any Rapid Metro station.",
+  "production_status": "verify_before_use",
+  "source_url": "https://new.delhimetrorail.com/en/rapid-metro",
+  "notes": "Confirm route-specific application before production use."
+}
