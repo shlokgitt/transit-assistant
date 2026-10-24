@@ -1,0 +1,19 @@
+{
+  "name": "transit-assistant",
+  "version": "0.1.0",
+  "description": "Delhi public transit route planner with AI chat agent",
+  "type": "module",
+  "scripts": {
+    "test": "node --test route.test.js",
+    "filter": "node filter-gtfs.js",
+    "build-graph": "node build-graph.js",
+    "route": "node test-route.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "csv-stringify": "^6.5.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

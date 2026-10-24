@@ -1,6 +1,19 @@
+
 {
-  "note": "PLACEHOLDER. Replace with the real fare rule.",
+  "note": "Estimated adult Delhi city-bus fares. Verify against official route fare stages before treating as exact.",
+  "currency": "INR",
+  "distanceUnit": "km",
   "bus": {
-    "boarding": 10
+    "ordinary": [
+      { "maxKm": 4, "fare": 5 },
+      { "maxKm": 10, "fare": 10 },
+      { "maxKm": null, "fare": 15 }
+    ],
+    "ac": [
+      { "maxKm": 4, "fare": 10 },
+      { "maxKm": 8, "fare": 15 },
+      { "maxKm": 12, "fare": 20 },
+      { "maxKm": null, "fare": 25 }
+    ]
   }
 }

@@ -1,0 +1,82 @@
+{
+  "note": "Hand-curated DMRC metro station data for the central-Delhi bounding box (lat 28.58–28.68, lon 77.15–77.28). Covers Yellow, Blue, and Violet lines. Coordinates sourced from public references; treat as approximate. Travel times are representative averages (2–3 min/hop underground). Fare slabs are official DMRC 2023–2024 token fares (distance-based). No live feed — this is static data.",
+  "fareSlabs": [
+    { "maxKm": 2,  "fare": 10 },
+    { "maxKm": 5,  "fare": 20 },
+    { "maxKm": 12, "fare": 30 },
+    { "maxKm": 21, "fare": 40 },
+    { "maxKm": 32, "fare": 50 },
+    { "maxKm": null, "fare": 60 }
+  ],
+  "boardingMinutes": 3,
+  "interchangeMinutes": 5,
+  "stations": {
+    "Y-KSG": { "name": "Kashmere Gate",       "lat": 28.6675, "lon": 77.2281 },
+    "Y-CHC": { "name": "Chandni Chowk",        "lat": 28.6562, "lon": 77.2321 },
+    "Y-CHB": { "name": "Chawri Bazar",          "lat": 28.6495, "lon": 77.2230 },
+    "Y-NDL": { "name": "New Delhi",             "lat": 28.6420, "lon": 77.2210 },
+    "Y-RJC": { "name": "Rajiv Chowk",           "lat": 28.6328, "lon": 77.2196 },
+    "Y-PTC": { "name": "Patel Chowk",           "lat": 28.6200, "lon": 77.2116 },
+    "Y-CST": { "name": "Central Secretariat",   "lat": 28.6143, "lon": 77.2117 },
+    "Y-UDB": { "name": "Udyog Bhawan",          "lat": 28.6100, "lon": 77.2124 },
+    "Y-LKM": { "name": "Lok Kalyan Marg",       "lat": 28.6001, "lon": 77.2136 },
+    "Y-JRB": { "name": "Jor Bagh",              "lat": 28.5882, "lon": 77.2165 },
+    "B-KRB": { "name": "Karol Bagh",            "lat": 28.6440, "lon": 77.1885 },
+    "B-RJP": { "name": "Rajendra Place",        "lat": 28.6424, "lon": 77.1918 },
+    "B-JHD": { "name": "Jhandewalan",           "lat": 28.6443, "lon": 77.1999 },
+    "B-RKA": { "name": "R.K. Ashram Marg",      "lat": 28.6385, "lon": 77.2062 },
+    "B-RJC": { "name": "Rajiv Chowk",           "lat": 28.6328, "lon": 77.2196 },
+    "B-BRK": { "name": "Barakhamba Road",        "lat": 28.6320, "lon": 77.2251 },
+    "B-MDH": { "name": "Mandi House",           "lat": 28.6258, "lon": 77.2343 },
+    "B-PGM": { "name": "Pragati Maidan",        "lat": 28.6219, "lon": 77.2431 },
+    "B-IDP": { "name": "Indraprastha",          "lat": 28.6206, "lon": 77.2495 },
+    "V-KSG": { "name": "Kashmere Gate",         "lat": 28.6675, "lon": 77.2281 },
+    "V-MDH": { "name": "Mandi House",           "lat": 28.6258, "lon": 77.2343 },
+    "V-CST": { "name": "Central Secretariat",   "lat": 28.6143, "lon": 77.2117 }
+  },
+  "lines": [
+    {
+      "id": "Yellow",
+      "name": "Yellow Line",
+      "color": "#FFFF00",
+      "sequence": ["Y-KSG","Y-CHC","Y-CHB","Y-NDL","Y-RJC","Y-PTC","Y-CST","Y-UDB","Y-LKM","Y-JRB"],
+      "travelMinutes": [2.5, 2.0, 2.0, 2.0, 2.5, 2.0, 1.5, 2.0, 2.5]
+    },
+    {
+      "id": "Blue",
+      "name": "Blue Line",
+      "color": "#0000FF",
+      "sequence": ["B-KRB","B-RJP","B-JHD","B-RKA","B-RJC","B-BRK","B-MDH","B-PGM","B-IDP"],
+      "travelMinutes": [2.0, 2.0, 2.0, 2.5, 2.0, 2.0, 2.0, 2.0]
+    },
+    {
+      "id": "Violet",
+      "name": "Violet Line",
+      "color": "#9B59B6",
+      "sequence": ["V-KSG","V-MDH","V-CST"],
+      "travelMinutes": [5.0, 4.0]
+    }
+  ],
+  "interchanges": [
+    {
+      "note": "Rajiv Chowk — Yellow ↔ Blue, same station complex",
+      "stations": ["Y-RJC", "B-RJC"],
+      "walkMinutes": 5
+    },
+    {
+      "note": "Kashmere Gate — Yellow ↔ Violet, same station complex",
+      "stations": ["Y-KSG", "V-KSG"],
+      "walkMinutes": 5
+    },
+    {
+      "note": "Mandi House — Blue ↔ Violet, same station complex",
+      "stations": ["B-MDH", "V-MDH"],
+      "walkMinutes": 5
+    },
+    {
+      "note": "Central Secretariat — Yellow ↔ Violet, same station complex",
+      "stations": ["Y-CST", "V-CST"],
+      "walkMinutes": 5
+    }
+  ]
+}
