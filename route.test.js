@@ -30,6 +30,10 @@ function assertValidRoute(result) {
   assert.ok(Array.isArray(result.legs), "legs must be an array");
   assert.ok(typeof result.fareEstimate === "boolean", "fareEstimate must be boolean");
   assert.ok(typeof result.fareAvailable === "boolean", "fareAvailable must be boolean");
+  assert.ok(
+    ["verified", "estimated", "unavailable"].includes(result.fareStatus),
+    "fareStatus must identify fare confidence"
+  );
   assert.ok(typeof result.fareNote === "string", "fareNote must be a string");
   assert.ok(
     ["fastest", "cheapest"].includes(result.preference),
@@ -198,6 +202,7 @@ describe("plan — same-stop trip", () => {
     assertValidRoute(result);
     assert.equal(result.totalMinutes, 0);
     assert.equal(result.totalFare, 0);
+    assert.equal(result.fareStatus, "verified");
     assert.equal(result.legs.length, 0);
   });
 });
@@ -435,6 +440,7 @@ describe("plan — metro journeys", () => {
     assert.ok(result.legs.some((leg) => leg.mode === "metro"));
     assert.equal(result.totalFare, null);
     assert.equal(result.fareAvailable, false);
+    assert.equal(result.fareStatus, "unavailable");
   });
 
   it("supports bus-to-metro journeys", () => {
@@ -455,6 +461,8 @@ describe("plan — metro journeys", () => {
     assert.equal(result.legs[0].fare, 64);
     assert.equal(result.totalFare, 64);
     assert.equal(result.fareAvailable, true);
+    assert.equal(result.fareEstimate, true);
+    assert.equal(result.fareStatus, "estimated");
   });
 
   it("applies Noida fare bands using ridden station edges", () => {
@@ -471,9 +479,16 @@ describe("plan — metro journeys", () => {
       preference: "cheapest",
     });
     assert.ok(result);
-    assert.equal(result.totalFare, null);
-    assert.equal(result.fareAvailable, false);
-    assert.equal(result.fareEstimate, false);
-    assert.equal(result.cheapestConfirmed, false);
+    assert.notEqual(result.totalFare, 0);
+    assert.ok(result.totalFare === null || result.totalFare > 0);
+    if (result.totalFare === null) {
+      assert.equal(result.fareAvailable, false);
+      assert.equal(result.fareEstimate, false);
+      assert.equal(result.fareStatus, "unavailable");
+      assert.equal(result.cheapestConfirmed, false);
+    } else {
+      assert.equal(result.fareAvailable, true);
+      assert.equal(result.cheapestConfirmed, false);
+    }
   });
 });

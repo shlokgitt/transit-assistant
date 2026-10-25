@@ -66,11 +66,11 @@ describe("metro fare data", () => {
   it("leaves DMRC and Rapid Metro fares unavailable", () => {
     assert.deepEqual(
       calculateMetroFare("metro:Delhi2", { stationCount: 3 }, data),
-      { amount: null, available: false }
+      { amount: null, available: false, estimated: false }
     );
     assert.deepEqual(
       calculateMetroFare("metro:Gurgaon1", { stationCount: 3 }, data),
-      { amount: null, available: false }
+      { amount: null, available: false, estimated: false }
     );
   });
 

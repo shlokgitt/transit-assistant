@@ -322,15 +322,15 @@ export function calculateMetroFare(
   switch (metroFareClass(routeId)) {
     case "airport_express": {
       const amount = calculateAirportExpressFare(fromName, toName, data);
-      return { amount, available: amount !== null };
+      return { amount, available: amount !== null, estimated: amount !== null };
     }
     case "noida_metro": {
       const amount = calculateNoidaFare(stationCount, dayType, data);
-      return { amount, available: amount !== null };
+      return { amount, available: amount !== null, estimated: amount !== null };
     }
     case "dmrc_standard":
     case "rapid_metro":
     default:
-      return { amount: null, available: false };
+      return { amount: null, available: false, estimated: false };
   }
 }

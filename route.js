@@ -35,6 +35,7 @@ const DELAYS = load("./data/delays.json", {});
 const MAX_METRO_FARE_KM = 32.1;
 const CROWD_PENALTY = 10;
 const FARE_PRIORITY = 1000;
+const UNKNOWN_FARE_PENALTY = 1_000_000_000;
 const DISTANCE_BUCKET_KM = 0.1;
 const MAX_FARE_DISTANCE_KM = 12.1;
 
@@ -135,7 +136,7 @@ function fareForDistance(km, routeName) {
   for (const slab of slabs) {
     if (slab.maxKm === null || km <= slab.maxKm) return slab.fare;
   }
-  return 0;
+  return null;
 }
 
 function distanceBucket(km, routeName) {
@@ -246,6 +247,7 @@ export function plan(fromIds, toIds, opts = {}) {
       let nextActive = activeBus;
       let minutes = baseMinutes;
       let fare = null;
+      let fareEstimated = false;
       let legDistanceKm = 0;
       let penalty = 0;
       // boardDelayMin is stored directly so the leg builder does not need to
@@ -300,8 +302,10 @@ export function plan(fromIds, toIds, opts = {}) {
               }
             );
             fare = metroFare.amount;
+            fareEstimated = metroFare.estimated;
           } else {
             fare = fareForDistance(activeBus.distanceKm, activeBus.routeName);
+            fareEstimated = fare !== null;
           }
         }
 
@@ -312,12 +316,13 @@ export function plan(fromIds, toIds, opts = {}) {
 
       // Fare is charged when alighting, based on the distance ridden.
       // Cheapest prioritizes total fare, then travel time.
-      const weight =
-        minutes +
-        penalty +
-        (preference === "cheapest" && fare !== null
-          ? fare * FARE_PRIORITY
-          : 0);
+      const fareWeight =
+        preference === "cheapest" && type === "alight"
+          ? fare === null
+            ? UNKNOWN_FARE_PENALTY
+            : fare * FARE_PRIORITY
+          : 0;
+      const weight = minutes + penalty + fareWeight;
 
       const nextScore = score + weight;
 
@@ -333,6 +338,7 @@ export function plan(fromIds, toIds, opts = {}) {
           routeId,
           minutes,
           fare,
+          fareEstimated,
           legDistanceKm,
           busDistanceKm:
             type === "alight" && activeBus
@@ -364,6 +370,7 @@ export function plan(fromIds, toIds, opts = {}) {
   let totalFare = 0;
   let totalDistanceKm = 0;
   let fareAvailable = true;
+  let fareEstimated = false;
 
   for (const edge of edges) {
     totalMinutes += edge.minutes;
@@ -399,6 +406,7 @@ export function plan(fromIds, toIds, opts = {}) {
       currentTransit.to = nameOf(stopOf(edge.to));
       currentTransit.fare = edge.fare;
       if (edge.fare === null) fareAvailable = false;
+      if (edge.fare !== null && edge.fareEstimated) fareEstimated = true;
       currentTransit.distanceKm = r1(currentTransit.distanceKm);
 
       if (edge.fare !== null) totalFare += edge.fare;
@@ -416,11 +424,17 @@ export function plan(fromIds, toIds, opts = {}) {
     totalMinutes: r1(totalMinutes),
     totalFare: fareAvailable ? totalFare : null,
     totalDistanceKm: r1(totalDistanceKm),
-    fareEstimate: fareAvailable,
+    fareEstimate: fareAvailable && fareEstimated,
     fareAvailable,
+    fareStatus: !fareAvailable
+      ? "unavailable"
+      : fareEstimated
+        ? "estimated"
+        : "verified",
     fareNote:
-      "Bus fares are estimates. Metro fares are available only for supported fare tables and reliable route calculations.",
-    cheapestConfirmed: preference !== "cheapest" || fareAvailable,
+      "Bus fares are estimates. Metro fares are available only for supported fare tables and reliable route calculations. Cheapest mode excludes unknown fares from confirmed cost comparisons.",
+    cheapestConfirmed:
+      preference !== "cheapest" || (fareAvailable && !fareEstimated),
     legs,
   };
 }
