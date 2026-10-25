@@ -9,7 +9,13 @@
 
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
-import { plan, planByName, findStops, periodFor } from "./route.js";
+import {
+  plan,
+  planByName,
+  findStops,
+  periodFor,
+  busHopDistance,
+} from "./route.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -489,6 +495,196 @@ describe("plan — metro journeys", () => {
     } else {
       assert.equal(result.fareAvailable, true);
       assert.equal(result.cheapestConfirmed, false);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bus road distance: cached driving distance with straight-line fallback
+// ---------------------------------------------------------------------------
+
+describe("busHopDistance — road cache with straight-line fallback", () => {
+  // Real consecutive stops on 03DOWN: Karol Bagh Terminal -> Jhandewalan
+  // (straight-line about 0.34 km).
+  const A = "1773";
+  const B = "1774";
+  const straight = busHopDistance(A, B, {}).km;
+
+  it("uses a plausible cached road distance", () => {
+    const table = { [`${A}>${B}`]: { distanceKm: 0.35 } };
+    assert.deepEqual(busHopDistance(A, B, table), { km: 0.35, source: "road" });
+  });
+
+  it("reads the real road cache by default", () => {
+    const hop = busHopDistance(A, B);
+    assert.equal(hop.source, "road");
+    assert.ok(hop.km > 0.3 && hop.km < 0.5, `unexpected ${hop.km} km`);
+  });
+
+  it("falls back to straight-line when the pair is not cached", () => {
+    const hop = busHopDistance(A, B, {});
+    assert.equal(hop.source, "straight-line");
+    assert.ok(straight > 0.3 && straight < 0.4, `unexpected ${straight} km`);
+  });
+
+  it("treats failed cache entries (no finite distanceKm) as missing", () => {
+    for (const entry of [
+      { error: "HTTP 403: Quota exceeded", from: A, to: B },
+      { distanceKm: null },
+      { distanceKm: NaN },
+    ]) {
+      const hop = busHopDistance(A, B, { [`${A}>${B}`]: entry });
+      assert.equal(hop.source, "straight-line");
+      assert.equal(hop.km, straight);
+    }
+  });
+
+  it("tolerates a road distance a hair below straight-line (rounding/snapping)", () => {
+    const road = straight * 0.99;
+    const hop = busHopDistance(A, B, { [`${A}>${B}`]: { distanceKm: road } });
+    assert.deepEqual(hop, { km: road, source: "road" });
+  });
+
+  it("rejects a road distance well below the straight-line distance", () => {
+    const hop = busHopDistance(A, B, { [`${A}>${B}`]: { distanceKm: 0.1 } });
+    assert.equal(hop.source, "straight-line");
+    assert.equal(hop.km, straight);
+  });
+
+  it("rejects an implausibly long road distance", () => {
+    const hop = busHopDistance(A, B, { [`${A}>${B}`]: { distanceKm: 5 } });
+    assert.equal(hop.source, "straight-line");
+    assert.equal(hop.km, straight);
+  });
+
+  it("accepts a short-hop detour within the excess limit (Turkman Gate -> Delite Cinema, cached 1.91 km for 0.19 km apart)", () => {
+    const hop = busHopDistance("744", "745");
+    assert.equal(hop.source, "road");
+    assert.ok(hop.km > 1.8 && hop.km < 2.0, `unexpected ${hop.km} km`);
+  });
+
+  it("rejects a short hop whose extra distance exceeds the limit", () => {
+    const table = { [`${A}>${B}`]: { distanceKm: straight + 3 } };
+    const hop = busHopDistance(A, B, table);
+    assert.equal(hop.source, "straight-line");
+    assert.equal(hop.km, straight);
+  });
+
+  it("accepts a long hop with a large absolute excess if the ratio is modest", () => {
+    // Karol Bagh Terminal -> Gandhi Darshan is about 4.7 km straight-line.
+    const far = busHopDistance("1773", "441", {}).km;
+    const road = far * 1.8;
+    assert.ok(road - far > 2.5, "test needs an excess above the absolute limit");
+    const hop = busHopDistance("1773", "441", {
+      "1773>441": { distanceKm: road },
+    });
+    assert.deepEqual(hop, { km: road, source: "road" });
+  });
+
+  it("is directional: A>B does not satisfy B>A", () => {
+    const table = { [`${A}>${B}`]: { distanceKm: 0.35 } };
+    assert.equal(busHopDistance(B, A, table).source, "straight-line");
+  });
+
+  it("returns zero with no source for a same-stop hop", () => {
+    assert.deepEqual(busHopDistance(A, A, {}), { km: 0, source: null });
+  });
+});
+
+describe("plan — reported distance for bus, metro and walk legs", () => {
+  it("Karol Bagh -> Gandhi Darshan uses cached road distances, not the straight-line sum", () => {
+    const result = planByName("Karol Bagh", "Gandhi Darshan", {
+      preference: "fastest",
+      period: "peak",
+    });
+    assertValidRoute(result);
+    assert.equal(result.legs.length, 1);
+    // The straight-line sum for this route was 4.9 km; the cached road
+    // distances for its 12 hops sum to about 7.6 km.
+    assert.ok(result.legs[0].distanceKm > 7 && result.legs[0].distanceKm < 8,
+      `got ${result.legs[0].distanceKm}`);
+    assert.equal(result.legs[0].distanceSource, "road");
+    assert.equal(result.distanceSource, "road");
+  });
+
+  describe("multi-mode journey (ISBT -> India Gate)", () => {
+    let result;
+
+    before(() => {
+      result = planByName("ISBT", "India Gate", {
+        preference: "fastest",
+        period: "peak",
+      });
+    });
+
+    it("has walk, metro and bus legs", () => {
+      const modes = new Set(result.legs.map((leg) => leg.mode));
+      for (const mode of ["walk", "metro", "bus"]) {
+        assert.ok(modes.has(mode), `expected a ${mode} leg`);
+      }
+    });
+
+    it("total distance equals the sum of transit legs (no double counting)", () => {
+      const sum = result.legs
+        .filter((leg) => leg.mode !== "walk")
+        .reduce((total, leg) => total + leg.distanceKm, 0);
+      assert.ok(
+        Math.abs(result.totalDistanceKm - sum) < 0.05,
+        `total ${result.totalDistanceKm} vs legs ${sum}`
+      );
+    });
+
+    it("walk legs carry no distance or distance source", () => {
+      for (const leg of result.legs.filter((l) => l.mode === "walk")) {
+        assert.ok(!("distanceKm" in leg));
+        assert.ok(!("distanceSource" in leg));
+      }
+    });
+
+    it("metro legs stay straight-line and never use driving distance", () => {
+      for (const leg of result.legs.filter((l) => l.mode === "metro")) {
+        assert.equal(leg.distanceSource, "straight-line");
+      }
+    });
+
+    it("bus legs report where their distance came from", () => {
+      for (const leg of result.legs.filter((l) => l.mode === "bus")) {
+        assert.ok(
+          ["road", "mixed", "straight-line"].includes(leg.distanceSource),
+          `bad distanceSource ${leg.distanceSource}`
+        );
+      }
+    });
+
+    it("route distanceSource summarises the leg sources", () => {
+      const sources = new Set(
+        result.legs.filter((l) => l.distanceSource).map((l) => l.distanceSource)
+      );
+      const expected = sources.size === 1 ? [...sources][0] : "mixed";
+      assert.equal(result.distanceSource, expected);
+    });
+  });
+
+  it("ordinary bus fares stay consistent with the reported distance", () => {
+    const journeys = [
+      ["Karol Bagh", "Gandhi Darshan"],
+      ["ISBT", "India Gate"],
+      ["Karol Bagh", "Rajiv Chowk"],
+    ];
+
+    for (const [from, to] of journeys) {
+      const result = planByName(from, to, { preference: "fastest", period: "peak" });
+      if (result.error) continue;
+
+      for (const leg of result.legs) {
+        if (leg.mode !== "bus" || leg.busType !== "ordinary") continue;
+        const d = leg.distanceKm;
+        // Distances are rounded to 0.1 km; skip legs next to a fare boundary.
+        if (Math.abs(d - 4) < 0.15 || Math.abs(d - 10) < 0.15) continue;
+
+        const expected = d <= 4 ? 5 : d <= 10 ? 10 : 15;
+        assert.equal(leg.fare, expected, `${leg.route} ${d} km`);
+      }
     }
   });
 });

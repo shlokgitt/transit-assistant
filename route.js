@@ -1,4 +1,3 @@
-
 import fs from "node:fs";
 import { calculateMetroFare } from "./metro-fares.js";
 
@@ -29,6 +28,22 @@ const FARES = load("./data/fares.json", {
 });
 
 const DELAYS = load("./data/delays.json", {});
+
+// Driving-road distances between consecutive GTFS stops, keyed "fromId>toId"
+// (directional). Built by build-road-cache.js. Entries that failed to fetch
+// are stored without a finite distanceKm and must be treated as missing.
+const ROAD_DISTANCES = load("./data/road-distances.json", {});
+// A cached road distance is trusted only if it is not meaningfully shorter
+// than the straight-line distance AND either the extra distance is small in absolute terms or the
+// ratio is modest. Road detours (one-ways, divided roads, U-turns) add a
+// roughly fixed overhead, so a pure ratio cap wrongly rejects short hops.
+// In the cache, ~96% of hops add <= 2.5 km; the rest (up to 16 km extra,
+// up to 130x straight-line) are routing/snapping artifacts.
+// A road path can be marginally shorter than the straight line (stops snapped
+// to the road, 3-decimal rounding); only values well below it are rejected.
+const ROAD_MIN_RATIO = 0.95;
+const ROAD_MAX_EXCESS_KM = 2.5;
+const ROAD_MAX_RATIO = 2;
 // Metro fare distance cap for the bucketing state space.
 // The highest metro slab boundary in the covered area is 21 km (well above
 // any journey within the bounding box), but we cap at 32 to be safe.
@@ -118,6 +133,36 @@ function distanceKm(a, b) {
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
 
   return 6371 * 2 * Math.asin(Math.sqrt(Math.min(1, h)));
+}
+
+/**
+ * Distance for one bus hop between consecutive GTFS stops.
+ * Uses the cached driving-road distance when it exists, is finite and passes
+ * the plausibility guard; otherwise falls back to straight-line distance.
+ * `source` is "road", "straight-line", or null for a zero-length same-stop hop.
+ * Metro edges must not use this: metro stops are not in the road cache.
+ */
+export function busHopDistance(a, b, table = ROAD_DISTANCES) {
+  if (a === b) return { km: 0, source: null };
+
+  const straight = distanceKm(a, b);
+  const road = table[`${a}>${b}`]?.distanceKm;
+
+  if (
+    Number.isFinite(road) &&
+    road >= straight * ROAD_MIN_RATIO &&
+    (road - straight <= ROAD_MAX_EXCESS_KM || road <= straight * ROAD_MAX_RATIO)
+  ) {
+    return { km: road, source: "road" };
+  }
+
+  return { km: straight, source: "straight-line" };
+}
+
+function combineSources(sources) {
+  const s = new Set([...sources].filter(Boolean));
+  if (s.size === 0) return null;
+  return s.size === 1 ? [...s][0] : "mixed";
 }
 
 function isMetroRoute(routeName) {
@@ -249,6 +294,7 @@ export function plan(fromIds, toIds, opts = {}) {
       let fare = null;
       let fareEstimated = false;
       let legDistanceKm = 0;
+      let distanceSource = null;
       let penalty = 0;
       // boardDelayMin is stored directly so the leg builder does not need to
       // back-compute it from (edge.minutes - BOARD), which would break if the
@@ -277,7 +323,15 @@ export function plan(fromIds, toIds, opts = {}) {
         const fromStop = stopOf(node);
         const toStop = stopOf(nextNode);
 
-        legDistanceKm = distanceKm(fromStop, toStop);
+        if (isMetroRoute(G.routes[routeId])) {
+          legDistanceKm = distanceKm(fromStop, toStop);
+          distanceSource = "straight-line";
+        } else {
+          ({ km: legDistanceKm, source: distanceSource } = busHopDistance(
+            fromStop,
+            toStop
+          ));
+        }
 
         if (activeBus) {
           nextActive = {
@@ -340,6 +394,7 @@ export function plan(fromIds, toIds, opts = {}) {
           fare,
           fareEstimated,
           legDistanceKm,
+          distanceSource,
           busDistanceKm:
             type === "alight" && activeBus
               ? activeBus.distanceKm
@@ -366,6 +421,8 @@ export function plan(fromIds, toIds, opts = {}) {
 
   const legs = [];
   let currentTransit = null;
+  let currentSources = new Set();
+  const routeSources = new Set();
   let totalMinutes = 0;
   let totalFare = 0;
   let totalDistanceKm = 0;
@@ -385,6 +442,7 @@ export function plan(fromIds, toIds, opts = {}) {
     } else if (edge.type === "board") {
       const routeName = G.routes[edge.routeId];
       const metro = isMetroRoute(routeName);
+      currentSources = new Set();
       currentTransit = {
         mode: metro ? "metro" : "bus",
         route: G.routes[edge.routeId],
@@ -402,12 +460,17 @@ export function plan(fromIds, toIds, opts = {}) {
       currentTransit.stops++;
       currentTransit.minutes += edge.minutes;
       currentTransit.distanceKm += edge.legDistanceKm;
+      if (edge.distanceSource) currentSources.add(edge.distanceSource);
     } else if (edge.type === "alight" && currentTransit) {
       currentTransit.to = nameOf(stopOf(edge.to));
       currentTransit.fare = edge.fare;
       if (edge.fare === null) fareAvailable = false;
       if (edge.fare !== null && edge.fareEstimated) fareEstimated = true;
       currentTransit.distanceKm = r1(currentTransit.distanceKm);
+      currentTransit.distanceSource = combineSources(currentSources);
+      if (currentTransit.distanceSource) {
+        routeSources.add(currentTransit.distanceSource);
+      }
 
       if (edge.fare !== null) totalFare += edge.fare;
       totalDistanceKm += currentTransit.distanceKm;
@@ -424,6 +487,7 @@ export function plan(fromIds, toIds, opts = {}) {
     totalMinutes: r1(totalMinutes),
     totalFare: fareAvailable ? totalFare : null,
     totalDistanceKm: r1(totalDistanceKm),
+    distanceSource: combineSources(routeSources),
     fareEstimate: fareAvailable && fareEstimated,
     fareAvailable,
     fareStatus: !fareAvailable
