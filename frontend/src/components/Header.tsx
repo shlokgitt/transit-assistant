@@ -1,8 +1,62 @@
 "use client";
 
 import React from "react";
-import { Compass, Code2, AlertTriangle, Radio } from "lucide-react";
+import { Code2, AlertTriangle, Radio, Zap } from "lucide-react";
 import { CITIES } from "@/lib/transitData";
+
+const TransitPulseLogo = () => (
+  <div style={{ position: "relative", width: "42px", height: "42px" }}>
+    {/* Animated outer pulse ring */}
+    <div
+      style={{
+        position: "absolute",
+        inset: "-4px",
+        borderRadius: "14px",
+        background: "linear-gradient(135deg, rgba(59,130,246,0.5), rgba(6,182,212,0.5))",
+        animation: "logoPulse 2.5s ease-in-out infinite",
+        filter: "blur(4px)",
+      }}
+    />
+    {/* Main icon container */}
+    <div
+      style={{
+        position: "relative",
+        width: "42px",
+        height: "42px",
+        borderRadius: "12px",
+        background: "linear-gradient(135deg, #1d4ed8 0%, #0891b2 60%, #06b6d4 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 0 20px rgba(59,130,246,0.6), inset 0 1px 0 rgba(255,255,255,0.2)",
+        border: "1px solid rgba(255,255,255,0.15)",
+      }}
+    >
+      {/* Custom transit pulse SVG */}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* Metro/train track lines */}
+        <path d="M3 12 L21 12" stroke="rgba(255,255,255,0.3)" strokeWidth="1" strokeDasharray="2 2"/>
+        {/* Speed lines */}
+        <path d="M5 8 L10 8" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M5 16 L9 16" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+        {/* Main pulse/signal circle */}
+        <circle cx="12" cy="12" r="4" fill="white" opacity="0.95"/>
+        <circle cx="12" cy="12" r="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" fill="none"/>
+        {/* Navigation arrow tip */}
+        <path d="M12 5 L14.5 9.5 L12 8.5 L9.5 9.5 Z" fill="white"/>
+        {/* Dot accent */}
+        <circle cx="18" cy="8" r="1.5" fill="rgba(56,189,248,0.9)"/>
+        <circle cx="6" cy="16" r="1.5" fill="rgba(52,211,153,0.9)"/>
+      </svg>
+    </div>
+    <style>{`
+      @keyframes logoPulse {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.08); }
+      }
+    `}</style>
+  </div>
+);
 
 interface HeaderProps {
   selectedCity: string;
@@ -39,49 +93,44 @@ export const Header: React.FC<HeaderProps> = ({
     >
       {/* Brand & City */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div
-          style={{
-            width: "38px",
-            height: "38px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 16px rgba(59, 130, 246, 0.4)",
-          }}
-        >
-          <Compass size={22} color="#ffffff" />
-        </div>
+        <TransitPulseLogo />
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h1
               style={{
-                fontSize: "1.1rem",
-                fontWeight: "800",
-                letterSpacing: "-0.02em",
-                background: "linear-gradient(90deg, #ffffff 30%, #93c5fd 100%)",
+                fontSize: "1.15rem",
+                fontWeight: "900",
+                letterSpacing: "-0.03em",
+                background: "linear-gradient(90deg, #ffffff 0%, #bfdbfe 50%, #67e8f9 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
+                textShadow: "0 0 30px rgba(59,130,246,0.3)",
               }}
             >
               TransitPulse
             </h1>
             <span
               style={{
-                fontSize: "0.65rem",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                background: "rgba(59, 130, 246, 0.15)",
-                color: "#60a5fa",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
-                fontWeight: 700,
+                fontSize: "0.6rem",
+                padding: "2px 7px",
+                borderRadius: "999px",
+                background: "linear-gradient(135deg, rgba(59,130,246,0.25), rgba(6,182,212,0.2))",
+                color: "#67e8f9",
+                border: "1px solid rgba(103,232,249,0.4)",
+                fontWeight: 800,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: "3px",
               }}
             >
-              MULTI-MODAL v1.0
+              <Zap size={8} />
+              v1.0
             </span>
           </div>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "1px" }}>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981", display: "inline-block", flexShrink: 0 }} />
             {city.tagline}
           </p>
         </div>

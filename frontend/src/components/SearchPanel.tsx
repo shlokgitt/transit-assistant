@@ -5,16 +5,8 @@ import {
   MapPin,
   ArrowUpDown,
   Search,
-  Train,
-  Bus,
-  Car,
-  Bike,
-  Footprints,
   SlidersHorizontal,
   ShieldAlert,
-  Zap,
-  Leaf,
-  Layers,
   Sparkles,
 } from "lucide-react";
 import {
@@ -43,20 +35,71 @@ interface SearchPanelProps {
   onSelectPreset: (from: string, to: string) => void;
 }
 
+// Rich mode icon badges with colors
+const ModeIconBadge = ({ emoji, color, glow }: { emoji: string; color: string; glow: string }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "24px",
+      height: "24px",
+      borderRadius: "8px",
+      background: `linear-gradient(135deg, ${color}33, ${color}22)`,
+      border: `1px solid ${color}55`,
+      boxShadow: `0 0 8px ${glow}`,
+      fontSize: "13px",
+      flexShrink: 0,
+    }}
+  >
+    {emoji}
+  </span>
+);
+
 const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: string }[] = [
-  { id: "metro", label: "Metro", icon: <Train size={14} />, color: "#3b82f6" },
-  { id: "bus", label: "Bus", icon: <Bus size={14} />, color: "#10b981" },
-  { id: "auto", label: "Auto", icon: <span style={{ fontSize: "12px", fontWeight: 700 }}>🛺</span>, color: "#f59e0b" },
-  { id: "bike", label: "Bike Taxi", icon: <Bike size={14} />, color: "#f97316" },
-  { id: "cab", label: "Cab / Taxi", icon: <Car size={14} />, color: "#cbd5e1" },
-  { id: "walk", label: "Walk", icon: <Footprints size={14} />, color: "#06b6d4" },
+  {
+    id: "metro",
+    label: "Metro",
+    icon: <ModeIconBadge emoji="🚇" color="#3b82f6" glow="rgba(59,130,246,0.5)" />,
+    color: "#3b82f6",
+  },
+  {
+    id: "bus",
+    label: "Bus",
+    icon: <ModeIconBadge emoji="🚌" color="#10b981" glow="rgba(16,185,129,0.5)" />,
+    color: "#10b981",
+  },
+  {
+    id: "auto",
+    label: "Auto",
+    icon: <ModeIconBadge emoji="🛺" color="#f59e0b" glow="rgba(245,158,11,0.5)" />,
+    color: "#f59e0b",
+  },
+  {
+    id: "bike",
+    label: "Bike Taxi",
+    icon: <ModeIconBadge emoji="🏍️" color="#f97316" glow="rgba(249,115,22,0.5)" />,
+    color: "#f97316",
+  },
+  {
+    id: "cab",
+    label: "Cab",
+    icon: <ModeIconBadge emoji="🚖" color="#a78bfa" glow="rgba(167,139,250,0.5)" />,
+    color: "#a78bfa",
+  },
+  {
+    id: "walk",
+    label: "Walk",
+    icon: <ModeIconBadge emoji="🚶" color="#06b6d4" glow="rgba(6,182,212,0.5)" />,
+    color: "#06b6d4",
+  },
 ];
 
 const PRIORITIES: { id: RoutingPriority; label: string; icon: React.ReactNode; badge: string }[] = [
-  { id: "fastest", label: "Fastest", icon: <Zap size={13} />, badge: "⚡ Quickest Arrival" },
-  { id: "cheapest", label: "Cheapest", icon: <span style={{ fontSize: "12px" }}>₹</span>, badge: "💰 Lowest Fare" },
-  { id: "least_transfers", label: "Least Transfers", icon: <Layers size={13} />, badge: "🔄 Direct First" },
-  { id: "eco", label: "Eco-Friendly", icon: <Leaf size={13} />, badge: "🌿 Low CO₂" },
+  { id: "fastest", label: "Fastest", icon: <span style={{ fontSize: "14px" }}>⚡</span>, badge: "⚡ Quickest Arrival" },
+  { id: "cheapest", label: "Cheapest", icon: <span style={{ fontSize: "14px" }}>💰</span>, badge: "💰 Lowest Fare" },
+  { id: "least_transfers", label: "Direct", icon: <span style={{ fontSize: "14px" }}>🔄</span>, badge: "🔄 Direct First" },
+  { id: "eco", label: "Eco", icon: <span style={{ fontSize: "14px" }}>🌿</span>, badge: "🌿 Low CO₂" },
 ];
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({

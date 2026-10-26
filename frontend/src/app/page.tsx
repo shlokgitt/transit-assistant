@@ -9,36 +9,68 @@ import { TransitMap } from "@/components/TransitMap";
 import { ApiInspectorModal } from "@/components/ApiInspectorModal";
 import { LiveAlertsModal } from "@/components/LiveAlertsModal";
 import {
-  TransitMode,
-  RoutingPriority,
-  RoutePlanRequest,
-  RoutePlanResponse,
-  RouteOption,
+  TransitMode, RoutingPriority, RoutePlanRequest,
+  RoutePlanResponse, RouteOption,
 } from "@/types/transit";
 import { CITIES, planRoutesMock } from "@/lib/transitData";
 import {
-  ListFilter,
-  Navigation,
-  Sparkles,
-  SlidersHorizontal,
-  ChevronRight,
-  Database,
-  ArrowRight,
-  RefreshCw,
+  ListFilter, Navigation, Database, Users,
+  Zap, Leaf, RefreshCw, Radio, Layers, BarChart3, Shield,
 } from "lucide-react";
+
+const FEATURE_CARDS = [
+  {
+    icon: "📡",
+    iconBg: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(6,182,212,0.2))",
+    iconGlow: "0 0 20px rgba(59,130,246,0.4)",
+    title: "Live Crowd Insights",
+    desc: "AI-powered crowd density predictions for metro, bus, and auto routes across Delhi NCR, Mumbai & Bengaluru.",
+    tag: "DEMO DATA",
+    tagColor: "#fbbf24",
+  },
+  {
+    icon: "🗺️",
+    iconBg: "linear-gradient(135deg, rgba(168,85,247,0.3), rgba(99,102,241,0.2))",
+    iconGlow: "0 0 20px rgba(168,85,247,0.4)",
+    title: "Multi-Modal Routing",
+    desc: "Seamlessly combines Metro, Bus, Auto, Bike Taxi, AC Cab, and Walking into one optimised journey plan.",
+    tag: "LIVE",
+    tagColor: "#34d399",
+  },
+  {
+    icon: "🌿",
+    iconBg: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(74,222,128,0.2))",
+    iconGlow: "0 0 20px rgba(16,185,129,0.4)",
+    title: "Low-Carbon Travel",
+    desc: "Calculates CO₂ emissions per route and highlights eco-friendly alternatives to reduce your carbon footprint.",
+    tag: "DEMO DATA",
+    tagColor: "#fbbf24",
+  },
+  {
+    icon: "⚡",
+    iconBg: "linear-gradient(135deg, rgba(245,158,11,0.3), rgba(251,191,36,0.2))",
+    iconGlow: "0 0 20px rgba(245,158,11,0.4)",
+    title: "Real-Time Updates",
+    desc: "Integrates GTFS feeds, DMRC, DTC, MMRDA and BMTC APIs for live delay alerts and service disruptions.",
+    tag: "DEMO DATA",
+    tagColor: "#fbbf24",
+  },
+];
+
+const STATS = [
+  { value: "3+", label: "Cities Covered" },
+  { value: "6", label: "Transport Modes" },
+  { value: "48+", label: "Metro Stations" },
+  { value: "500+", label: "Bus Routes" },
+  { value: "< 300ms", label: "Route Computation" },
+  { value: "GTFS", label: "Open Data Standard" },
+];
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState<string>("delhi");
   const [origin, setOrigin] = useState<string>("Karol Bagh");
   const [destination, setDestination] = useState<string>("Gandhi Darshan");
-  const [selectedModes, setSelectedModes] = useState<TransitMode[]>([
-    "metro",
-    "bus",
-    "cab",
-    "bike",
-    "auto",
-    "walk",
-  ]);
+  const [selectedModes, setSelectedModes] = useState<TransitMode[]>(["metro", "bus", "cab", "bike", "auto", "walk"]);
   const [priority, setPriority] = useState<RoutingPriority>("fastest");
   const [avoidCrowded, setAvoidCrowded] = useState<boolean>(false);
   const [period, setPeriod] = useState<"peak" | "offpeak">("peak");
@@ -50,21 +82,15 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"routes" | "itinerary">("routes");
   const [selectedLegIndex, setSelectedLegIndex] = useState<number | null>(null);
 
-  // Simulation State
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [simulationStep, setSimulationStep] = useState<number>(0);
 
-  // Modals
   const [isApiInspectorOpen, setIsApiInspectorOpen] = useState<boolean>(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState<boolean>(false);
-
-  // Data Source Mode: Mock Response vs Live API Route
   const [dataSource, setDataSource] = useState<"mock" | "api">("mock");
 
-  // Current City Object
   const currentCity = CITIES[selectedCity] || CITIES["delhi"];
 
-  // Run Route Planning
   const handlePlanRoute = async () => {
     setIsLoading(true);
     setIsSimulating(false);
@@ -93,63 +119,47 @@ export default function Home() {
         });
         const data = (await res.json()) as RoutePlanResponse;
         setRouteResponse(data);
-        if (data.routes && data.routes.length > 0) {
-          setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
-        }
+        if (data.routes?.length > 0) setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
       } catch (err) {
-        console.warn("API route fallback to mock:", err);
         const data = planRoutesMock(requestPayload);
         setRouteResponse(data);
-        if (data.routes && data.routes.length > 0) {
-          setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
-        }
+        if (data.routes?.length > 0) setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
       }
     } else {
-      // Immediate rich mock response
       setTimeout(() => {
         const data = planRoutesMock(requestPayload);
         setRouteResponse(data);
-        if (data.routes && data.routes.length > 0) {
-          setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
-        }
+        if (data.routes?.length > 0) setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
         setIsLoading(false);
-      }, 300);
+      }, 350);
       return;
     }
-
     setIsLoading(false);
   };
 
-  // Initial Route Computation on Mount
-  useEffect(() => {
-    handlePlanRoute();
-  }, [selectedCity, priority, avoidCrowded, period]);
+  useEffect(() => { handlePlanRoute(); }, [selectedCity, priority, avoidCrowded, period]);
 
-  // Mode Toggle Handler
   const handleToggleMode = (mode: TransitMode) => {
     setSelectedModes((prev) => {
       if (prev.includes(mode)) {
-        if (prev.length === 1) return prev; // Keep at least one
+        if (prev.length === 1) return prev;
         return prev.filter((m) => m !== mode);
       }
       return [...prev, mode];
     });
   };
 
-  // Swap Origin and Destination
   const handleSwap = () => {
     const temp = origin;
     setOrigin(destination);
     setDestination(temp);
   };
 
-  // Preset Selection
   const handleSelectPreset = (from: string, to: string) => {
     setOrigin(from);
     setDestination(to);
   };
 
-  // City Change Handler
   const handleCityChange = (cityId: string) => {
     setSelectedCity(cityId);
     const c = CITIES[cityId] || CITIES["delhi"];
@@ -159,7 +169,6 @@ export default function Home() {
     }
   };
 
-  // Simulation Timer
   const selectedRoute =
     routeResponse?.routes.find((r) => r.id === selectedRouteId) ||
     routeResponse?.routes[0] ||
@@ -167,31 +176,17 @@ export default function Home() {
 
   useEffect(() => {
     if (!isSimulating || !selectedRoute) return;
-
     const timer = setInterval(() => {
       setSimulationStep((prev) => {
-        if (prev >= selectedRoute.legs.length - 1) {
-          setIsSimulating(false);
-          return 0;
-        }
+        if (prev >= selectedRoute.legs.length - 1) { setIsSimulating(false); return 0; }
         return prev + 1;
       });
     }, 3500);
-
     return () => clearInterval(timer);
   }, [isSimulating, selectedRoute]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-        backgroundColor: "var(--bg-dark)",
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100vw", overflow: "hidden", backgroundColor: "var(--bg-dark)" }}>
       {/* Top Header */}
       <Header
         selectedCity={selectedCity}
@@ -202,21 +197,29 @@ export default function Home() {
         onTogglePeriod={() => setPeriod((p) => (p === "peak" ? "offpeak" : "peak"))}
       />
 
-      {/* Main Split Layout: Left Control Panel & Right Interactive Map */}
+      {/* Stats Ribbon */}
+      <div className="stats-ribbon">
+        {STATS.map((s, i) => (
+          <div key={i} className="stats-ribbon-item">
+            <span>{s.value}</span>
+            <span>{s.label}</span>
+          </div>
+        ))}
+        <div className="demo-banner" style={{ marginLeft: "auto" }}>
+          ⚠️ Demo data — not connected to live feeds
+        </div>
+      </div>
+
+      {/* Main Split Layout */}
       <div className="app-layout" style={{ flex: 1, minHeight: 0 }}>
-        {/* Left Side: Search, Filters & Route Cards */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            background: "rgba(11, 17, 32, 0.95)",
-            borderRight: "1px solid var(--border-glass)",
-            overflow: "hidden",
-            zIndex: 20,
-          }}
-        >
-          {/* Top Search Controls */}
+        {/* Left Side: Search + Cards */}
+        <div style={{
+          display: "flex", flexDirection: "column", height: "100%",
+          background: "linear-gradient(180deg, rgba(9,13,26,0.98) 0%, rgba(7,10,19,0.99) 100%)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          overflow: "hidden", zIndex: 20,
+        }}>
+          {/* Search Panel */}
           <SearchPanel
             city={currentCity}
             origin={origin}
@@ -235,89 +238,73 @@ export default function Home() {
             onSelectPreset={handleSelectPreset}
           />
 
-          {/* Navigation Sub-Tabs: Route Options vs Itinerary View */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "10px 16px",
-              background: "rgba(15, 23, 42, 0.75)",
-              borderBottom: "1px solid var(--border-glass)",
-            }}
-          >
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button
-                onClick={() => setActiveTab("routes")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "5px 12px",
-                  borderRadius: "6px",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  border: "none",
-                  background: activeTab === "routes" ? "rgba(59, 130, 246, 0.25)" : "transparent",
-                  color: activeTab === "routes" ? "#60a5fa" : "var(--text-secondary)",
-                }}
-              >
-                <ListFilter size={13} />
-                <span>Options ({routeResponse?.routes.length || 0})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("itinerary")}
-                disabled={!selectedRoute}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "5px 12px",
-                  borderRadius: "6px",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  cursor: selectedRoute ? "pointer" : "not-allowed",
-                  border: "none",
-                  background: activeTab === "itinerary" ? "rgba(59, 130, 246, 0.25)" : "transparent",
-                  color: activeTab === "itinerary" ? "#60a5fa" : "var(--text-secondary)",
-                  opacity: selectedRoute ? 1 : 0.5,
-                }}
-              >
-                <Navigation size={13} />
-                <span>Turn Navigation</span>
-              </button>
+          {/* Tab Bar */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "8px 14px",
+            background: "rgba(7,10,19,0.8)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}>
+            <div style={{ display: "flex", gap: "4px" }}>
+              {[
+                { id: "routes" as const, label: `Options (${routeResponse?.routes.length || 0})`, icon: <ListFilter size={12} /> },
+                { id: "itinerary" as const, label: "Turn Navigation", icon: <Navigation size={12} />, disabled: !selectedRoute },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => !tab.disabled && setActiveTab(tab.id)}
+                  disabled={tab.disabled}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "5px",
+                    padding: "5px 10px", borderRadius: "7px", fontSize: "0.73rem", fontWeight: 600,
+                    cursor: tab.disabled ? "not-allowed" : "pointer", border: "none",
+                    background: activeTab === tab.id ? "rgba(59,130,246,0.2)" : "transparent",
+                    color: activeTab === tab.id ? "#60a5fa" : "#4b5a6e",
+                    opacity: tab.disabled ? 0.4 : 1,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
             </div>
 
-            {/* Data Engine Toggle */}
             <button
               onClick={() => setDataSource((d) => (d === "mock" ? "api" : "mock"))}
-              title="Toggle between Mock Responses and Next.js /api/v1 Routes"
+              title="Toggle Mock / Live API"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "3px 8px",
-                borderRadius: "4px",
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                display: "flex", alignItems: "center", gap: "4px",
+                padding: "3px 8px", borderRadius: "5px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 color: dataSource === "mock" ? "#34d399" : "#60a5fa",
-                fontSize: "0.68rem",
-                fontWeight: 600,
-                cursor: "pointer",
+                fontSize: "0.65rem", fontWeight: 700, cursor: "pointer",
               }}
             >
-              <Database size={11} />
-              <span>{dataSource === "mock" ? "Mock Contract" : "Live API"}</span>
+              <Database size={10} />
+              {dataSource === "mock" ? "MOCK" : "LIVE API"}
             </button>
           </div>
 
-          {/* Scrollable Content: Cards List or Itinerary Detail */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          {/* Scrollable Cards / Itinerary */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
             {activeTab === "routes" ? (
               <>
-                {routeResponse && routeResponse.routes.length > 0 ? (
+                {isLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[1,2,3].map(i => (
+                      <div key={i} style={{
+                        height: "130px", borderRadius: "14px",
+                        background: "linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.07), rgba(255,255,255,0.04))",
+                        backgroundSize: "200%",
+                        animation: "shimmerLoad 1.5s ease-in-out infinite",
+                      }}>
+                        <style>{`@keyframes shimmerLoad { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
+                      </div>
+                    ))}
+                  </div>
+                ) : routeResponse && routeResponse.routes.length > 0 ? (
                   routeResponse.routes.map((r) => (
                     <RouteCard
                       key={r.id}
@@ -331,9 +318,10 @@ export default function Home() {
                     />
                   ))
                 ) : (
-                  <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                    <p style={{ fontSize: "0.85rem" }}>No routes found matching selected filters.</p>
-                    <p style={{ fontSize: "0.75rem", marginTop: "4px" }}>Try enabling more transit modes.</p>
+                  <div style={{ textAlign: "center", padding: "40px 20px", color: "#4b5a6e" }}>
+                    <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🔍</div>
+                    <p style={{ fontSize: "0.85rem", fontWeight: 600 }}>No routes found</p>
+                    <p style={{ fontSize: "0.75rem", marginTop: "4px" }}>Try enabling more transport modes</p>
                   </div>
                 )}
               </>
@@ -344,17 +332,14 @@ export default function Home() {
                   simulationStep={simulationStep}
                   isSimulating={isSimulating}
                   onStartSimulation={() => setIsSimulating(true)}
-                  onResetSimulation={() => {
-                    setIsSimulating(false);
-                    setSimulationStep(0);
-                  }}
+                  onResetSimulation={() => { setIsSimulating(false); setSimulationStep(0); }}
                 />
               )
             )}
           </div>
         </div>
 
-        {/* Right Side: Interactive Vector Map View */}
+        {/* Right Side: Interactive Leaflet Map */}
         <div style={{ height: "100%", width: "100%", position: "relative" }}>
           <TransitMap
             city={currentCity}
@@ -366,15 +351,95 @@ export default function Home() {
         </div>
       </div>
 
-      {/* API Contract Inspector Modal */}
+      {/* Feature Cards Section */}
+      <div className="features-section">
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          {/* Section Header */}
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              padding: "4px 14px", borderRadius: "999px",
+              background: "rgba(59,130,246,0.1)",
+              border: "1px solid rgba(59,130,246,0.25)",
+              fontSize: "0.7rem", fontWeight: 700, color: "#60a5fa",
+              textTransform: "uppercase", letterSpacing: "0.08em",
+              marginBottom: "14px",
+            }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#60a5fa", boxShadow: "0 0 8px #60a5fa" }} />
+              Platform Capabilities
+            </div>
+            <h2 style={{
+              fontSize: "1.8rem", fontWeight: 900, letterSpacing: "-0.03em",
+              background: "linear-gradient(135deg, #fff 30%, #93c5fd 70%, #67e8f9 100%)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              marginBottom: "10px",
+            }}>
+              Smart Transit. Smarter City.
+            </h2>
+            <p style={{ fontSize: "0.88rem", color: "#4b5a6e", maxWidth: "480px", margin: "0 auto", lineHeight: 1.6 }}>
+              Built for the next generation of urban mobility — multimodal, sustainable, and AI-assisted.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            {FEATURE_CARDS.map((card, i) => (
+              <div key={i} className="feature-card">
+                {/* Background glow blob */}
+                <div style={{
+                  position: "absolute", top: "-30px", right: "-30px",
+                  width: "120px", height: "120px", borderRadius: "50%",
+                  background: card.iconBg, filter: "blur(30px)", opacity: 0.5,
+                  pointerEvents: "none",
+                }} />
+
+                {/* Icon */}
+                <div className="feature-icon-wrap" style={{ background: card.iconBg, boxShadow: card.iconGlow }}>
+                  <span style={{ fontSize: "22px" }}>{card.icon}</span>
+                </div>
+
+                {/* Tag */}
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{
+                    fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase",
+                    letterSpacing: "0.08em", padding: "2px 7px", borderRadius: "999px",
+                    color: card.tagColor,
+                    background: `${card.tagColor}18`,
+                    border: `1px solid ${card.tagColor}40`,
+                  }}>
+                    {card.tag}
+                  </span>
+                </div>
+
+                <h3>{card.title}</h3>
+                <p>{card.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom CTA */}
+          <div style={{
+            textAlign: "center", marginTop: "48px",
+            padding: "28px", borderRadius: "20px",
+            background: "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(6,182,212,0.06))",
+            border: "1px solid rgba(59,130,246,0.15)",
+          }}>
+            <p style={{ fontSize: "0.78rem", color: "#4b5a6e", marginBottom: "6px" }}>
+              🏆 Built for Hackathon Demo — TransitPulse v1.0
+            </p>
+            <p style={{ fontSize: "0.88rem", color: "#94a3b8", fontWeight: 500 }}>
+              Multimodal Urban Route Assistant • Delhi NCR, Mumbai, Bengaluru • GTFS Open Data
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
       <ApiInspectorModal
         isOpen={isApiInspectorOpen}
         onClose={() => setIsApiInspectorOpen(false)}
         lastRequest={lastRequest}
         lastResponse={routeResponse}
       />
-
-      {/* Live Alerts Radar Modal */}
       <LiveAlertsModal
         isOpen={isAlertsOpen}
         onClose={() => setIsAlertsOpen(false)}
