@@ -1,0 +1,57 @@
+
+{
+  "project": "Delhi Transit Assistant",
+  "test_cases": [
+    {
+      "id": 1,
+      "query": "Find the fastest route from Karol Bagh to Gandhi Darshan",
+      "expected_behavior": "Call the route planner with the fastest preference and explain the returned route."
+    },
+    {
+      "id": 2,
+      "query": "Find the cheapest route from Stop A to Stop B",
+      "expected_behavior": "Call the route planner with the cheapest preference and explain the returned route and estimated fare if available."
+    },
+    {
+      "id": 3,
+      "query": "How long will my journey take?",
+      "expected_behavior": "Ask for the starting point and destination if they are not known; otherwise explain the calculated journey duration."
+    },
+    {
+      "id": 4,
+      "query": "Which bus should I take?",
+      "expected_behavior": "Ask for the destination or other missing route information, then use the route planner."
+    },
+    {
+      "id": 5,
+      "query": "Show the delay for route 534 in the morning",
+      "expected_behavior": "Retrieve the matching sample delay record and identify the data as simulated."
+    },
+    {
+      "id": 6,
+      "query": "Is route 534 crowded in the morning?",
+      "expected_behavior": "Retrieve the matching crowd-level record and explain that it is sample data."
+    },
+    {
+      "id": 7,
+      "query": "Save this route",
+      "expected_behavior": "Save the currently selected route if one exists; otherwise ask which route to save."
+    },
+    {
+      "id": 8,
+      "query": "Show my saved routes",
+      "expected_behavior": "Call the saved-routes functionality and display the routes returned."
+    },
+    {
+      "id": 9,
+      "query": "Find a route from an unknown stop to Gandhi Darshan",
+      "expected_behavior": "Explain that the source stop could not be matched and ask the user to clarify."
+    },
+    {
+      "id": 10,
+      "query": "Is the bus running late right now?",
+      "expected_behavior": "Do not claim to know the live delay; explain that only sample delay information is available."
+    }
+  ]
+}
+
