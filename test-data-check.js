@@ -1,134 +1,237 @@
-const fs = require("fs");
-const path = require("path");
 
-console.log("================================");
-console.log(" DELHI TRANSIT ASSISTANT");
-console.log(" DATA VALIDATION TEST");
-console.log("================================");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// File paths
-const delaysPath = path.join(__dirname, "data", "delays.json");
-const faresPath = path.join(__dirname, "data", "fares.json");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = __dirname;
 
-// Read JSON file
-function readJSON(filePath) {
-    try {
-        const content = fs.readFileSync(filePath, "utf8");
-        const data = JSON.parse(content);
+const delaysPath = path.join(rootDir, "data", "delays.json");
+const faresPath = path.join(rootDir, "data", "fares.json");
 
-        console.log(`PASS: ${path.basename(filePath)} loaded successfully`);
+let hasErrors = false;
 
-        return data;
-    } catch (error) {
-        console.log(`FAIL: ${path.basename(filePath)}`);
-        console.log("Reason:", error.message);
-
-        return null;
+function readJson(filePath, label) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
     }
+
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (error) {
+    console.error(`❌ ${label}: ${error.message}`);
+    hasErrors = true;
+    return null;
+  }
 }
 
-// Load files
-const delayData = readJSON(delaysPath);
-const fareData = readJSON(faresPath);
+function validateDelays() {
+  console.log("\nChecking delays.json...");
 
-// Test delay data
-console.log("\n--- DELAY DATA TEST ---");
+  const data = readJson(delaysPath, "delays.json");
+  if (!data) return;
 
-if (delayData) {
-    console.log("City:", delayData.metadata?.city);
-    console.log("Data type:", delayData.metadata?.data_type);
-
-    if (Array.isArray(delayData.delays)) {
-        console.log("Total delay records:", delayData.delays.length);
-
-        const route = delayData.delays.find(
-            item =>
-                item.route_id === "534" &&
-                item.time_period === "morning"
-        );
-
-        if (route) {
-            console.log("PASS: Route 534 morning record found");
-            console.log("Delay:", route.delay_minutes, "minutes");
-            console.log("Crowd:", route.crowd_level);
-        } else {
-            console.log("WARNING: Route 534 morning record not found");
-        }
-
-        const invalidRecords = delayData.delays.filter(item =>
-            typeof item.route_id !== "string" ||
-            typeof item.delay_minutes !== "number" ||
-            item.delay_minutes < 0 ||
-            !["low", "medium", "high"].includes(item.crowd_level)
-        );
-
-        console.log("Invalid delay records:", invalidRecords.length);
-
-        if (invalidRecords.length === 0) {
-            console.log("PASS: Delay records have valid fields");
-        } else {
-            console.log("FAIL: Check the invalid delay records");
-            console.log(invalidRecords);
-        }
-    } else {
-        console.log("FAIL: delays must be an array");
+  if (!data.metadata || typeof data.metadata !== "object") {
+    console.error("❌ Missing metadata object.");
+    hasErrors = true;
+  } else {
+    if (data.metadata.city !== "Delhi") {
+      console.error('❌ Expected metadata.city to be "Delhi".');
+      hasErrors = true;
     }
+
+    if (data.metadata.data_type !== "simulated") {
+      console.error('❌ Expected metadata.data_type to be "simulated".');
+      hasErrors = true;
+    }
+
+    if (data.metadata.live_data !== false) {
+      console.error("❌ Expected metadata.live_data to be false.");
+      hasErrors = true;
+    }
+  }
+
+  const validPeriods = ["morning", "afternoon", "evening", "night"];
+  const validCrowdLevels = ["low", "medium", "high"];
+
+  if (!Array.isArray(data.delays)) {
+    console.error('❌ Expected "delays" to be an array.');
+    hasErrors = true;
+    return;
+  }
+
+  if (data.delays.length === 0) {
+    console.error("❌ No delay records found.");
+    hasErrors = true;
+    return;
+  }
+
+  const seen = new Set();
+
+  for (const record of data.delays) {
+    if (!record || typeof record !== "object" || Array.isArray(record)) {
+      console.error("❌ Invalid delay record.");
+      hasErrors = true;
+      continue;
+    }
+
+    if (
+      typeof record.route_id !== "string" ||
+      record.route_id.trim() === ""
+    ) {
+      console.error("❌ Invalid route_id.");
+      hasErrors = true;
+    }
+
+    if (!validPeriods.includes(record.time_period)) {
+      console.error(
+        `❌ Invalid time_period for route ${record.route_id ?? "unknown"}.`
+      );
+      hasErrors = true;
+    }
+
+    if (
+      typeof record.delay_minutes !== "number" ||
+      !Number.isFinite(record.delay_minutes) ||
+      record.delay_minutes < 0
+    ) {
+      console.error(
+        `❌ Invalid delay_minutes for route ${record.route_id ?? "unknown"}.`
+      );
+      hasErrors = true;
+    }
+
+    if (!validCrowdLevels.includes(record.crowd_level)) {
+      console.error(
+        `❌ Invalid crowd_level for route ${record.route_id ?? "unknown"}.`
+      );
+      hasErrors = true;
+    }
+
+    if (
+      typeof record.route_id === "string" &&
+      validPeriods.includes(record.time_period)
+    ) {
+      const key = `${record.route_id}|${record.time_period}`;
+
+      if (seen.has(key)) {
+        console.error(`❌ Duplicate route/time-period entry: ${key}`);
+        hasErrors = true;
+      }
+
+      seen.add(key);
+    }
+  }
+
+  console.log(`  Delay records checked: ${data.delays.length}`);
+
+  if (
+    data.metadata?.live_data === false &&
+    data.metadata?.data_type === "simulated"
+  ) {
+    console.log("  ℹ️ Delay and crowd data is simulated, not live.");
+  }
 }
 
-// Test fare data
-console.log("\n--- FARE DATA TEST ---");
+function validateFares() {
+  console.log("\nChecking fares.json...");
 
-if (fareData) {
-    const currency = fareData.currency ?? fareData.metadata?.currency;
+  const data = readJson(faresPath, "fares.json");
+  if (!data) return;
 
-    console.log("Currency:", currency ?? "Not specified");
+  if (data.currency !== "INR") {
+    console.error('❌ Expected currency to be "INR".');
+    hasErrors = true;
+  }
 
-    // Check the distance-based fare format
-    if (fareData.bus) {
-        for (const type of ["ordinary", "ac"]) {
-            const stages = fareData.bus[type];
+  if (data.distanceUnit !== "km") {
+    console.error('❌ Expected distanceUnit to be "km".');
+    hasErrors = true;
+  }
 
-            if (!Array.isArray(stages) || stages.length === 0) {
-                console.log(`FAIL: ${type} fare stages missing`);
-                continue;
-            }
+  if (!data.bus || typeof data.bus !== "object" || Array.isArray(data.bus)) {
+    console.error('❌ Missing or invalid "bus" object.');
+    hasErrors = true;
+    return;
+  }
 
-            const validStages = stages.every(stage =>
-                (typeof stage.maxKm === "number" ||
-                    stage.maxKm === null) &&
-                typeof stage.fare === "number" &&
-                stage.fare >= 0
-            );
+  for (const category of ["ordinary", "ac"]) {
+    const slabs = data.bus[category];
 
-            console.log(
-                `${validStages ? "PASS" : "FAIL"}: ${type} fare stages`
-            );
+    if (!Array.isArray(slabs) || slabs.length === 0) {
+      console.error(`❌ bus.${category} must be a non-empty array.`);
+      hasErrors = true;
+      continue;
+    }
 
-            console.log("Number of stages:", stages.length);
+    let previousMax = -Infinity;
+    let hasOpenEnded = false;
+
+    slabs.forEach((slab, index) => {
+      if (!slab || typeof slab !== "object" || Array.isArray(slab)) {
+        console.error(`❌ Invalid bus.${category}[${index}] fare slab.`);
+        hasErrors = true;
+        return;
+      }
+
+      if (
+        typeof slab.fare !== "number" ||
+        !Number.isFinite(slab.fare) ||
+        slab.fare < 0
+      ) {
+        console.error(`❌ Invalid fare in bus.${category}[${index}].`);
+        hasErrors = true;
+      }
+
+      if (slab.maxKm === null) {
+        if (index !== slabs.length - 1) {
+          console.error(
+            `❌ Open-ended maxKm must be the final slab in bus.${category}.`
+          );
+          hasErrors = true;
         }
+
+        hasOpenEnded = true;
+      } else if (
+        typeof slab.maxKm !== "number" ||
+        !Number.isFinite(slab.maxKm) ||
+        slab.maxKm <= 0
+      ) {
+        console.error(`❌ Invalid maxKm in bus.${category}[${index}].`);
+        hasErrors = true;
+      } else {
+        if (slab.maxKm <= previousMax) {
+          console.error(
+            `❌ maxKm values must increase in bus.${category}.`
+          );
+          hasErrors = true;
+        }
+
+        previousMax = slab.maxKm;
+      }
+    });
+
+    if (!hasOpenEnded) {
+      console.error(`❌ bus.${category} needs a final maxKm: null slab.`);
+      hasErrors = true;
     }
 
-    // Check the duration-based fare format
-    else if (fareData.fare_rules?.bus?.categories) {
-        const categories = fareData.fare_rules.bus.categories;
+    console.log(`  ${category}: ${slabs.length} fare slabs`);
+  }
 
-        console.log("Fare categories:", categories.length);
-
-        const validCategories = categories.every(category =>
-            typeof category.fare_inr === "number" &&
-            typeof category.minimum_minutes === "number" &&
-            (typeof category.maximum_minutes === "number" ||
-                category.maximum_minutes === null)
-        );
-
-        console.log(
-            `${validCategories ? "PASS" : "FAIL"}: fare categories`
-        );
-    } else {
-        console.log("WARNING: Unrecognized fare data structure");
-    }
+  if (typeof data.note !== "string" || data.note.trim() === "") {
+    console.warn("⚠️ fares.json has no explanatory note.");
+  } else {
+    console.log("  ℹ️ Fare values are estimates; verify against official sources.");
+  }
 }
 
-console.log("\n================================");
-console.log(" DATA CHECK COMPLETE");
-console.log("================================");
+validateDelays();
+validateFares();
+
+if (hasErrors) {
+  console.error("\n❌ Validation failed. Fix the errors above.");
+  process.exitCode = 1;
+} else {
+  console.log("\n✅ All transit data checks passed.");
+}
