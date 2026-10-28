@@ -42,7 +42,7 @@
         "end_date": "20251231"
       }
     ],
-    "inputDirectory": "metro"
+    "inputDirectory": "./metro"
   },
   "fareSlabs": [],
   "fareNote": "No fare data is provided by this GTFS feed.",

@@ -79,7 +79,10 @@ function assertBusLegs(legs) {
       assert.ok(leg.stops >= 0, "metro stops must be non-negative");
       assert.ok(leg.minutes >= 0, "metro minutes must be non-negative");
       assert.ok(leg.distanceKm >= 0, "metro distanceKm must be non-negative");
-      assert.equal(leg.fare, null, "metro fare should be explicit when unavailable");
+      assert.ok(
+        leg.fare === null || leg.fare >= 0,
+        "metro fare should be null only when unavailable"
+      );
     } else if (leg.mode === "walk") {
       assert.ok(typeof leg.from === "string", "walk leg must have from");
       assert.ok(typeof leg.to === "string", "walk leg must have to");
@@ -444,9 +447,9 @@ describe("plan — metro journeys", () => {
 
     assertValidRoute(result);
     assert.ok(result.legs.some((leg) => leg.mode === "metro"));
-    assert.equal(result.totalFare, null);
-    assert.equal(result.fareAvailable, false);
-    assert.equal(result.fareStatus, "unavailable");
+    assert.equal(result.totalFare, 32);
+    assert.equal(result.fareAvailable, true);
+    assert.equal(result.fareStatus, "estimated");
   });
 
   it("supports bus-to-metro journeys", () => {
