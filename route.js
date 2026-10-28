@@ -1,11 +1,15 @@
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { calculateMetroFare } from "./metro-fares.js";
 
-const G = JSON.parse(fs.readFileSync("./graph.json", "utf8"));
+const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const resolveRoot = (file) => path.join(ROOT_DIR, file);
+const G = JSON.parse(fs.readFileSync(resolveRoot("graph.json"), "utf8"));
 
 const load = (file, fallback) => {
   try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    return JSON.parse(fs.readFileSync(resolveRoot(file), "utf8"));
   } catch {
     return fallback;
   }
@@ -218,6 +222,180 @@ export function findStops(query) {
     .map(([id, stop]) => ({ id, ...stop }));
 }
 
+export function stopCoordinates(id) {
+  const stop = G.stops[id];
+  return stop ? { lat: stop.lat, lon: stop.lon } : null;
+}
+
+export function stopName(id) {
+  return nameOf(id);
+}
+
+export function stopDetails(id) {
+  const stop = G.stops[id];
+  if (!stop) return null;
+
+  const metroLines = new Set();
+  for (const edge of G.adj[`M:${id}`] || []) {
+    if (edge[2] === "board" && G.routes[edge[3]]) {
+      metroLines.add(G.routes[edge[3]].replace(/^metro:/, ""));
+    }
+  }
+
+  return {
+    id,
+    name: stop.name,
+    type: G.adj[`M:${id}`] ? "metro" : "bus",
+    city: "delhi",
+    lat: stop.lat,
+    lng: stop.lon,
+    lines: [...metroLines],
+  };
+}
+
+export function planWalkingByName(fromName, toName) {
+  const fromMatches = findStops(fromName);
+  const toMatches = findStops(toName);
+
+  if (!fromMatches.length) {
+    return { error: `No stop matches "${fromName}"` };
+  }
+
+  if (!toMatches.length) {
+    return { error: `No stop matches "${toName}"` };
+  }
+
+  let best = null;
+
+  for (const from of fromMatches) {
+    for (const to of toMatches) {
+      const km = distanceKm(from.id, to.id);
+      if (!best || km < best.distanceKm) {
+        best = { from, to, distanceKm: km };
+      }
+    }
+  }
+
+  if (!best) {
+    return { error: "No walkable route found between those stops" };
+  }
+
+  const distance = r1(best.distanceKm);
+  const minutes = r1(distance * 12);
+
+  return {
+    fromMatches: fromMatches.length,
+    toMatches: toMatches.length,
+    totalMinutes: minutes,
+    totalFare: 0,
+    totalDistanceKm: distance,
+    distanceSource: "straight-line",
+    fareEstimate: false,
+    fareAvailable: true,
+    fareStatus: "verified",
+    cheapestConfirmed: true,
+    legs: [
+      {
+        mode: "walk",
+        fromId: best.from.id,
+        toId: best.to.id,
+        from: best.from.name,
+        to: best.to.name,
+        minutes,
+        distanceKm: distance,
+        distanceSource: "straight-line",
+        fare: 0,
+        stopIds: [best.from.id, best.to.id],
+        stops: 0,
+      },
+    ],
+  };
+}
+
+export function planMetroByName(fromName, toName) {
+  const fromMatches = findStops(fromName);
+  const toMatches = findStops(toName);
+
+  if (!fromMatches.length) return { error: `No stop matches "${fromName}"` };
+  if (!toMatches.length) return { error: `No stop matches "${toName}"` };
+
+  const metroStops = Object.entries(G.stops)
+    .filter(([id]) => Boolean(G.adj[`M:${id}`]))
+    .map(([id, stop]) => ({ id, ...stop }));
+
+  const nearest = (matches) =>
+    metroStops.reduce((best, metro) => {
+      const candidate = matches.reduce((closest, stop) =>
+        distanceKm(stop.id, metro.id) < distanceKm(stop.id, closest.id)
+          ? stop
+          : closest
+      );
+      if (!best || distanceKm(candidate.id, metro.id) < best.distance) {
+        return { metro, distance: distanceKm(candidate.id, metro.id), stop: candidate };
+      }
+      return best;
+    }, null);
+
+  const origin = nearest(fromMatches);
+  const destination = nearest(toMatches);
+  if (!origin || !destination) {
+    return { error: "No metro stations found near these stops" };
+  }
+
+  const transit = plan([origin.metro.id], [destination.metro.id], {
+    preference: "fastest",
+    period: "offpeak",
+  });
+  if (!transit || transit.legs.some((leg) => leg.mode === "bus")) {
+    return { error: "No metro-only route found between those stops" };
+  }
+
+  const legs = [];
+  if (origin.distance > 0) {
+    legs.push({
+      mode: "walk",
+      fromId: origin.stop.id,
+      toId: origin.metro.id,
+      from: origin.stop.name,
+      to: nameOf(origin.metro.id),
+      minutes: r1(origin.distance * 12),
+      distanceKm: r1(origin.distance),
+      distanceSource: "straight-line",
+      fare: 0,
+      stopIds: [origin.stop.id, origin.metro.id],
+      stops: 0,
+    });
+  }
+  legs.push(...transit.legs);
+  if (destination.distance > 0) {
+    legs.push({
+      mode: "walk",
+      fromId: destination.metro.id,
+      toId: destination.stop.id,
+      from: nameOf(destination.metro.id),
+      to: destination.stop.name,
+      minutes: r1(destination.distance * 12),
+      distanceKm: r1(destination.distance),
+      distanceSource: "straight-line",
+      fare: 0,
+      stopIds: [destination.metro.id, destination.stop.id],
+      stops: 0,
+    });
+  }
+
+  return {
+    totalMinutes: r1(legs.reduce((total, leg) => total + leg.minutes, 0)),
+    totalFare: transit.totalFare,
+    totalDistanceKm: r1(
+      legs.reduce((total, leg) => total + (leg.distanceKm || 0), 0)
+    ),
+    distanceSource: legs.some((leg) => leg.distanceSource === "straight-line")
+      ? "mixed"
+      : transit.distanceSource,
+    legs,
+  };
+}
+
 export function periodFor(date = new Date()) {
   const hour = date.getHours();
 
@@ -352,6 +530,7 @@ export function plan(fromIds, toIds, opts = {}) {
                 fromName: nameOf(activeBus.boardStop),
                 toName: nameOf(stopOf(nextNode)),
                 stationCount: activeBus.stationCount,
+                distanceKm: activeBus.distanceKm,
                 dayType,
               }
             );
@@ -435,6 +614,8 @@ export function plan(fromIds, toIds, opts = {}) {
     if (edge.type === "walk") {
       legs.push({
         mode: "walk",
+        fromId: stopOf(edge.from),
+        toId: stopOf(edge.to),
         from: nameOf(stopOf(edge.from)),
         to: nameOf(stopOf(edge.to)),
         minutes: r1(edge.minutes),
@@ -446,6 +627,9 @@ export function plan(fromIds, toIds, opts = {}) {
       currentTransit = {
         mode: metro ? "metro" : "bus",
         route: G.routes[edge.routeId],
+        fromId: stopOf(edge.from),
+        toId: null,
+        stopIds: [stopOf(edge.from)],
         from: nameOf(stopOf(edge.from)),
         to: null,
         stops: 0,
@@ -460,8 +644,10 @@ export function plan(fromIds, toIds, opts = {}) {
       currentTransit.stops++;
       currentTransit.minutes += edge.minutes;
       currentTransit.distanceKm += edge.legDistanceKm;
+      currentTransit.stopIds.push(stopOf(edge.to));
       if (edge.distanceSource) currentSources.add(edge.distanceSource);
     } else if (edge.type === "alight" && currentTransit) {
+      currentTransit.toId = stopOf(edge.to);
       currentTransit.to = nameOf(stopOf(edge.to));
       currentTransit.fare = edge.fare;
       if (edge.fare === null) fareAvailable = false;

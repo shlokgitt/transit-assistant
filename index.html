@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransitPulse • Urban Route Assistant</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS for Real Interactive Dark Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    :root {
+      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Colors */
+      --bg-dark: #070913;
+      --bg-surface: #0e1424;
+      --card-bg: rgba(18, 27, 47, 0.75);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-glow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 35px rgba(37, 99, 235, 0.15);
+
+      /* Transit Modes */
+      --color-metro: #38bdf8;
+      --color-bus: #34d399;
+      --color-auto: #fbbf24;
+      --color-bike: #fb923c;
+      --color-cab: #cbd5e1;
+      --color-walk: #22d3ee;
+
+      --accent-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --text-white: #ffffff;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      background-color: var(--bg-dark);
+      font-family: var(--font-main);
+      color: var(--text-white);
+    }
+
+    /* Clean Dark Map Tiles (NO WATERMARKS, NO API KEYS) */
+    .dark-map-tiles {
+      filter: brightness(0.65) invert(1) contrast(3.2) hue-rotate(200deg) saturate(0.25);
+    }
+
+    /* App Layout */
+    .app-root {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100vw;
+      position: relative;
+      background: radial-gradient(circle at 50% 15%, #111a33 0%, #070913 70%);
+    }
+
+    /* Fixed Top Navbar */
+    .navbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(10, 15, 29, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(37, 99, 235, 0.6);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Interactive Stepper in Navbar */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .step-item.active {
+      background: linear-gradient(135deg, #2563eb, #0891b2);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+    }
+    .step-item.completed {
+      color: #38bdf8;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    /* City selector pill */
+    .city-capsule {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      padding: 3px;
+      border-radius: 999px;
+    }
+    .city-btn {
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .city-btn.active {
+      background: #1e293b;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* Views / Slide Container */
+    .slides-viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-page {
+      display: none;
+      width: 100%;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .slide-page.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================
+       SLIDE 1: DATA FEED & JOURNEY PLANNER HERO
+       ========================================= */
+    .hero-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 30px 20px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+    }
+
+    .hero-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .hero-title {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    /* Main Journey Planner Feed Card */
+    .planner-card {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--card-glow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    /* Origin & Destination Rows */
+    .feed-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .feed-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 12px 18px;
+      transition: all 0.2s ease;
+    }
+    .feed-row:focus-within {
+      border-color: #38bdf8;
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .node-pin {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pin-start {
+      background: #10b981;
+      box-shadow: 0 0 12px #10b981;
+    }
+    .pin-end {
+      background: #f43f5e;
+      box-shadow: 0 0 12px #f43f5e;
+    }
+
+    .feed-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: var(--font-main);
+    }
+    .feed-input::placeholder {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .swap-icon-btn {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      transition: all 0.25s ease;
+      z-index: 10;
+    }
+    .swap-icon-btn:hover {
+      transform: translateY(-50%) rotate(180deg);
+      background: #334155;
+    }
+
+    /* Autocomplete */
+    .feed-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: #0f172a;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
+      z-index: 50;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .feed-dropdown.show {
+      display: block;
+    }
+    .dropdown-opt {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.85rem;
+    }
+    .dropdown-opt:hover {
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    /* City Quick Presets */
+    .feed-presets {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .preset-bubble {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .preset-bubble:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #93c5fd;
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    /* Mode Toggles */
+    .mode-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 768px) {
+      .mode-selection-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .mode-feed-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 8px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .mode-feed-btn.active {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* Priority Toggles */
+    .prio-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 768px) {
+      .prio-selection-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .prio-feed-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .prio-feed-btn.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(6, 182, 212, 0.25));
+      border-color: #38bdf8;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Huge Action Button */
+    .cta-plan-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      border: none;
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 6px 28px rgba(37, 99, 235, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+    }
+    .cta-plan-btn:hover {
+      transform: scale(1.015);
+      box-shadow: 0 8px 34px rgba(37, 99, 235, 0.75);
+    }
+
+    /* =========================================
+       SLIDE 2: ROUTE COMPARISON MATRIX
+       ========================================= */
+    .compare-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px 50px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .compare-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .routes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .routes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .matrix-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .matrix-card:hover {
+      background: rgba(28, 41, 71, 0.85);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+      box-shadow: var(--card-glow);
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .badge-RECOMMENDED {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.45);
+    }
+    .badge-FASTEST {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+    }
+    .badge-CHEAPEST {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.45);
+    }
+    .badge-COMFORT {
+      background: rgba(226, 232, 240, 0.2);
+      color: #f1f5f9;
+      border: 1px solid rgba(226, 232, 240, 0.35);
+    }
+    .badge-TRAFFIC_BUSTER {
+      background: rgba(251, 146, 60, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, 0.45);
+    }
+    .badge-ECO {
+      background: rgba(52, 211, 153, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.45);
+    }
+
+    .btn-choose-route {
+      width: 100%;
+      padding: 11px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn-choose-route:hover {
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.5);
+    }
+
+    /* =========================================
+       SLIDE 3: FULLSCREEN MAP & NAVIGATION
+       ========================================= */
+    .map-slide-view {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #leaflet-map {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+      z-index: 1;
+    }
+
+    /* Floating Turn Guidance Card */
+    .map-sidebar-card {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 380px;
+      max-height: calc(100% - 40px);
+      background: rgba(13, 19, 33, 0.88);
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: var(--card-glow);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      .map-sidebar-card {
+        width: calc(100% - 32px);
+        left: 16px;
+        top: 16px;
+        max-height: 50vh;
+      }
+    }
+
+    /* Floating Bottom Vehicle Simulator Widget */
+    .map-sim-hud {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 17, 32, 0.92);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: 999px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.35);
+      padding: 9px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 30;
+    }
+
+    /* Simulation Pulse animation */
+    .pulse-beacon {
+      animation: beaconAnim 2s infinite ease-out;
+    }
+    @keyframes beaconAnim {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-root">
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="brand" onclick="navigateToStep(1)">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+      </div>
+      <div>
+        <div class="brand-title">TransitPulse</div>
+      </div>
+    </div>
+
+    <!-- 3-Step Sequential Stepper -->
+    <div class="stepper">
+      <div class="step-item active" id="step-nav-1" onclick="navigateToStep(1)">
+        <span>1. Feed Data</span>
+      </div>
+      <span style="color: var(--text-muted); font-size: 0.7rem;">➔</span>
+      <div class="step-item" id="step-nav-2" onclick="navigateToStep(2)">
+        <span>2. Compare Routes</span>
+      </div>
+      <span style="color: var(--text-muted); font-size: 0.7rem;">➔</span>
+      <div class="step-item" id="step-nav-3" onclick="navigateToStep(3)">
+        <span>3. Live Map</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="nav-actions">
+      <!-- City Switcher -->
+      <div class="city-capsule">
+        <button class="city-btn active" onclick="switchCity('delhi', this)">Delhi NCR</button>
+        <button class="city-btn" onclick="switchCity('mumbai', this)">Mumbai MMR</button>
+        <button class="city-btn" onclick="switchCity('bengaluru', this)">Bengaluru</button>
+      </div>
+
+      <button class="nav-btn" onclick="togglePeakPeriod()" id="peak-btn">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24;" id="peak-indicator"></span>
+        <span id="peak-label">Peak Rush 🚦</span>
+      </button>
+
+      <button class="nav-btn" onclick="openAlertsModal()">
+        <span>📡</span>
+        <span>Live Radar</span>
+      </button>
+
+      <button class="nav-btn" onclick="openApiModal()">
+        <span>⚡</span>
+        <span>API Contract</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Viewport for Sequential Slides -->
+  <main class="slides-viewport">
+    
+    <!-- =========================================
+         SLIDE 1: DATA FEED & JOURNEY PLANNER
+         ========================================= -->
+    <section class="slide-page active" id="slide-1">
+      <div class="hero-container">
+        <div class="hero-header">
+          <div class="hero-tag">Step 1 • Feed Your Journey Data</div>
+          <h1 class="hero-title">Where would you like to travel today?</h1>
+          <p class="hero-sub" id="hero-tagline">
+            Enter your starting point and destination. TransitPulse combines Metro, Bus, Auto, Bike, and Cab into the smartest route.
+          </p>
+        </div>
+
+        <!-- The Planner Feed Box -->
+        <div class="planner-card">
+          <!-- Origin & Destination Inputs -->
+          <div class="feed-group">
+            <!-- Origin Row -->
+            <div style="position: relative;">
+              <div class="feed-row">
+                <span class="node-pin pin-start"></span>
+                <input type="text" id="feed-origin" class="feed-input" placeholder="Start location, metro station or bus stop..." value="Karol Bagh" oninput="handleFeedTyping('orig')" onfocus="showFeedDropdown('orig')">
+              </div>
+              <div id="feed-dd-orig" class="feed-dropdown"></div>
+            </div>
+
+            <!-- Swap button -->
+            <button class="swap-icon-btn" onclick="swapFeedLocations()" title="Swap Origin & Destination">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 16 4 4 4-4"></path><path d="M7 20V4"></path><path d="m21 8-4-4-4 4"></path><path d="M17 4v16"></path></svg>
+            </button>
+
+            <!-- Destination Row -->
+            <div style="position: relative;">
+              <div class="feed-row">
+                <span class="node-pin pin-end"></span>
+                <input type="text" id="feed-dest" class="feed-input" placeholder="Destination landmark, venue, or address..." value="Gandhi Darshan" oninput="handleFeedTyping('dest')" onfocus="showFeedDropdown('dest')">
+              </div>
+              <div id="feed-dd-dest" class="feed-dropdown"></div>
+            </div>
+          </div>
+
+          <!-- Quick City Route Presets -->
+          <div>
+            <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 6px; display: block;">
+              Popular City Destinations
+            </span>
+            <div class="feed-presets" id="feed-presets-list"></div>
+          </div>
+
+          <!-- Mode Choices -->
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+              <span>Allowed Modes</span>
+              <span style="color: #38bdf8;" id="feed-mode-count">6 Modes Active</span>
+            </div>
+            <div class="mode-selection-grid">
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('metro', this)">
+                <span style="font-size: 1.3rem;">🚇</span>
+                <span>Metro</span>
+              </button>
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('bus', this)">
+                <span style="font-size: 1.3rem;">🚌</span>
+                <span>Bus</span>
+              </button>
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('auto', this)">
+                <span style="font-size: 1.3rem;">🛺</span>
+                <span>Auto</span>
+              </button>
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('bike', this)">
+                <span style="font-size: 1.3rem;">🏍️</span>
+                <span>Bike Taxi</span>
+              </button>
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('cab', this)">
+                <span style="font-size: 1.3rem;">🚗</span>
+                <span>AC Cab</span>
+              </button>
+              <button class="mode-feed-btn active" onclick="toggleFeedMode('walk', this)">
+                <span style="font-size: 1.3rem;">🚶</span>
+                <span>Walking</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Priority Optimization Selection -->
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+              <span>Routing Priority</span>
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-dim); font-size: 0.72rem;">
+                <input type="checkbox" id="feed-avoid-crowded" onchange="toggleFeedAvoidCrowded()" style="accent-color: #fbbf24;">
+                <span>Avoid Crowded Routes</span>
+              </label>
+            </div>
+            <div class="prio-selection-grid">
+              <button class="prio-feed-btn active" onclick="setFeedPrio('fastest', this)">⚡ Fastest Arrival</button>
+              <button class="prio-feed-btn" onclick="setFeedPrio('cheapest', this)">💰 Budget Saver</button>
+              <button class="prio-feed-btn" onclick="setFeedPrio('least_transfers', this)">🔄 Direct First</button>
+              <button class="prio-feed-btn" onclick="setFeedPrio('eco', this)">🌿 Low-Carbon Eco</button>
+            </div>
+          </div>
+
+          <!-- Primary CTA Button -->
+          <button class="cta-plan-btn" onclick="submitFeedAndGoToRoutes()">
+            <span>Calculate Routes & Compare Options</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================
+         SLIDE 2: ROUTE COMPARISON MATRIX
+         ========================================= -->
+    <section class="slide-page" id="slide-2">
+      <div class="compare-container">
+        <!-- Top Navigation & Summary -->
+        <div class="compare-top-bar">
+          <div>
+            <div class="hero-tag" style="margin-bottom: 4px;">Step 2 • Compare Route Options</div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff;" id="compare-route-title">
+              Routes from Karol Bagh to Gandhi Darshan
+            </h2>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">
+              Select your preferred route option to inspect turn navigation and open the live map.
+            </p>
+          </div>
+          <button class="nav-btn" onclick="navigateToStep(1)">
+            <span>← Modify Inputs</span>
+          </button>
+        </div>
+
+        <!-- Route Cards Matrix Grid -->
+        <div class="routes-grid" id="matrix-routes-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================
+         SLIDE 3: LIVE REAL MAP & TURN NAVIGATION
+         ========================================= -->
+    <section class="slide-page" id="slide-3">
+      <div class="map-slide-view">
+        <!-- The Real Leaflet Map Canvas (NO WATERMARKS) -->
+        <div id="leaflet-map"></div>
+
+        <!-- Floating Sidebar with Turn-by-Turn Guidance -->
+        <div class="map-sidebar-card">
+          <!-- Top Header inside Map Card -->
+          <div style="padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(15,23,42,0.85); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span class="card-badge badge-FASTEST" id="map-card-tag" style="font-size: 0.65rem;">FASTEST</span>
+              <h3 style="font-size: 0.92rem; font-weight: 700; color: #fff; margin-top: 4px;" id="map-card-title">Smart Metro Express</h3>
+            </div>
+            <button onclick="navigateToStep(2)" class="nav-btn" style="padding: 4px 10px; font-size: 0.72rem;">
+              <span>← All Routes</span>
+            </button>
+          </div>
+
+          <!-- Quick Stats Row -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 14px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06); text-align: center;">
+            <div>
+              <span style="font-size: 0.6rem; color: var(--text-muted); display: block;">DURATION</span>
+              <span style="font-size: 0.88rem; font-weight: 800; color: #38bdf8;" id="map-stat-time">22 min</span>
+            </div>
+            <div style="border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.6rem; color: var(--text-muted); display: block;">FARE</span>
+              <span style="font-size: 0.88rem; font-weight: 800; color: #34d399;" id="map-stat-fare">₹45</span>
+            </div>
+            <div>
+              <span style="font-size: 0.6rem; color: var(--text-muted); display: block;">DISTANCE</span>
+              <span style="font-size: 0.85rem; font-weight: 600; color: #fff;" id="map-stat-dist">8.6 km</span>
+            </div>
+          </div>
+
+          <!-- Turn-by-Turn Steps List -->
+          <div style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;" id="map-steps-list"></div>
+        </div>
+
+        <!-- Floating Bottom Simulation HUD -->
+        <div class="map-sim-hud">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.3rem;" id="sim-hud-icon">⚡</span>
+            <div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #fff;" id="sim-hud-title">Journey In Progress</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);" id="sim-hud-sub">Navigating route on live map</div>
+            </div>
+          </div>
+          <div style="height: 24px; width: 1px; background: rgba(255,255,255,0.15);"></div>
+          <button onclick="toggleMapRideSimulation()" style="display: flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 999px; background: #2563eb; border: none; color: #fff; font-size: 0.75rem; font-weight: 700; cursor: pointer; box-shadow: 0 0 16px rgba(37,99,235,0.6);" id="sim-toggle-btn">
+            <span>▶ Simulate Ride</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- API Contract Modal -->
+<div class="modal-overlay" id="modal-api">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.85);">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.2rem;">⚡</span>
+        <div>
+          <h3 style="font-size:0.95rem; font-weight:700;">OpenAPI v1.0 Contract Payload</h3>
+          <span style="font-size:0.7rem; color:var(--text-muted);">POST /api/v1/routes/plan • Public Transit Assistant</span>
+        </div>
+      </div>
+      <button onclick="closeApiModal()" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:10px 20px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono);">HTTP 200 OK • Response JSON</span>
+      <button onclick="copyApiJson()" style="padding:5px 12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; font-size:0.72rem; cursor:pointer;">
+        Copy JSON
+      </button>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:16px; background:#070a13;">
+      <pre id="api-pre" style="font-family:var(--font-mono); font-size:0.74rem; color:#38bdf8; line-height:1.5; white-space:pre-wrap; word-break:break-all;"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Live Radar Modal -->
+<div class="modal-overlay" id="modal-alerts">
+  <div class="modal-box" style="max-width:540px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(245,158,11,0.08);">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.2rem;">📡</span>
+        <div>
+          <h3 style="font-size:0.95rem; font-weight:700;" id="alerts-city-title">City Transit Radar</h3>
+          <span style="font-size:0.7rem; color:var(--text-muted);">Real-time network crowd load & line advisories</span>
+        </div>
+      </div>
+      <button onclick="closeAlertsModal()" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;" id="alerts-body"></div>
+  </div>
+</div>
+
+<script>
+  // City Transit Database with Real GPS Coordinates
+  const CITIES = {
+    delhi: {
+      name: "Delhi NCR",
+      center: [28.6328, 77.2197], // Rajiv Chowk
+      zoom: 12,
+      tagline: "Delhi NCR • Metro, DTC Bus, Auto, Rapido & Cabs",
+      presets: [
+        { from: "Karol Bagh", to: "Gandhi Darshan" },
+        { from: "Rajiv Chowk (CP)", to: "Hauz Khas Village" },
+        { from: "Kashmere Gate", to: "Cyber City Gurgaon" },
+        { from: "Noida Sector 18", to: "Airport Terminal 3" }
+      ],
+      stops: [
+        { name: "Karol Bagh", lat: 28.6525, lng: 77.1920, type: "metro", line: "Blue Line" },
+        { name: "Karol Bagh Terminal", lat: 28.6510, lng: 77.1925, type: "bus" },
+        { name: "Gandhi Darshan", lat: 28.6415, lng: 77.2485, type: "landmark" },
+        { name: "Rajiv Chowk (CP)", lat: 28.6328, lng: 77.2197, type: "metro", line: "Blue/Yellow" },
+        { name: "Kashmere Gate", lat: 28.6675, lng: 77.2285, type: "metro", line: "Red/Yellow/Violet" },
+        { name: "Hauz Khas", lat: 28.5432, lng: 77.2065, type: "metro", line: "Yellow/Magenta" },
+        { name: "Cyber City Gurgaon", lat: 28.4986, lng: 77.0878, type: "metro" },
+        { name: "Noida Sector 18", lat: 28.5708, lng: 77.3261, type: "metro" },
+        { name: "Airport Terminal 3", lat: 28.5562, lng: 77.0870, type: "metro" }
+      ],
+      alerts: [
+        { title: "ITO / Vikas Marg Traffic Jam", text: "DTC buses experiencing 5-8 min delay due to flyover lane maintenance.", lines: "Lines 354UP, 543, 720" },
+        { title: "Blue Line High Headway", text: "DMRC running peak frequency with trains every 2.4 mins smoothly.", lines: "Normal Operations" }
+      ]
+    },
+    mumbai: {
+      name: "Mumbai MMR",
+      center: [19.0178, 72.8478],
+      zoom: 12,
+      tagline: "Mumbai MMR • Metro, Local Suburban, BEST, Kaali-Peeli & Cabs",
+      presets: [
+        { from: "CSMT Terminus", to: "Bandra Kurla Complex (BKC)" },
+        { from: "Andheri West", to: "Ghatkopar" },
+        { from: "Dadar Circle", to: "Nariman Point" }
+      ],
+      stops: [
+        { name: "CSMT Terminus", lat: 18.9401, lng: 72.8355, type: "landmark" },
+        { name: "Bandra Kurla Complex (BKC)", lat: 19.0657, lng: 72.8687, type: "landmark" },
+        { name: "Andheri West", lat: 19.1197, lng: 72.8468, type: "metro", line: "Line 1" },
+        { name: "Ghatkopar", lat: 19.0863, lng: 72.9085, type: "metro", line: "Line 1" },
+        { name: "Dadar Circle", lat: 19.0178, lng: 72.8478, type: "bus" },
+        { name: "Nariman Point", lat: 18.9265, lng: 72.8228, type: "landmark" }
+      ],
+      alerts: [
+        { title: "Western Express Highway Traffic", text: "Heavy bumper-to-bumper movement between Andheri and Bandra.", lines: "Cabs +10m delay" },
+        { title: "Metro Line 2A & 7 Full Capacity", text: "Services running smoothly every 3 minutes.", lines: "High Frequency" }
+      ]
+    },
+    bengaluru: {
+      name: "Bengaluru",
+      center: [12.9716, 77.5946],
+      zoom: 12,
+      tagline: "Bengaluru • Namma Metro, BMTC, Auto, Rapido & Cabs",
+      presets: [
+        { from: "Kempegowda Majestic", to: "Indiranagar 100ft Road" },
+        { from: "MG Road Metro", to: "Whitefield ITPL" },
+        { from: "Koramangala 5th Block", to: "Electronic City Phase 1" }
+      ],
+      stops: [
+        { name: "Kempegowda Majestic", lat: 12.9757, lng: 77.5728, type: "metro", line: "Purple/Green" },
+        { name: "Indiranagar 100ft Road", lat: 12.9719, lng: 77.6412, type: "landmark" },
+        { name: "MG Road Metro", lat: 12.9756, lng: 77.6066, type: "metro", line: "Purple Line" },
+        { name: "Whitefield ITPL", lat: 12.9863, lng: 77.7381, type: "metro", line: "Purple Line" },
+        { name: "Koramangala 5th Block", lat: 12.9352, lng: 77.6245, type: "landmark" },
+        { name: "Electronic City Phase 1", lat: 12.8399, lng: 77.6770, type: "bus" }
+      ],
+      alerts: [
+        { title: "Silk Board / ORR Congestion", text: "Surface vehicular speeds under 12 km/h. Feeder metro advised.", lines: "Road Traffic" },
+        { title: "Purple Line Full Reach Operational", text: "Majestic to Whitefield fully smooth in 38 mins.", lines: "Every 3.5m" }
+      ]
+    }
+  };
+
+  // State
+  let currentCity = "delhi";
+  let activeModes = new Set(["metro", "bus", "auto", "bike", "cab", "walk"]);
+  let currentPriority = "fastest";
+  let isPeak = true;
+  let avoidCrowded = false;
+  let currentStep = 1;
+  let computedRoutes = [];
+  let selectedRouteIdx = 0;
+
+  // Leaflet Map State
+  let map = null;
+  let mapPolylines = [];
+  let mapMarkers = [];
+  let simulationMarker = null;
+  let simulationTimer = null;
+
+  // Initialization
+  window.addEventListener("DOMContentLoaded", () => {
+    renderFeedPresets();
+  });
+
+  // Step Navigation Function
+  function navigateToStep(stepNum) {
+    currentStep = stepNum;
+
+    // Update Stepper in Navbar
+    document.querySelectorAll('.step-item').forEach((item, idx) => {
+      item.classList.remove('active');
+      if (idx + 1 === stepNum) item.classList.add('active');
+      if (idx + 1 < stepNum) item.classList.add('completed');
+    });
+
+    // Toggle Slide Pages
+    document.querySelectorAll('.slide-page').forEach((page, idx) => {
+      page.classList.remove('active');
+      if (idx + 1 === stepNum) page.classList.add('active');
+    });
+
+    // Trigger map invalidation if on Step 3
+    if (stepNum === 3) {
+      setTimeout(() => {
+        if (!map) {
+          initLeafletMap();
+        } else {
+          map.invalidateSize();
+        }
+        drawSelectedRoute();
+      }, 150);
+    }
+  }
+
+  function switchCity(cityId, btn) {
+    currentCity = cityId;
+    document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const city = CITIES[cityId];
+    document.getElementById('hero-tagline').innerText = `${city.name} • ${city.tagline}`;
+
+    if (city.presets.length > 0) {
+      document.getElementById('feed-origin').value = city.presets[0].from;
+      document.getElementById('feed-dest').value = city.presets[0].to;
+    }
+    renderFeedPresets();
+
+    if (map) {
+      map.flyTo(city.center, city.zoom);
+    }
+  }
+
+  function renderFeedPresets() {
+    const container = document.getElementById('feed-presets-list');
+    container.innerHTML = "";
+    CITIES[currentCity].presets.forEach(p => {
+      const b = document.createElement('button');
+      b.className = "preset-bubble";
+      b.innerText = `${p.from} ➔ ${p.to}`;
+      b.onclick = () => {
+        document.getElementById('feed-origin').value = p.from;
+        document.getElementById('feed-dest').value = p.to;
+      };
+      container.appendChild(b);
+    });
+  }
+
+  function toggleFeedMode(mode, btn) {
+    if (activeModes.has(mode)) {
+      if (activeModes.size === 1) return;
+      activeModes.delete(mode);
+      btn.classList.remove('active');
+    } else {
+      activeModes.add(mode);
+      btn.classList.add('active');
+    }
+    document.getElementById('feed-mode-count').innerText = `${activeModes.size} Modes Active`;
+  }
+
+  function setFeedPrio(p, btn) {
+    currentPriority = p;
+    document.querySelectorAll('.prio-feed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function toggleFeedAvoidCrowded() {
+    avoidCrowded = document.getElementById('feed-avoid-crowded').checked;
+  }
+
+  function swapFeedLocations() {
+    const o = document.getElementById('feed-origin');
+    const d = document.getElementById('feed-dest');
+    const tmp = o.value;
+    o.value = d.value;
+    d.value = tmp;
+  }
+
+  function togglePeakPeriod() {
+    isPeak = !isPeak;
+    const label = document.getElementById('peak-label');
+    const ind = document.getElementById('peak-indicator');
+    if (isPeak) {
+      label.innerText = "Peak Rush 🚦";
+      ind.style.background = "#fbbf24";
+      ind.style.boxShadow = "0 0 8px #fbbf24";
+    } else {
+      label.innerText = "Off-Peak 🌤️";
+      ind.style.background = "#34d399";
+      ind.style.boxShadow = "0 0 8px #34d399";
+    }
+  }
+
+  // Autocomplete
+  function handleFeedTyping(type) {
+    showFeedDropdown(type);
+  }
+  function showFeedDropdown(type) {
+    const val = (type === 'orig' ? document.getElementById('feed-origin') : document.getElementById('feed-dest')).value.toLowerCase();
+    const dd = document.getElementById(type === 'orig' ? 'feed-dd-orig' : 'feed-dd-dest');
+    const stops = CITIES[currentCity].stops.filter(s => s.name.toLowerCase().includes(val));
+
+    dd.innerHTML = "";
+    if (stops.length === 0) {
+      dd.classList.remove('show');
+      return;
+    }
+    stops.slice(0, 5).forEach(s => {
+      const item = document.createElement('div');
+      item.className = "dropdown-opt";
+      item.innerHTML = `<span>${s.name}</span><span style="font-size:0.65rem; color:#94a3b8; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${s.type.toUpperCase()}${s.line ? ' • ' + s.line : ''}</span>`;
+      item.onclick = () => {
+        if (type === 'orig') document.getElementById('feed-origin').value = s.name;
+        else document.getElementById('feed-dest').value = s.name;
+        dd.classList.remove('show');
+      };
+      dd.appendChild(item);
+    });
+    dd.classList.add('show');
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#feed-origin') && !e.target.closest('#feed-dd-orig')) {
+      document.getElementById('feed-dd-orig').classList.remove('show');
+    }
+    if (!e.target.closest('#feed-dest') && !e.target.closest('#feed-dd-dest')) {
+      document.getElementById('feed-dd-dest').classList.remove('show');
+    }
+  });
+
+  // Calculate & Proceed from Step 1 to Step 2
+  function submitFeedAndGoToRoutes() {
+    calculateMultimodalRoutes();
+    renderMatrixRoutes();
+    navigateToStep(2);
+  }
+
+  // Location Coordinate Resolution
+  function resolveCoord(name, isDest) {
+    const match = CITIES[currentCity].stops.find(s => s.name.toLowerCase().includes(name.toLowerCase()));
+    if (match) return [match.lat, match.lng];
+    const c = CITIES[currentCity].center;
+    return isDest ? [c[0] + 0.025, c[1] + 0.035] : [c[0] - 0.02, c[1] - 0.025];
+  }
+
+  // Multimodal Computation Engine
+  function calculateMultimodalRoutes() {
+    const orig = document.getElementById('feed-origin').value || "Origin";
+    const dest = document.getElementById('feed-dest').value || "Destination";
+
+    const p1 = resolveCoord(orig, false);
+    const p2 = resolveCoord(dest, true);
+
+    const mid1 = [p1[0] + (p2[0] - p1[0]) * 0.35 + 0.005, p1[1] + (p2[1] - p1[1]) * 0.35 - 0.004];
+    const mid2 = [p1[0] + (p2[0] - p1[0]) * 0.75 - 0.003, p1[1] + (p2[1] - p1[1]) * 0.75 + 0.005];
+
+    const routes = [];
+
+    // 1. SMART METRO
+    if (activeModes.has('metro') && activeModes.has('walk')) {
+      const isAuto = activeModes.has('auto');
+      routes.push({
+        id: "r1",
+        tag: "RECOMMENDED",
+        title: isAuto ? "Smart Metro Express + Last-Mile Auto" : "Direct Fast Metro + Walk",
+        summary: isAuto ? ["walk", "metro", "auto"] : ["walk", "metro", "walk"],
+        duration: isAuto ? 21 : 24,
+        fare: isAuto ? 45 : 30,
+        dist: 8.6,
+        transfers: isAuto ? 1 : 0,
+        crowd: isPeak ? "medium" : "low",
+        delay: 0,
+        carbon: 0.35,
+        calories: 52,
+        savingsText: "Save ₹150 vs Cab • Beat street traffic by 12 mins",
+        legs: [
+          { mode: "walk", from: orig, to: `${orig} Metro Gate 2`, duration: 3, dist: 0.3, fare: 0, coords: [p1, mid1], instruction: `Walk 300m to ${orig} Metro Station (Gate 2)` },
+          { mode: "metro", from: `${orig} Metro`, to: `${dest} Metro`, duration: 15, dist: 6.8, fare: 30, coords: [mid1, mid2], line: currentCity === 'delhi' ? "Blue Line" : "Metro Line 1", platform: "Platform 1 towards Concourse", stops: 5, instruction: `Board express train; 5 stops en route` },
+          isAuto 
+            ? { mode: "auto", from: `${dest} Metro`, to: dest, duration: 3, dist: 1.5, fare: 15, coords: [mid2, p2], instruction: `Prepaid CNG auto directly to ${dest} gate` }
+            : { mode: "walk", from: `${dest} Metro`, to: dest, duration: 6, dist: 0.5, fare: 0, coords: [mid2, p2], instruction: `Walk 500m to destination entrance` }
+        ]
+      });
+    }
+
+    // 2. CITY BUS (CHEAPEST)
+    if (activeModes.has('bus')) {
+      const busNum = currentCity === 'delhi' ? "354UP" : currentCity === 'mumbai' ? "C-51 Exp" : "G-4 Feeder";
+      routes.push({
+        id: "r2",
+        tag: "CHEAPEST",
+        title: `Direct City Bus (${busNum})`,
+        summary: ["walk", "bus", "walk"],
+        duration: isPeak ? 31 : 25,
+        fare: 10,
+        dist: 7.9,
+        transfers: 0,
+        crowd: isPeak ? "high" : "medium",
+        delay: isPeak ? 3 : 0,
+        carbon: 0.42,
+        calories: 68,
+        savingsText: "Lowest fare route • ₹10 flat rate across city",
+        legs: [
+          { mode: "walk", from: orig, to: `${orig} Bus Stop`, duration: 3, dist: 0.2, fare: 0, coords: [p1, [p1[0]+0.002, p1[1]+0.002]], instruction: `Walk 200m to bus shelter` },
+          { mode: "bus", from: `${orig} Bus Stop`, to: `${dest} Stop`, duration: isPeak ? 25 : 20, dist: 7.5, fare: 10, coords: [[p1[0]+0.002, p1[1]+0.002], [p2[0]-0.002, p2[1]-0.002]], routeNumber: busNum, instruction: `Board bus ${busNum}; 12 stops` },
+          { mode: "walk", from: `${dest} Stop`, to: dest, duration: 3, dist: 0.2, fare: 0, coords: [[p2[0]-0.002, p2[1]-0.002], p2], instruction: `Walk 200m to entrance` }
+        ]
+      });
+    }
+
+    // 3. RAPIDO BIKE TAXI (TRAFFIC BUSTER)
+    if (activeModes.has('bike')) {
+      routes.push({
+        id: "r3",
+        tag: "TRAFFIC_BUSTER",
+        title: "Zippy Bike Taxi (Rapido / Moto)",
+        summary: ["bike"],
+        duration: 15,
+        fare: 65,
+        dist: 7.8,
+        transfers: 0,
+        crowd: "low",
+        delay: 0,
+        carbon: 0.65,
+        calories: 0,
+        savingsText: "15 min sprint • Slices past arterial road jams",
+        legs: [
+          { mode: "bike", from: orig, to: dest, duration: 15, dist: 7.8, fare: 65, coords: [p1, mid1, mid2, p2], instruction: `Doorstep pickup. Fastest route slicing through arterial jams.` }
+        ]
+      });
+    }
+
+    // 4. AC CAB (COMFORT)
+    if (activeModes.has('cab')) {
+      routes.push({
+        id: "r4",
+        tag: "COMFORT",
+        title: "Private AC Cab (Uber Go / Ola)",
+        summary: ["cab"],
+        duration: isPeak ? 23 : 18,
+        fare: isPeak ? 195 : 160,
+        dist: 8.2,
+        transfers: 0,
+        crowd: "low",
+        delay: isPeak ? 4 : 1,
+        carbon: 1.85,
+        calories: 0,
+        savingsText: "Door-to-door AC comfort • Highway flyway route",
+        legs: [
+          { mode: "cab", from: orig, to: dest, duration: isPeak ? 23 : 18, dist: 8.2, fare: isPeak ? 195 : 160, coords: [p1, [p1[0]-0.005, p1[1]+0.01], [p2[0]+0.004, p2[1]-0.008], p2], instruction: `Air-conditioned direct ride via flyway.` }
+        ]
+      });
+    }
+
+    // 5. DIRECT AUTO
+    if (activeModes.has('auto')) {
+      routes.push({
+        id: "r5",
+        tag: "FASTEST",
+        title: "Direct CNG Auto Rickshaw",
+        summary: ["auto"],
+        duration: isPeak ? 22 : 18,
+        fare: 110,
+        dist: 8.0,
+        transfers: 0,
+        crowd: "low",
+        delay: isPeak ? 2 : 0,
+        carbon: 0.85,
+        calories: 0,
+        savingsText: "Metered CNG rate • Fast street connections",
+        legs: [
+          { mode: "auto", from: orig, to: dest, duration: isPeak ? 22 : 18, dist: 8.0, fare: 110, coords: [p1, mid1, p2], instruction: `Direct metered CNG auto hail.` }
+        ]
+      });
+    }
+
+    // 6. ECO WARRIOR
+    if (activeModes.has('metro') && activeModes.has('walk')) {
+      routes.push({
+        id: "r6",
+        tag: "ECO",
+        title: "Eco Warrior (Metro + Pedestrian)",
+        summary: ["walk", "metro", "walk"],
+        duration: 27,
+        fare: 30,
+        dist: 8.5,
+        transfers: 0,
+        crowd: "medium",
+        delay: 0,
+        carbon: 0.18,
+        calories: 125,
+        savingsText: "100% solar electric • 125 kcal burned",
+        legs: [
+          { mode: "walk", from: orig, to: "Metro Concourse", duration: 6, dist: 0.5, fare: 0, coords: [p1, mid1], instruction: `Brisk pedestrian connection to station` },
+          { mode: "metro", from: "Metro Concourse", to: "Destination Concourse", duration: 15, dist: 7.3, fare: 30, coords: [mid1, mid2], instruction: `Solar powered electric rail ride` },
+          { mode: "walk", from: "Destination Concourse", to: dest, duration: 6, dist: 0.7, fare: 0, coords: [mid2, p2], instruction: `Walk to final entrance` }
+        ]
+      });
+    }
+
+    // Sort by chosen priority
+    if (currentPriority === 'fastest') routes.sort((a,b) => a.duration - b.duration);
+    else if (currentPriority === 'cheapest') routes.sort((a,b) => a.fare - b.fare);
+    else if (currentPriority === 'shortest') routes.sort((a,b) => a.dist - b.dist);
+    else if (currentPriority === 'least_transfers') routes.sort((a,b) => a.transfers - b.transfers);
+    else if (currentPriority === 'eco') routes.sort((a,b) => a.carbon - b.carbon);
+
+    computedRoutes = routes;
+    selectedRouteIdx = 0;
+  }
+
+  // Render Step 2 Matrix Cards
+  function renderMatrixRoutes() {
+    const container = document.getElementById('matrix-routes-grid');
+    container.innerHTML = "";
+
+    const orig = document.getElementById('feed-origin').value || "Origin";
+    const dest = document.getElementById('feed-dest').value || "Destination";
+    document.getElementById('compare-route-title').innerText = `Routes from ${orig} to ${dest}`;
+
+    const modeLabels = {
+      metro: "🚇 Metro",
+      bus: "🚌 Bus",
+      auto: "🛺 Auto",
+      bike: "🏍️ Bike",
+      cab: "🚗 Cab",
+      walk: "🚶 Walk"
+    };
+
+    computedRoutes.forEach((r, idx) => {
+      const card = document.createElement('div');
+      card.className = "matrix-card";
+
+      const chainPills = r.legs.map(l => `<span style="font-size:0.72rem; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.08);">${modeLabels[l.mode] || l.mode} (${l.duration}m)</span>`).join('<span style="color:var(--text-muted); font-size:0.65rem;">➔</span>');
+
+      card.innerHTML = `
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span class="card-badge badge-${r.tag}">${r.tag.replace('_', ' ')}</span>
+            <div style="font-size:0.7rem; font-weight:700; color:${r.crowd === 'high' ? '#fb7185' : r.crowd === 'medium' ? '#fbbf24' : '#34d399'};">
+              ● ${r.crowd.toUpperCase()} LOAD
+            </div>
+          </div>
+          <h3 style="font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:4px;">${r.title}</h3>
+          <p style="font-size:0.75rem; color:#38bdf8; margin-bottom:12px;">${r.savingsText}</p>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">${chainPills}</div>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+            <div>
+              <span style="font-size:0.62rem; color:var(--text-muted); display:block;">DURATION</span>
+              <span style="font-size:0.95rem; font-weight:800; color:#38bdf8;">${r.duration} min</span>
+            </div>
+            <div>
+              <span style="font-size:0.62rem; color:var(--text-muted); display:block;">EST. FARE</span>
+              <span style="font-size:0.95rem; font-weight:800; color:#34d399;">₹${r.fare}</span>
+            </div>
+            <div>
+              <span style="font-size:0.62rem; color:var(--text-muted); display:block;">DISTANCE</span>
+              <span style="font-size:0.85rem; font-weight:600; color:#e2e8f0;">${r.dist} km</span>
+            </div>
+            <div>
+              <span style="font-size:0.62rem; color:var(--text-muted); display:block;">TRANSFERS</span>
+              <span style="font-size:0.85rem; font-weight:600; color:#e2e8f0;">${r.transfers === 0 ? 'Direct' : r.transfers + ' change'}</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn-choose-route" onclick="selectRouteAndOpenMap(${idx})">
+          <span>View on Live Map & Start Navigation</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Select Route & Go to Step 3 (Map)
+  function selectRouteAndOpenMap(idx) {
+    selectedRouteIdx = idx;
+    navigateToStep(3);
+  }
+
+  // Leaflet Map Initialization with Free Clean Tiles (No watermark)
+  function initLeafletMap() {
+    const city = CITIES[currentCity];
+    map = L.map('leaflet-map', {
+      center: city.center,
+      zoom: city.zoom,
+      zoomControl: false
+    });
+
+    // 100% Free OpenStreetMap with high-contrast dark filter
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      className: 'dark-map-tiles',
+      maxZoom: 19
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+  }
+
+  // Draw Polylines and Markers on Leaflet
+  function drawSelectedRoute() {
+    if (!map) return;
+
+    // Clear old layers
+    mapPolylines.forEach(p => map.removeLayer(p));
+    mapMarkers.forEach(m => map.removeLayer(m));
+    mapPolylines = [];
+    mapMarkers = [];
+
+    if (simulationMarker) {
+      map.removeLayer(simulationMarker);
+      simulationMarker = null;
+    }
+    if (simulationTimer) {
+      clearInterval(simulationTimer);
+      simulationTimer = null;
+    }
+
+    const r = computedRoutes[selectedRouteIdx];
+    if (!r) return;
+
+    // Update Step 3 Map Card Details
+    document.getElementById('map-card-tag').className = `card-badge badge-${r.tag}`;
+    document.getElementById('map-card-tag').innerText = r.tag.replace('_', ' ');
+    document.getElementById('map-card-title').innerText = r.title;
+    document.getElementById('map-stat-time').innerText = `${r.duration} min`;
+    document.getElementById('map-stat-fare').innerText = `₹${r.fare}`;
+    document.getElementById('map-stat-dist').innerText = `${r.dist} km`;
+
+    // Render Steps in Map Sidebar
+    const stepsList = document.getElementById('map-steps-list');
+    stepsList.innerHTML = "";
+
+    const modeColors = {
+      metro: "#38bdf8",
+      bus: "#34d399",
+      auto: "#fbbf24",
+      bike: "#fb923c",
+      cab: "#cbd5e1",
+      walk: "#22d3ee"
+    };
+
+    const allPoints = [];
+
+    r.legs.forEach((leg, i) => {
+      const col = modeColors[leg.mode] || "#38bdf8";
+
+      // Draw polyline on Leaflet
+      const poly = L.polyline(leg.coords, {
+        color: col,
+        weight: leg.mode === 'walk' ? 4 : 6,
+        opacity: 0.95,
+        dashArray: leg.mode === 'walk' ? '4, 8' : null,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+      mapPolylines.push(poly);
+      allPoints.push(...leg.coords);
+
+      // Add Step Row
+      const stepRow = document.createElement('div');
+      stepRow.style.padding = "9px";
+      stepRow.style.background = "rgba(255,255,255,0.03)";
+      stepRow.style.border = "1px solid rgba(255,255,255,0.06)";
+      stepRow.style.borderRadius = "8px";
+      stepRow.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+          <span style="font-size:0.72rem; font-weight:700; color:${col}; text-transform:uppercase;">${leg.mode}</span>
+          <span style="font-size:0.72rem; font-weight:700; color:#fff;">${leg.duration} min</span>
+        </div>
+        <p style="font-size:0.8rem; color:#f8fafc; font-weight:500;">${leg.instruction}</p>
+        ${leg.platform ? `<span style="font-size:0.68rem; color:#fbbf24; background:rgba(245,158,11,0.12); padding:1px 6px; border-radius:4px; display:inline-block; margin-top:2px;">🚉 ${leg.platform}</span>` : ''}
+      `;
+      stepsList.appendChild(stepRow);
+    });
+
+    // Start Pin (Green)
+    const startCoord = allPoints[0];
+    const sIcon = L.divIcon({
+      html: `<div style="position:relative;"><div style="position:absolute; inset:-8px; border-radius:50%; background:rgba(16,185,129,0.4);" class="pulse-beacon"></div><div style="width:14px; height:14px; border-radius:50%; background:#10b981; border:2.5px solid #fff; box-shadow:0 0 10px #10b981;"></div></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+    const sm = L.marker(startCoord, { icon: sIcon }).addTo(map).bindPopup(`<b>Start:</b> ${document.getElementById('feed-origin').value}`);
+    mapMarkers.push(sm);
+
+    // End Pin (Red)
+    const endCoord = allPoints[allPoints.length - 1];
+    const eIcon = L.divIcon({
+      html: `<div style="position:relative;"><div style="position:absolute; inset:-8px; border-radius:50%; background:rgba(244,63,94,0.4);" class="pulse-beacon"></div><div style="width:14px; height:14px; border-radius:50%; background:#f43f5e; border:2.5px solid #fff; box-shadow:0 0 10px #f43f5e;"></div></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+    const em = L.marker(endCoord, { icon: eIcon }).addTo(map).bindPopup(`<b>Destination:</b> ${document.getElementById('feed-dest').value}`);
+    mapMarkers.push(em);
+
+    // Auto fit map bounds
+    if (allPoints.length > 0) {
+      const bounds = L.latLngBounds(allPoints);
+      map.flyToBounds(bounds, {
+        paddingTopLeft: [400, 40],
+        paddingBottomRight: [40, 80],
+        duration: 1.0
+      });
+    }
+
+    // Update Bottom HUD
+    document.getElementById('sim-hud-title').innerText = `${r.title} • ₹${r.fare}`;
+    document.getElementById('sim-hud-sub').innerText = `${r.duration} mins • ${r.dist} km • ${r.transfers === 0 ? 'Direct Route' : r.transfers + ' transfer'}`;
+  }
+
+  // Ride Simulation
+  function toggleMapRideSimulation() {
+    const r = computedRoutes[selectedRouteIdx];
+    if (!r) return;
+
+    const allCoords = r.legs.flatMap(l => l.coords);
+    if (allCoords.length < 2) return;
+
+    const simBtn = document.getElementById('sim-toggle-btn');
+
+    if (simulationTimer) {
+      clearInterval(simulationTimer);
+      simulationTimer = null;
+      if (simulationMarker) map.removeLayer(simulationMarker);
+      simBtn.innerHTML = "<span>▶ Simulate Ride</span>";
+      return;
+    }
+
+    simBtn.innerHTML = "<span>⏹ Stop Simulation</span>";
+
+    const vIcon = L.divIcon({
+      html: `<div style="position:relative;"><div style="position:absolute; inset:-12px; border-radius:50%; background:rgba(56,189,248,0.4);" class="pulse-beacon"></div><div style="width:20px; height:20px; border-radius:50%; background:#38bdf8; border:2.5px solid #fff; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px #38bdf8; font-size:10px;">⚡</div></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+
+    simulationMarker = L.marker(allCoords[0], { icon: vIcon, zIndexOffset: 1000 }).addTo(map);
+
+    let step = 0;
+    const totalSteps = 120;
+
+    simulationTimer = setInterval(() => {
+      step++;
+      if (step > totalSteps) step = 0;
+      const t = step / totalSteps;
+      const idx = Math.min(Math.floor(t * (allCoords.length - 1)), allCoords.length - 2);
+      const subT = (t * (allCoords.length - 1)) - idx;
+      const c1 = allCoords[idx];
+      const c2 = allCoords[idx + 1];
+
+      const curLat = c1[0] + (c2[0] - c1[0]) * subT;
+      const curLng = c1[1] + (c2[1] - c1[1]) * subT;
+
+      simulationMarker.setLatLng([curLat, curLng]);
+    }, 50);
+  }
+
+  // Modals
+  function openApiModal() {
+    const payload = {
+      success: true,
+      queryId: "req_del_8923a41b",
+      timestamp: new Date().toISOString(),
+      city: CITIES[currentCity].name,
+      origin: document.getElementById('feed-origin').value,
+      destination: document.getElementById('feed-dest').value,
+      preferences: {
+        priority: currentPriority,
+        allowedModes: Array.from(activeModes),
+        avoidCrowded: avoidCrowded,
+        period: isPeak ? "peak" : "offpeak"
+      },
+      summary: {
+        totalRoutes: computedRoutes.length,
+        selectedRoute: computedRoutes[selectedRouteIdx]
+      },
+      routes: computedRoutes
+    };
+    document.getElementById('api-pre').innerText = JSON.stringify(payload, null, 2);
+    document.getElementById('modal-api').classList.add('open');
+  }
+  function closeApiModal() {
+    document.getElementById('modal-api').classList.remove('open');
+  }
+  function copyApiJson() {
+    navigator.clipboard.writeText(document.getElementById('api-pre').innerText);
+    alert("API Contract Response JSON copied to clipboard!");
+  }
+
+  function openAlertsModal() {
+    const modal = document.getElementById('modal-alerts');
+    document.getElementById('alerts-city-title').innerText = `${CITIES[currentCity].name} Transit Radar`;
+    const body = document.getElementById('alerts-body');
+    body.innerHTML = "";
+    CITIES[currentCity].alerts.forEach(a => {
+      const item = document.createElement('div');
+      item.style.padding = "12px";
+      item.style.borderRadius = "10px";
+      item.style.background = "rgba(245, 158, 11, 0.08)";
+      item.style.border = "1px solid rgba(245, 158, 11, 0.3)";
+      item.innerHTML = `
+        <div style="font-weight:700; color:#fbbf24; font-size:0.85rem; margin-bottom:3px;">⚠️ ${a.title}</div>
+        <div style="font-size:0.75rem; color:#cbd5e1; line-height:1.4;">${a.text}</div>
+        <div style="font-size:0.68rem; color:#94a3b8; margin-top:6px;">Impact: <strong style="color:#fff;">${a.lines}</strong></div>
+      `;
+      body.appendChild(item);
+    });
+    modal.classList.add('open');
+  }
+  function closeAlertsModal() {
+    document.getElementById('modal-alerts').classList.remove('open');
+  }
+</script>
+</body>
+</html>

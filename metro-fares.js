@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
 
-export const METRO_FARES_DIR = path.join(".", "data", "metro-fares");
+const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
+export const METRO_FARES_DIR = path.join(ROOT_DIR, "data", "metro-fares");
 
 const DMRC_COLUMNS = [
   "min_km_inclusive",
@@ -289,6 +291,11 @@ export function metroFareClass(routeId) {
   if (id === NOIDA_ROUTE_ID) return "noida_metro";
   if (id === RAPID_ROUTE_ID) return "rapid_metro";
   if (DMRC_ROUTE_IDS.has(id)) return "dmrc_standard";
+  if (
+    /^(Red|Yellow|Blue|Green|Violet|Pink|Magenta|Grey) Line(?:\s|\(|$)/.test(id)
+  ) {
+    return "dmrc_standard";
+  }
   return "unknown";
 }
 
@@ -316,7 +323,7 @@ export function calculateAirportExpressFare(fromName, toName, data = METRO_FARE_
 
 export function calculateMetroFare(
   routeId,
-  { fromName, toName, stationCount, dayType = "weekday" } = {},
+  { fromName, toName, stationCount, distanceKm, dayType = "weekday" } = {},
   data = METRO_FARE_DATA
 ) {
   switch (metroFareClass(routeId)) {
@@ -328,7 +335,22 @@ export function calculateMetroFare(
       const amount = calculateNoidaFare(stationCount, dayType, data);
       return { amount, available: amount !== null, estimated: amount !== null };
     }
-    case "dmrc_standard":
+    case "dmrc_standard": {
+      if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+        return { amount: null, available: false, estimated: false };
+      }
+      const slab = data.dmrcStandard.find(
+        (row) =>
+          distanceKm >= row.min &&
+          (row.max === null || distanceKm < row.max)
+      );
+      const amount = slab
+        ? dayType === "sunday_holiday"
+          ? slab.holiday
+          : slab.weekday
+        : null;
+      return { amount, available: amount !== null, estimated: amount !== null };
+    }
     case "rapid_metro":
     default:
       return { amount: null, available: false, estimated: false };

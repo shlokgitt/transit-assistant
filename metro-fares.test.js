@@ -63,10 +63,14 @@ describe("metro fare data", () => {
     );
   });
 
-  it("leaves DMRC and Rapid Metro fares unavailable", () => {
+  it("calculates DMRC fares from ridden distance and leaves Rapid Metro unavailable", () => {
     assert.deepEqual(
-      calculateMetroFare("metro:Delhi2", { stationCount: 3 }, data),
-      { amount: null, available: false, estimated: false }
+      calculateMetroFare("metro:Delhi2", { distanceKm: 5.1 }, data),
+      { amount: 32, available: true, estimated: true }
+    );
+    assert.deepEqual(
+      calculateMetroFare("metro:Blue Line (Vaishali Branch)", { distanceKm: 5.1 }, data),
+      { amount: 32, available: true, estimated: true }
     );
     assert.deepEqual(
       calculateMetroFare("metro:Gurgaon1", { stationCount: 3 }, data),
