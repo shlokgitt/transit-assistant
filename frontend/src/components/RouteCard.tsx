@@ -141,29 +141,41 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
 
       {/* Mode chain with emoji badges */}
       <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", marginBottom: "12px" }}>
-        {route.legs.map((leg, i) => (
-          <React.Fragment key={i}>
-            <span
-              className={`mode-badge mode-${leg.mode}`}
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <span style={{
-                width: "18px", height: "18px", borderRadius: "5px",
-                background: `${MODE_COLOR[leg.mode]}22`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "10px",
-              }}>
-                {MODE_EMOJI[leg.mode]}
+        {(() => {
+          // Omit minor transfer walks (<= 3 min) between transit legs to avoid duplicate walk badges
+          const badgeLegs = route.legs.filter(
+            (leg, i) =>
+              !(
+                i > 0 &&
+                i < route.legs.length - 1 &&
+                leg.mode === "walk" &&
+                leg.durationMinutes <= 3
+              )
+          );
+          return badgeLegs.map((leg, i) => (
+            <React.Fragment key={i}>
+              <span
+                className={`mode-badge mode-${leg.mode}`}
+                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              >
+                <span style={{
+                  width: "18px", height: "18px", borderRadius: "5px",
+                  background: `${MODE_COLOR[leg.mode]}22`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "10px",
+                }}>
+                  {MODE_EMOJI[leg.mode]}
+                </span>
+                <span style={{ fontSize: "0.7rem" }}>
+                  {leg.lineName || (leg.routeNumber ? `B${leg.routeNumber}` : leg.mode.toUpperCase())} • {leg.durationMinutes}m
+                </span>
               </span>
-              <span style={{ fontSize: "0.7rem" }}>
-                {leg.lineName || (leg.routeNumber ? `B${leg.routeNumber}` : leg.mode.toUpperCase())} • {leg.durationMinutes}m
-              </span>
-            </span>
-            {i < route.legs.length - 1 && (
-              <ChevronRight size={11} color="#4b5a6e" />
-            )}
-          </React.Fragment>
-        ))}
+              {i < badgeLegs.length - 1 && (
+                <ChevronRight size={11} color="#4b5a6e" />
+              )}
+            </React.Fragment>
+          ));
+        })()}
       </div>
 
       {/* Stop-to-stop journey and interchange details */}

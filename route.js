@@ -399,28 +399,38 @@ export function findStops(query) {
     }
   }
 
-  scoredTransit.sort((a, b) => b.score - a.score);
-  for (const item of scoredTransit) {
-    results.push(item.stop);
-    seen.add(item.stop.id);
-  }
-
-  const places = PLACES.flatMap((place, index) => {
-    const matches = [place.name, ...(place.aliases || [])].some((name) => {
+  const scoredPlaces = [];
+  PLACES.forEach((place, index) => {
+    const id = `PLACE:${index}`;
+    const candidates = [place.name, ...(place.aliases || [])];
+    let bestScore = 0;
+    for (const name of candidates) {
       const nRaw = name.toLowerCase();
       const nNorm = normalizeQuery(name);
-      return (
-        nRaw.includes(qRaw) ||
-        nNorm.includes(qNorm) ||
-        (qTokens.length > 1 && qTokens.every((t) => nNorm.includes(t)))
-      );
-    });
-    return matches
-      ? [{ id: `PLACE:${index}`, name: place.name, ...place, type: "place" }]
-      : [];
+      let s = 0;
+      if (nRaw === qRaw || nNorm === qNorm) s = 100;
+      else if (nNorm.startsWith(qNorm) || nRaw.startsWith(qRaw)) s = 85;
+      else if (nNorm.split(" ").some((w) => w.startsWith(qNorm) || (qTokens.length === 1 && w.startsWith(qTokens[0])))) s = 75;
+      else if (qTokens.length > 1 && qTokens.every((t) => nNorm.includes(t) || nNorm.split(" ").some((w) => w.startsWith(t)))) s = 65;
+      else if (nNorm.includes(qNorm) || nRaw.includes(qRaw)) s = 50;
+
+      if (s > bestScore) bestScore = s;
+    }
+    if (bestScore > 0) {
+      scoredPlaces.push({ score: bestScore, stop: { id, name: place.name, ...place, type: "place" } });
+    }
   });
 
-  return [...results, ...places];
+  const allScored = [...scoredTransit, ...scoredPlaces];
+  allScored.sort((a, b) => b.score - a.score);
+  for (const item of allScored) {
+    if (!seen.has(item.stop.id)) {
+      results.push(item.stop);
+      seen.add(item.stop.id);
+    }
+  }
+
+  return results;
 }
 
 export function stopCoordinates(id) {

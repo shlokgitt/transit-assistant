@@ -10,7 +10,7 @@ import {
 } from "../../../../../../../route.js";
 
 type PlannerLeg = {
-  mode: "walk" | "bus" | "metro";
+  mode: "walk" | "bus" | "metro" | "auto";
   route?: string;
   fromId: string;
   toId: string;
@@ -69,6 +69,7 @@ function estimatedCarbonKg(legs: PlannerLeg[]) {
     walk: 0,
     metro: 0.04,
     bus: 0.08,
+    auto: 0.12,
   };
 
   return Number(
@@ -82,38 +83,109 @@ function estimatedCarbonKg(legs: PlannerLeg[]) {
   );
 }
 
+function formatRouteTitle(legs: PlannerLeg[]): string {
+  const metroLegs = legs.filter((l) => l.mode === "metro" && l.route);
+  const busLegs = legs.filter((l) => l.mode === "bus" && l.route);
+  const autoLegs = legs.filter((l) => l.mode === "auto");
+
+  const metroLines = [
+    ...new Set(metroLegs.map((l) => l.route!.replace(/^metro:/, ""))),
+  ];
+  const busRoutes = [
+    ...new Set(
+      busLegs.map((l) =>
+        l.route ? (l.route.startsWith("B") ? l.route : `B${l.route}`) : "Bus"
+      )
+    ),
+  ];
+
+  if (metroLines.length > 0 && busRoutes.length > 0) {
+    const metroPart = metroLines.join(" ➔ ");
+    return `${metroPart} + ${busRoutes[0]}`;
+  }
+
+  if (metroLines.length > 0) {
+    return `${metroLines.join(" ➔ ")} Metro`;
+  }
+
+  if (busRoutes.length > 0) {
+    return busRoutes.length === 1
+      ? `Bus ${busRoutes[0]}`
+      : `Bus ${busRoutes.join(" ➔ ")}`;
+  }
+
+  if (autoLegs.length > 0) {
+    return "Auto-rickshaw route";
+  }
+
+  return "Walking route";
+}
+
 function buildPlannerRoute(
   plannerResponse: PlannerResponse,
   id: string,
-  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO"
+  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO",
+  allowAuto: boolean = true
 ) {
   const firstLeg = plannerResponse.legs[0];
+  if (!firstLeg) return null;
+
+  // Enhance long access legs (> 1.5km from/to a place) with Auto if allowed
+  const processedLegs = plannerResponse.legs.map((leg, index) => {
+    const isFirstOrLast =
+      index === 0 || index === plannerResponse.legs.length - 1;
+    if (
+      allowAuto &&
+      isFirstOrLast &&
+      leg.mode === "walk" &&
+      (leg.distanceKm || 0) > 1.5
+    ) {
+      const distance = leg.distanceKm || 0;
+      const autoMinutes = Math.round(Math.max(5, distance * 2.5));
+      const autoFare = Math.round(30 + Math.max(0, distance - 1.5) * 10);
+      return {
+        ...leg,
+        mode: "auto" as const,
+        minutes: autoMinutes,
+        fare: autoFare,
+        instruction: `Take an auto from ${leg.from} to ${leg.to}`,
+      };
+    }
+    return leg;
+  });
+
   const routeModes = [
-    ...new Set(plannerResponse.legs.map((leg) => leg.mode)),
+    ...new Set(processedLegs.map((leg) => leg.mode)),
   ];
 
-  if (!firstLeg) return null;
+  const totalMinutes = Number(
+    processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
+  );
+  const totalFare = processedLegs.reduce(
+    (sum, leg) => sum + (leg.fare || 0),
+    0
+  );
 
   return {
     id,
     tag,
-    title: `${firstLeg.route || firstLeg.mode} route`,
-    summary: plannerResponse.legs.map((leg) => leg.mode).join(" ➔ "),
+    title: formatRouteTitle(processedLegs),
+    summary: processedLegs.map((leg) => leg.mode).join(" ➔ "),
     summaryModes: routeModes,
-    totalDurationMinutes: plannerResponse.totalMinutes,
+    totalDurationMinutes: totalMinutes,
     totalDistanceKm: plannerResponse.totalDistanceKm,
     distanceSource: plannerResponse.distanceSource,
-    totalFare: plannerResponse.totalFare ?? 0,
-    carbonEmissionsKg: estimatedCarbonKg(plannerResponse.legs),
+    totalFare,
+    carbonEmissionsKg: estimatedCarbonKg(processedLegs),
     caloriesBurned: 0,
     transfersCount: Math.max(0, routeModes.length - 1),
     crowdLevel: "unknown" as const,
     delayMinutes: Math.max(
       0,
-      ...plannerResponse.legs.map((leg) => leg.delayMin || 0)
+      ...processedLegs.map((leg) => leg.delayMin || 0)
     ),
     onTimeReliability: 100,
-    legs: plannerResponse.legs.map((leg, index) => {
+    legs: processedLegs.map((leg, index) => {
       const ids = leg.stopIds || [leg.fromId, leg.toId];
       const coordinates = coordinatesFor(ids);
 
@@ -126,7 +198,10 @@ function buildPlannerRoute(
         distanceKm: leg.distanceKm || 0,
         distanceSource: leg.distanceSource,
         fare: leg.fare ?? 0,
-        instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
+        instruction:
+          leg.mode === "auto"
+            ? `Take an auto from ${leg.from} to ${leg.to}`
+            : `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
         stopsCount: leg.stops,
         intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
@@ -134,7 +209,12 @@ function buildPlannerRoute(
           leg.mode === "metro"
             ? leg.route?.replace(/^metro:/, "")
             : undefined,
-        provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
+        provider:
+          leg.mode === "bus"
+            ? "GTFS bus data"
+            : leg.mode === "auto"
+            ? "Delhi NCR Auto Service"
+            : "GTFS transit data",
         crowdLevel: leg.crowd === "high" ? "high" : "medium",
         delayMinutes: leg.delayMin,
         coordinates:
@@ -192,7 +272,7 @@ export async function POST(request: NextRequest) {
     }
 
     const allowedModes = new Set(
-      body.preferences?.allowedModes || ["metro", "bus", "walk"]
+      body.preferences?.allowedModes || ["metro", "bus", "auto", "walk"]
     );
 
     if (allowedModes.size === 1 && allowedModes.has("walk")) {
@@ -433,7 +513,7 @@ export async function POST(request: NextRequest) {
               });
 
         if (!result || "error" in result) return null;
-        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag);
+        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag, allowedModes.has("auto"));
         if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
           return null;
         }
@@ -464,11 +544,7 @@ export async function POST(request: NextRequest) {
       .filter((alternative) => alternative.enabled)
       .map((alternative) => {
         if ("error" in alternative.result) return null;
-        const candidate = buildPlannerRoute(
-          alternative.result as PlannerResponse,
-          alternative.id,
-          alternative.tag
-        );
+        const candidate = buildPlannerRoute(alternative.result as PlannerResponse, alternative.id, alternative.tag, allowedModes.has("auto"));
         if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
           return null;
         }
