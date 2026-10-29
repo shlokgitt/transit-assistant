@@ -4,3 +4,8 @@
 [build]
   command = "npm install --prefix .. --omit=dev --no-audit --no-fund && npm run build"
   publish = ".next"
+
+# Next.js runtime: turns the .next output into Netlify Functions/Edge Functions
+# so pages and API routes are served. Without it the site returns 404.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
