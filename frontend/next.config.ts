@@ -20,27 +20,22 @@ import type { NextConfig } from "next";
 })();
 
 const securityHeaders = [
-  // Enforce HTTPS via Strict-Transport-Security (1 year, include subdomains)
   {
     key: "Strict-Transport-Security",
     value: "max-age=31536000; includeSubDomains; preload",
   },
-  // Prevent clickjacking
   {
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
   },
-  // Prevent MIME-sniffing
   {
     key: "X-Content-Type-Options",
     value: "nosniff",
   },
-  // Referrer policy
   {
     key: "Referrer-Policy",
     value: "strict-origin-when-cross-origin",
   },
-  // Permissions Policy
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(self)",
@@ -48,11 +43,17 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Turbopack / Webpack monorepo root pointing to repository root
   turbopack: {
     root: path.resolve(process.cwd(), ".."),
   },
+
+  // Ensure Vercel Serverless Functions trace and package graph.json & data files
+  outputFileTracingRoot: path.resolve(process.cwd(), ".."),
+  outputFileTracingIncludes: {
+    "/api/**/*": ["../graph.json", "../route.js", "../metro-fares.js", "../data/**/*"],
+  },
+
   async headers() {
     return [
       {
