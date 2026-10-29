@@ -45,6 +45,8 @@ interface ChatApiResponse {
 
 interface ChatPanelProps {
   onPlanRoute?: (from: string, to: string) => void;
+  initialPrompt?: string;
+  onInitialPromptHandled?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -263,7 +265,11 @@ const SUGGESTED_PROMPTS = [
 /*  Main ChatPanel component                                           */
 /* ------------------------------------------------------------------ */
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ onPlanRoute }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({
+  onPlanRoute,
+  initialPrompt,
+  onInitialPromptHandled,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -378,6 +384,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onPlanRoute }) => {
       void sendMessage(lastUserMsg.content);
     }
   };
+
+  useEffect(() => {
+    if (!initialPrompt) return;
+
+    setIsOpen(true);
+    void sendMessage(initialPrompt);
+    onInitialPromptHandled?.();
+  }, [initialPrompt, onInitialPromptHandled, sendMessage]);
 
   const handleViewRoute = (route: RouteResult) => {
     if (!onPlanRoute || !route.legs?.length) return;

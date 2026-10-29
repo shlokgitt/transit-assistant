@@ -64,6 +64,88 @@ function coordinatesFor(ids: string[]) {
     .filter((point): point is [number, number] => point !== null);
 }
 
+function estimatedCarbonKg(legs: PlannerLeg[]) {
+  const gramsPerKm: Record<PlannerLeg["mode"], number> = {
+    walk: 0,
+    metro: 0.04,
+    bus: 0.08,
+  };
+
+  return Number(
+    legs
+      .reduce(
+        (total, leg) =>
+          total + (leg.distanceKm || 0) * (gramsPerKm[leg.mode] || 0),
+        0
+      )
+      .toFixed(2)
+  );
+}
+
+function buildPlannerRoute(
+  plannerResponse: PlannerResponse,
+  id: string,
+  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO"
+) {
+  const firstLeg = plannerResponse.legs[0];
+  const routeModes = [
+    ...new Set(plannerResponse.legs.map((leg) => leg.mode)),
+  ];
+
+  if (!firstLeg) return null;
+
+  return {
+    id,
+    tag,
+    title: `${firstLeg.route || firstLeg.mode} route`,
+    summary: plannerResponse.legs.map((leg) => leg.mode).join(" ➔ "),
+    summaryModes: routeModes,
+    totalDurationMinutes: plannerResponse.totalMinutes,
+    totalDistanceKm: plannerResponse.totalDistanceKm,
+    distanceSource: plannerResponse.distanceSource,
+    totalFare: plannerResponse.totalFare ?? 0,
+    carbonEmissionsKg: estimatedCarbonKg(plannerResponse.legs),
+    caloriesBurned: 0,
+    transfersCount: Math.max(0, routeModes.length - 1),
+    crowdLevel: "unknown" as const,
+    delayMinutes: Math.max(
+      0,
+      ...plannerResponse.legs.map((leg) => leg.delayMin || 0)
+    ),
+    onTimeReliability: 100,
+    legs: plannerResponse.legs.map((leg, index) => {
+      const ids = leg.stopIds || [leg.fromId, leg.toId];
+      const coordinates = coordinatesFor(ids);
+
+      return {
+        legIndex: index,
+        mode: leg.mode,
+        from: leg.from,
+        to: leg.to,
+        durationMinutes: leg.minutes,
+        distanceKm: leg.distanceKm || 0,
+        distanceSource: leg.distanceSource,
+        fare: leg.fare ?? 0,
+        instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
+        stopsCount: leg.stops,
+        intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
+        routeNumber: leg.mode === "bus" ? leg.route : undefined,
+        lineName:
+          leg.mode === "metro"
+            ? leg.route?.replace(/^metro:/, "")
+            : undefined,
+        provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
+        crowdLevel: leg.crowd === "high" ? "high" : "medium",
+        delayMinutes: leg.delayMin,
+        coordinates:
+          coordinates.length >= 2
+            ? coordinates
+            : coordinatesFor([leg.fromId, leg.toId]),
+      };
+    }),
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RoutePlanRequest;
@@ -222,7 +304,7 @@ export async function POST(request: NextRequest) {
         totalDistanceKm: metroResponse.totalDistanceKm,
         distanceSource: metroResponse.distanceSource,
         totalFare: metroResponse.totalFare,
-        carbonEmissionsKg: 0,
+        carbonEmissionsKg: estimatedCarbonKg(metroResponse.legs),
         caloriesBurned: 0,
         transfersCount: Math.max(
           0,
@@ -321,56 +403,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const route = {
-      id: "route_real_planner",
-      tag: "RECOMMENDED" as const,
-      title: `${firstLeg.route || firstLeg.mode} route`,
-      summary: plannerResponse.legs.map((leg) => leg.mode).join(" ➔ "),
-      summaryModes: routeModes,
-      totalDurationMinutes: plannerResponse.totalMinutes,
-      totalDistanceKm: plannerResponse.totalDistanceKm,
-      distanceSource: plannerResponse.distanceSource,
-      totalFare: plannerResponse.totalFare ?? 0,
-      carbonEmissionsKg: 0,
-      caloriesBurned: 0,
-      transfersCount: Math.max(0, routeModes.length - 1),
-      crowdLevel: "unknown" as const,
-      delayMinutes: Math.max(
-        0,
-        ...plannerResponse.legs.map((leg) => leg.delayMin || 0)
-      ),
-      onTimeReliability: 100,
-      legs: plannerResponse.legs.map((leg, index) => {
-        const ids = leg.stopIds || [leg.fromId, leg.toId];
-        const coordinates = coordinatesFor(ids);
+    const variants = [
+      {
+        id: "route_real_planner",
+        tag: "RECOMMENDED" as const,
+        preference: requestedPriority,
+      },
+      {
+        id: "route_real_fastest",
+        tag: "FASTEST" as const,
+        preference: "fastest" as const,
+      },
+      {
+        id: "route_real_cheapest",
+        tag: "CHEAPEST" as const,
+        preference: "cheapest" as const,
+      },
+    ];
 
-        return {
-          legIndex: index,
-          mode: leg.mode,
-          from: leg.from,
-          to: leg.to,
-          durationMinutes: leg.minutes,
-          distanceKm: leg.distanceKm || 0,
-          distanceSource: leg.distanceSource,
-          fare: leg.fare ?? 0,
-          instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
-          stopsCount: leg.stops,
-          intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
-          routeNumber: leg.mode === "bus" ? leg.route : undefined,
-          lineName:
-            leg.mode === "metro"
-              ? leg.route?.replace(/^metro:/, "")
-              : undefined,
-          provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
-          crowdLevel: leg.crowd === "high" ? "high" : "medium",
-          delayMinutes: leg.delayMin,
-          coordinates:
-            coordinates.length >= 2
-              ? coordinates
-              : coordinatesFor([leg.fromId, leg.toId]),
-        };
-      }),
-    };
+    const routes = variants
+      .map((variant) => {
+        const result =
+          variant.preference === requestedPriority
+            ? plannerResponse
+            : planByName(body.origin.query, body.destination.query, {
+                preference: variant.preference,
+                period: plannerPeriod(body.preferences?.period),
+                avoidCrowded: body.preferences?.avoidCrowded ?? false,
+              });
+
+        if (!result || "error" in result) return null;
+        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag);
+        if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
+          return null;
+        }
+        return candidate;
+      })
+      .filter((route): route is NonNullable<typeof route> => route !== null)
+
+    const explicitAlternatives = [
+      {
+        id: "route_real_metro",
+        tag: "FASTEST" as const,
+        enabled: allowedModes.has("metro"),
+        result: planMetroByName(
+          body.origin.query,
+          body.destination.query
+        ),
+      },
+      {
+        id: "route_real_walking",
+        tag: "ECO" as const,
+        enabled: allowedModes.has("walk"),
+        result: planWalkingByName(
+          body.origin.query,
+          body.destination.query
+        ),
+      },
+    ]
+      .filter((alternative) => alternative.enabled)
+      .map((alternative) => {
+        if ("error" in alternative.result) return null;
+        const candidate = buildPlannerRoute(
+          alternative.result as PlannerResponse,
+          alternative.id,
+          alternative.tag
+        );
+        if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
+          return null;
+        }
+        return candidate;
+      })
+      .filter((route): route is NonNullable<typeof route> => route !== null);
+
+    const routeIds = new Set(routes.map((route) => route.id));
+    for (const alternative of explicitAlternatives) {
+      if (!routeIds.has(alternative.id)) {
+        routes.push(alternative);
+      }
+    }
+
+    const recommendedRoute =
+      routes.find((route) => route.tag === "RECOMMENDED") || routes[0];
+    if (!recommendedRoute) {
+      return NextResponse.json(
+        { success: false, error: "No route is available using the selected modes" },
+        { status: 422 }
+      );
+    }
+
+    const route = recommendedRoute;
 
     return NextResponse.json(
       {
@@ -389,12 +511,14 @@ export async function POST(request: NextRequest) {
           lng: destinationStop.lon,
         },
         summary: {
-          totalRoutes: 1,
+          totalRoutes: routes.length,
           recommendedRouteId: route.id,
-          fastestRouteId: route.id,
-          cheapestRouteId: route.id,
+          fastestRouteId:
+            routes.find((candidate) => candidate.tag === "FASTEST")?.id || route.id,
+          cheapestRouteId:
+            routes.find((candidate) => candidate.tag === "CHEAPEST")?.id || route.id,
         },
-        routes: [route],
+        routes,
       },
       { status: 200 }
     );

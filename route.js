@@ -57,6 +57,10 @@ const FARE_PRIORITY = 1000;
 const UNKNOWN_FARE_PENALTY = 1_000_000_000;
 const DISTANCE_BUCKET_KM = 0.1;
 const MAX_FARE_DISTANCE_KM = 12.1;
+// Walking routes do not have pedestrian geometry in the GTFS graph. Apply a
+// conservative detour factor instead of presenting the straight-line distance
+// as the distance a person will walk.
+const WALKING_DETOUR_FACTOR = 1.25;
 
 class Heap {
   constructor() {
@@ -280,7 +284,7 @@ export function planWalkingByName(fromName, toName) {
     return { error: "No walkable route found between those stops" };
   }
 
-  const distance = r1(best.distanceKm);
+  const distance = r1(best.distanceKm * WALKING_DETOUR_FACTOR);
   const minutes = r1(distance * 12);
 
   return {

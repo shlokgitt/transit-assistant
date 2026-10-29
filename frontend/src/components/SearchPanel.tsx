@@ -75,12 +75,6 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     color: "#f59e0b",
   },
   {
-    id: "cab",
-    label: "Cab",
-    icon: <ModeIconBadge emoji="🚖" color="#a78bfa" glow="rgba(167,139,250,0.5)" />,
-    color: "#a78bfa",
-  },
-  {
     id: "walk",
     label: "Walk",
     icon: <ModeIconBadge emoji="🚶" color="#06b6d4" glow="rgba(6,182,212,0.5)" />,

@@ -1,105 +1,188 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Header } from "@/components/Header";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Bookmark,
+  Bot,
+  ChevronRight,
+  Clock3,
+  Compass,
+  GitCompareArrows,
+  Map,
+  Menu,
+  RefreshCw,
+  Route as RouteIcon,
+  Save,
+  Settings2,
+  Sparkles,
+  TrainFront,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { SearchPanel } from "@/components/SearchPanel";
 import { RouteCard } from "@/components/RouteCard";
 import { ItineraryView } from "@/components/ItineraryView";
 import { TransitMap } from "@/components/TransitMap";
+import { ChatPanel } from "@/components/ChatPanel";
 import { ApiInspectorModal } from "@/components/ApiInspectorModal";
 import { LiveAlertsModal } from "@/components/LiveAlertsModal";
-import { ChatPanel } from "@/components/ChatPanel";
-import {
-  TransitMode, RoutingPriority, RoutePlanRequest,
-  RoutePlanResponse,
-} from "@/types/transit";
 import { CITIES } from "@/lib/transitData";
 import {
-  ListFilter, Navigation,
-} from "lucide-react";
+  RoutePlanRequest,
+  RoutePlanResponse,
+  RoutingPriority,
+  TransitMode,
+} from "@/types/transit";
 
-const FEATURE_CARDS = [
-  {
-    icon: "📡",
-    iconBg: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(6,182,212,0.2))",
-    iconGlow: "0 0 20px rgba(59,130,246,0.4)",
-    title: "Live Crowd Insights",
-  desc: "Uses the route planner's real delay and crowd metadata for Delhi NCR journey planning.",
-  tag: "GTFS",
-  tagColor: "#34d399",
-  },
-  {
-    icon: "🗺️",
-    iconBg: "linear-gradient(135deg, rgba(168,85,247,0.3), rgba(99,102,241,0.2))",
-    iconGlow: "0 0 20px rgba(168,85,247,0.4)",
-    title: "Multi-Modal Routing",
-  desc: "Combines Metro, Bus, Auto, and Walking into one real route-planning flow.",
-    tag: "LIVE",
-    tagColor: "#34d399",
-  },
-  {
-    icon: "🌿",
-    iconBg: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(74,222,128,0.2))",
-    iconGlow: "0 0 20px rgba(16,185,129,0.4)",
-    title: "Low-Carbon Travel",
-  desc: "Tracks per-leg emissions using the computed route result instead of static demo assumptions.",
-  tag: "REAL",
-  tagColor: "#34d399",
-  },
-  {
-    icon: "⚡",
-    iconBg: "linear-gradient(135deg, rgba(245,158,11,0.3), rgba(251,191,36,0.2))",
-    iconGlow: "0 0 20px rgba(245,158,11,0.4)",
-  title: "Route Accuracy",
-  desc: "Built from Delhi GTFS data and the real route planner, not static mock fares.",
-  tag: "REAL DATA",
-  tagColor: "#34d399",
-  },
+type Screen = "home" | "results" | "chat" | "disruptions" | "saved";
+type SavedJourney = {
+  id: string;
+  name: string;
+  origin: string;
+  destination: string;
+  priority: RoutingPriority;
+  createdAt: string;
+};
+
+const STORAGE_KEY = "transitsaathi-saved-journeys";
+
+const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
+  { id: "home", label: "Plan a trip", icon: <Compass size={16} /> },
+  { id: "results", label: "Results", icon: <GitCompareArrows size={16} /> },
+  { id: "chat", label: "Travel chat", icon: <Bot size={16} /> },
+  { id: "disruptions", label: "Simulator", icon: <TriangleAlert size={16} /> },
+  { id: "saved", label: "Saved journeys", icon: <Bookmark size={16} /> },
 ];
 
-const STATS = [
-  { value: "1", label: "City Covered" },
-  { value: "6", label: "Transport Modes" },
-  { value: "48+", label: "Metro Stations" },
-  { value: "500+", label: "Bus Routes" },
-  { value: "< 300ms", label: "Route Computation" },
-  { value: "GTFS", label: "Open Data Standard" },
-];
+function SlidingNav({
+  activeScreen,
+  onChange,
+}: {
+  activeScreen: Screen;
+  onChange: (screen: Screen) => void;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const tabRefs = useRef<Record<Screen, HTMLButtonElement | null>>({
+    home: null,
+    results: null,
+    chat: null,
+    disruptions: null,
+    saved: null,
+  });
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    const pill = pillRef.current;
+    const tab = tabRefs.current[activeScreen];
+    if (!bar || !pill || !tab) return;
+
+    const moveToActiveTab = (animate: boolean) => {
+      if (!animate) {
+        const previousTransition = pill.style.transition;
+        pill.style.transition = "none";
+        pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+        pill.style.width = `${tab.offsetWidth}px`;
+        void pill.offsetWidth;
+        pill.style.transition = previousTransition;
+        return;
+      }
+
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width = `${tab.offsetWidth}px`;
+    };
+
+    moveToActiveTab(true);
+    const resizeObserver = new ResizeObserver(() => moveToActiveTab(false));
+    resizeObserver.observe(bar);
+    return () => resizeObserver.disconnect();
+  }, [activeScreen]);
+
+  return (
+    <div ref={barRef} className="t-tabs t-nav-tabs" role="tablist" aria-label="Main navigation">
+      <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
+      {NAV_ITEMS.map((item) => (
+        <button
+          key={item.id}
+          ref={(element) => {
+            tabRefs.current[item.id] = element;
+          }}
+          className="t-tab"
+          role="tab"
+          aria-selected={activeScreen === item.id}
+          onClick={() => onChange(item.id)}
+        >
+          {item.icon}
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function Home() {
-  const [selectedCity, setSelectedCity] = useState<string>("delhi");
-  const [origin, setOrigin] = useState<string>("Karol Bagh");
-  const [destination, setDestination] = useState<string>("Gandhi Darshan");
-  const [selectedModes, setSelectedModes] = useState<TransitMode[]>(["metro", "bus", "cab", "auto", "walk"]);
+  const [screen, setScreen] = useState<Screen>("home");
+  const [selectedCity, setSelectedCity] = useState("delhi");
+  const [origin, setOrigin] = useState("Karol Bagh");
+  const [destination, setDestination] = useState("Gandhi Darshan");
+  const [selectedModes, setSelectedModes] = useState<TransitMode[]>([
+    "metro",
+    "bus",
+    "auto",
+    "walk",
+  ]);
   const [priority, setPriority] = useState<RoutingPriority>("fastest");
-  const [avoidCrowded, setAvoidCrowded] = useState<boolean>(false);
+  const [avoidCrowded, setAvoidCrowded] = useState(false);
   const [period, setPeriod] = useState<"peak" | "offpeak">("peak");
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [routeResponse, setRouteResponse] = useState<RoutePlanResponse | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<RoutePlanRequest | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"routes" | "itinerary">("routes");
   const [selectedLegIndex, setSelectedLegIndex] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"routes" | "itinerary">("routes");
+  const [isApiInspectorOpen, setIsApiInspectorOpen] = useState(false);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
+  const [delayMinutes, setDelayMinutes] = useState(10);
+  const [scenarioApplied, setScenarioApplied] = useState(false);
+  const [chatPrompt, setChatPrompt] = useState<string | undefined>();
 
-  const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [simulationStep, setSimulationStep] = useState<number>(0);
+  const city = CITIES[selectedCity] || CITIES.delhi;
+  const selectedRoute = useMemo(
+    () =>
+      routeResponse?.routes.find((route) => route.id === selectedRouteId) ||
+      routeResponse?.routes[0] ||
+      null,
+    [routeResponse, selectedRouteId]
+  );
 
-  const [isApiInspectorOpen, setIsApiInspectorOpen] = useState<boolean>(false);
-  const [isAlertsOpen, setIsAlertsOpen] = useState<boolean>(false);
-  const currentCity = CITIES[selectedCity] || CITIES["delhi"];
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) setSavedJourneys(JSON.parse(stored) as SavedJourney[]);
+    } catch {
+      setSavedJourneys([]);
+    }
+  }, []);
+
+  const persistSavedJourneys = (next: SavedJourney[]) => {
+    setSavedJourneys(next);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
 
   const handlePlanRoute = useCallback(async () => {
-    setIsLoading(true);
-    setIsSimulating(false);
-    setSimulationStep(0);
-    setRouteError(null);
+    if (!origin.trim() || !destination.trim() || origin.trim() === destination.trim()) {
+      setRouteError("Enter two different places to plan a journey.");
+      return;
+    }
 
+    setIsLoading(true);
+    setRouteError(null);
     const requestPayload: RoutePlanRequest = {
       city: selectedCity,
-      origin: { query: origin },
-      destination: { query: destination },
+      origin: { query: origin.trim() },
+      destination: { query: destination.trim() },
       preferences: {
         routingPriority: priority,
         allowedModes: selectedModes,
@@ -111,344 +194,179 @@ export default function Home() {
     setLastRequest(requestPayload);
 
     try {
-      const res = await fetch("/api/v1/routes/plan", {
+      const response = await fetch("/api/v1/routes/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestPayload),
       });
-      const data = (await res.json()) as RoutePlanResponse & { error?: string };
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Route planning failed");
-      }
+      const data = (await response.json()) as RoutePlanResponse;
+      if (!response.ok || !data.success) throw new Error(data.error || "Route planning failed.");
       setRouteResponse(data);
-      if (data.routes?.length > 0) setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0].id);
-    } catch (err) {
+      setSelectedRouteId(data.summary.recommendedRouteId || data.routes[0]?.id || null);
+      setActiveTab("routes");
+      setScreen("results");
+    } catch (error) {
       setRouteResponse(null);
       setSelectedRouteId(null);
-      setRouteError(err instanceof Error ? err.message : "Route planning failed");
+      setRouteError(error instanceof Error ? error.message : "Route planning failed.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [
-    avoidCrowded,
-    destination,
-    origin,
-    period,
-    priority,
-    selectedCity,
-    selectedModes,
-  ]);
+  }, [avoidCrowded, destination, origin, period, priority, selectedCity, selectedModes]);
 
-  useEffect(() => { void handlePlanRoute(); }, [handlePlanRoute]);
-
-  const handleToggleMode = (mode: TransitMode) => {
-    setSelectedModes((prev) => {
-      if (prev.includes(mode)) {
-        if (prev.length === 1) return prev;
-        return prev.filter((m) => m !== mode);
-      }
-      return [...prev, mode];
-    });
+  const openSavedJourney = (journey: SavedJourney) => {
+    setOrigin(journey.origin);
+    setDestination(journey.destination);
+    setPriority(journey.priority);
+    setScreen("home");
   };
 
-  const handleSwap = () => {
-    const temp = origin;
-    setOrigin(destination);
-    setDestination(temp);
+  const saveCurrentJourney = () => {
+    if (!origin || !destination) return;
+    const journey: SavedJourney = {
+      id: crypto.randomUUID(),
+      name: `${origin} to ${destination}`,
+      origin,
+      destination,
+      priority,
+      createdAt: new Date().toISOString(),
+    };
+    persistSavedJourneys([journey, ...savedJourneys]);
   };
 
-  const handleSelectPreset = (from: string, to: string) => {
-    setOrigin(from);
-    setDestination(to);
-  };
-
-  const handleCityChange = (cityId: string) => {
-    setSelectedCity(cityId);
-    const c = CITIES[cityId] || CITIES["delhi"];
-    if (c.popularPresets.length > 0) {
-      setOrigin(c.popularPresets[0].from);
-      setDestination(c.popularPresets[0].to);
-    }
-  };
-
-  const selectedRoute =
-    routeResponse?.routes.find((r) => r.id === selectedRouteId) ||
-    routeResponse?.routes[0] ||
-    null;
-
-  useEffect(() => {
-    if (!isSimulating || !selectedRoute) return;
-    const timer = setInterval(() => {
-      setSimulationStep((prev) => {
-        if (prev >= selectedRoute.legs.length - 1) { setIsSimulating(false); return 0; }
-        return prev + 1;
-      });
-    }, 3500);
-    return () => clearInterval(timer);
-  }, [isSimulating, selectedRoute]);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100vw", overflow: "hidden", backgroundColor: "var(--bg-dark)" }}>
-      {/* Top Header */}
-      <Header
-        selectedCity={selectedCity}
-        onSelectCity={handleCityChange}
-        onOpenApiInspector={() => setIsApiInspectorOpen(true)}
-        onOpenAlerts={() => setIsAlertsOpen(true)}
-        period={period}
-        onTogglePeriod={() => setPeriod((p) => (p === "peak" ? "offpeak" : "peak"))}
-      />
-
-      {/* Stats Ribbon */}
-      <div className="stats-ribbon">
-        {STATS.map((s, i) => (
-          <div key={i} className="stats-ribbon-item">
-            <span>{s.value}</span>
-            <span>{s.label}</span>
+  const renderResults = () => (
+    <div className="journey-workspace">
+      <section className="results-column">
+        <div className="page-heading compact-heading">
+          <div>
+            <p className="eyebrow">Route results</p>
+            <h2>{origin} <span>to</span> {destination}</h2>
+            <p className="muted-copy">Compare available journeys from the live route planner.</p>
           </div>
-        ))}
-        <div className="demo-banner" style={{ marginLeft: "auto" }}>
-          ✓ Real route values from planner
+          <button className="quiet-button" onClick={() => setScreen("home")}>
+            <Settings2 size={15} /> Edit search
+          </button>
         </div>
-      </div>
-
-      {/* Main Split Layout */}
-      <div className="app-layout" style={{ flex: 1, minHeight: 0 }}>
-        {/* Left Side: Search + Cards */}
-        <div style={{
-          display: "flex", flexDirection: "column", height: "100%",
-          background: "linear-gradient(180deg, rgba(9,13,26,0.98) 0%, rgba(7,10,19,0.99) 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-          overflow: "hidden", zIndex: 20,
-        }}>
-          {/* Search Panel */}
-          <SearchPanel
-            city={currentCity}
-            origin={origin}
-            destination={destination}
-            onChangeOrigin={setOrigin}
-            onChangeDestination={setDestination}
-            onSwap={handleSwap}
-            selectedModes={selectedModes}
-            onToggleMode={handleToggleMode}
-            priority={priority}
-            onChangePriority={setPriority}
-            avoidCrowded={avoidCrowded}
-            onToggleAvoidCrowded={() => setAvoidCrowded((a) => !a)}
-            onSearch={handlePlanRoute}
-            isLoading={isLoading}
-            onSelectPreset={handleSelectPreset}
-          />
-
-          {/* Tab Bar */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "8px 14px",
-            background: "rgba(7,10,19,0.8)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ display: "flex", gap: "4px" }}>
-              {[
-                { id: "routes" as const, label: `Options (${routeResponse?.routes.length || 0})`, icon: <ListFilter size={12} /> },
-                { id: "itinerary" as const, label: "Turn Navigation", icon: <Navigation size={12} />, disabled: !selectedRoute },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                  disabled={tab.disabled}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "5px",
-                    padding: "5px 10px", borderRadius: "7px", fontSize: "0.73rem", fontWeight: 600,
-                    cursor: tab.disabled ? "not-allowed" : "pointer", border: "none",
-                    background: activeTab === tab.id ? "rgba(59,130,246,0.2)" : "transparent",
-                    color: activeTab === tab.id ? "#60a5fa" : "#4b5a6e",
-                    opacity: tab.disabled ? 0.4 : 1,
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {tab.icon}
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#60a5fa" }}>
-              LIVE BACKEND
-            </span>
-          </div>
-
-          {/* Scrollable Cards / Itinerary */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            {activeTab === "routes" ? (
-              <>
-                {isLoading ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {[1,2,3].map(i => (
-                      <div key={i} style={{
-                        height: "130px", borderRadius: "14px",
-                        background: "linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.07), rgba(255,255,255,0.04))",
-                        backgroundSize: "200%",
-                        animation: "shimmerLoad 1.5s ease-in-out infinite",
-                      }}>
-                        <style>{`@keyframes shimmerLoad { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
-                      </div>
-                    ))}
-                  </div>
-                ) : routeError ? (
-                  <div style={{ textAlign: "center", padding: "40px 20px", color: "#fca5a5" }}>
-                    <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⚠️</div>
-                    <p style={{ fontSize: "0.85rem", fontWeight: 600 }}>Route planning failed</p>
-                    <p style={{ fontSize: "0.75rem", marginTop: "4px" }}>{routeError}</p>
-                  </div>
-                ) : routeResponse && routeResponse.routes.length > 0 ? (
-                  routeResponse.routes.map((r) => (
-                    <RouteCard
-                      key={r.id}
-                      route={r}
-                      isSelected={r.id === selectedRouteId}
-                      onSelect={() => {
-                        setSelectedRouteId(r.id);
-                        setSelectedLegIndex(null);
-                        setIsSimulating(false);
-                      }}
-                    />
-                  ))
-                ) : (
-                  <div style={{ textAlign: "center", padding: "40px 20px", color: "#4b5a6e" }}>
-                    <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🔍</div>
-                    <p style={{ fontSize: "0.85rem", fontWeight: 600 }}>No routes found</p>
-                    <p style={{ fontSize: "0.75rem", marginTop: "4px" }}>Try enabling more transport modes</p>
-                  </div>
-                )}
-              </>
-            ) : (
-              selectedRoute && (
-                <ItineraryView
-                  route={selectedRoute}
-                  simulationStep={simulationStep}
-                  isSimulating={isSimulating}
-                  onStartSimulation={() => setIsSimulating(true)}
-                  onResetSimulation={() => { setIsSimulating(false); setSimulationStep(0); }}
-                />
-              )
+        <div className="result-toolbar">
+          <span>{routeResponse?.routes.length || 0} option{routeResponse?.routes.length === 1 ? "" : "s"}</span>
+        </div>
+        {isLoading ? (
+          <div className="empty-panel"><RefreshCw className="spin" size={22} /><p>Finding practical routes…</p></div>
+        ) : routeError ? (
+          <div className="empty-panel error-panel"><TriangleAlert size={24} /><p>{routeError}</p><button className="text-button" onClick={() => setScreen("home")}>Change search</button></div>
+        ) : routeResponse?.routes.length ? (
+          <div className="route-list">
+            {routeResponse.routes.map((route) => (
+              <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
+            ))}
+            {selectedRoute && (
+              <button className="save-journey-button" onClick={saveCurrentJourney}><Save size={16} /> Save this journey</button>
             )}
           </div>
-        </div>
-
-        {/* Right Side: Interactive Leaflet Map */}
-        <div style={{ height: "100%", width: "100%", position: "relative" }}>
-          <TransitMap
-            city={currentCity}
-            route={selectedRoute}
-            selectedLegIndex={selectedLegIndex}
-            simulationStep={simulationStep}
-            isSimulating={isSimulating}
-          />
-        </div>
-      </div>
-
-      {/* Feature Cards Section */}
-      <div className="features-section">
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          {/* Section Header */}
-          <div style={{ textAlign: "center", marginBottom: "40px" }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: "6px",
-              padding: "4px 14px", borderRadius: "999px",
-              background: "rgba(59,130,246,0.1)",
-              border: "1px solid rgba(59,130,246,0.25)",
-              fontSize: "0.7rem", fontWeight: 700, color: "#60a5fa",
-              textTransform: "uppercase", letterSpacing: "0.08em",
-              marginBottom: "14px",
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#60a5fa", boxShadow: "0 0 8px #60a5fa" }} />
-              Platform Capabilities
+        ) : (
+          <div className="empty-panel"><RouteIcon size={24} /><p>Plan a journey to compare route options.</p></div>
+        )}
+      </section>
+      <section className="map-column">
+        <TransitMap city={city} route={selectedRoute} selectedLegIndex={selectedLegIndex} simulationStep={0} isSimulating={false} />
+        {selectedRoute && (
+          <div className="map-detail-card">
+            <div className="segmented-control">
+              <button className={activeTab === "routes" ? "active" : ""} onClick={() => setActiveTab("routes")}>Overview</button>
+              <button className={activeTab === "itinerary" ? "active" : ""} onClick={() => setActiveTab("itinerary")}>Steps</button>
             </div>
-            <h2 style={{
-              fontSize: "1.8rem", fontWeight: 900, letterSpacing: "-0.03em",
-              background: "linear-gradient(135deg, #fff 30%, #93c5fd 70%, #67e8f9 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-              marginBottom: "10px",
-            }}>
-              Smart Transit. Smarter City.
-            </h2>
-            <p style={{ fontSize: "0.88rem", color: "#4b5a6e", maxWidth: "480px", margin: "0 auto", lineHeight: 1.6 }}>
-              Built for the next generation of urban mobility — multimodal, sustainable, and AI-assisted.
-            </p>
+            {activeTab === "itinerary" ? <ItineraryView route={selectedRoute} simulationStep={0} isSimulating={false} onStartSimulation={() => undefined} onResetSimulation={() => undefined} /> : <div className="map-summary"><strong>{selectedRoute.totalDurationMinutes} min</strong><span>Estimated trip · ₹{selectedRoute.totalFare ?? "—"} · {selectedRoute.transfersCount} transfers</span></div>}
           </div>
+        )}
+      </section>
+    </div>
+  );
 
-          <div className="features-grid">
-            {FEATURE_CARDS.map((card, i) => (
-              <div key={i} className="feature-card">
-                {/* Background glow blob */}
-                <div style={{
-                  position: "absolute", top: "-30px", right: "-30px",
-                  width: "120px", height: "120px", borderRadius: "50%",
-                  background: card.iconBg, filter: "blur(30px)", opacity: 0.5,
-                  pointerEvents: "none",
-                }} />
+  const renderHome = () => (
+    <div className="home-grid">
+      <section className="hero-panel">
+        <div className="page-heading">
+          <p className="eyebrow">Delhi NCR transit planner</p>
+          <h2>Make the next journey feel simple.</h2>
+          <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
+        </div>
+        <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={setPriority} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={handlePlanRoute} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} />
+      </section>
+      <section className="home-aside">
+        <div className="aside-card route-note">
+          <div className="aside-icon"><TrainFront size={18} /></div>
+          <p className="eyebrow">Built for real trips</p>
+          <h3>Start with a place, not a station code.</h3>
+          <p className="muted-copy">Search by landmark, metro station, or bus stop. The planner will explain the journey in plain language.</p>
+        </div>
+        <div className="aside-card">
+          <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent journeys</strong></div>
+          {savedJourneys.slice(0, 3).map((journey) => <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}><span>{journey.origin} → {journey.destination}</span><ChevronRight size={14} /></button>)}
+          {!savedJourneys.length && <p className="muted-copy">Saved journeys will appear here after your first trip.</p>}
+        </div>
+      </section>
+    </div>
+  );
 
-                {/* Icon */}
-                <div className="feature-icon-wrap" style={{ background: card.iconBg, boxShadow: card.iconGlow }}>
-                  <span style={{ fontSize: "22px" }}>{card.icon}</span>
-                </div>
+  const renderChat = () => (
+    <div className="simple-screen">
+      <div className="page-heading">
+        <p className="eyebrow">Travel chat</p>
+        <h2>Ask for a better way there.</h2>
+        <p className="hero-copy">Tell the assistant what matters—price, walking, crowding, or an explanation in Hindi.</p>
+      </div>
+      <div className="chat-screen-card">
+        <div className="chat-screen-intro"><div className="aside-icon"><Bot size={20} /></div><div><h3>TransitSaathi assistant</h3><p className="muted-copy">Route answers are grounded in the planner, not invented by the assistant.</p></div></div>
+        <div className="prompt-row"><span>Try asking</span>{["Find the cheapest route", "Avoid crowded stations", "Explain this in Hindi"].map((prompt) => <button key={prompt} onClick={() => { setChatPrompt(prompt); setScreen("chat"); }}>“{prompt}”</button>)}</div>
+      </div>
+      <ChatPanel initialPrompt={chatPrompt} onInitialPromptHandled={() => setChatPrompt(undefined)} onPlanRoute={(from, to) => { setOrigin(from); setDestination(to); void handlePlanRoute(); }} />
+    </div>
+  );
 
-                {/* Tag */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{
-                    fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase",
-                    letterSpacing: "0.08em", padding: "2px 7px", borderRadius: "999px",
-                    color: card.tagColor,
-                    background: `${card.tagColor}18`,
-                    border: `1px solid ${card.tagColor}40`,
-                  }}>
-                    {card.tag}
-                  </span>
-                </div>
-
-                <h3>{card.title}</h3>
-                <p>{card.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom CTA */}
-          <div style={{
-            textAlign: "center", marginTop: "48px",
-            padding: "28px", borderRadius: "20px",
-            background: "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(6,182,212,0.06))",
-            border: "1px solid rgba(59,130,246,0.15)",
-          }}>
-            <p style={{ fontSize: "0.78rem", color: "#4b5a6e", marginBottom: "6px" }}>
-              🚆 TransitPulse v1.0 • Real Delhi NCR route planning
-            </p>
-            <p style={{ fontSize: "0.88rem", color: "#94a3b8", fontWeight: 500 }}>
-              Multimodal Urban Route Assistant • Delhi NCR • GTFS Open Data
-            </p>
-          </div>
+  const renderDisruptions = () => (
+    <div className="simple-screen">
+      <div className="page-heading"><p className="eyebrow">Scenario lab</p><h2>See how a delay changes the journey.</h2><p className="hero-copy">This is a simulation. It does not represent live disruptions.</p></div>
+      <div className="simulator-grid">
+        <div className="aside-card">
+          <div className="aside-card-heading"><TriangleAlert size={16} /><strong>Simulated disruption</strong></div>
+          <label className="field-label">Service</label><select className="select-field"><option>Metro · Blue Line</option><option>Bus · Route 534</option></select>
+          <label className="field-label">Added delay: {delayMinutes} minutes</label><input className="range-field" type="range" min="0" max="30" step="5" value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} />
+          <div className="range-labels"><span>On time</span><span>30 min</span></div>
+          <button className="primary-button" onClick={() => setScenarioApplied(true)}><Sparkles size={16} /> Apply scenario</button>
+          <button className="quiet-button full-width" onClick={() => { setDelayMinutes(0); setScenarioApplied(false); }}>Reset</button>
+        </div>
+        <div className="aside-card comparison-card">
+          <p className="eyebrow">Before / after</p>
+          {selectedRoute ? <><div className="comparison-row"><span>Baseline</span><strong>{selectedRoute.totalDurationMinutes} min</strong></div><div className="comparison-row"><span>Simulated estimate</span><strong>{selectedRoute.totalDurationMinutes + (scenarioApplied ? delayMinutes : 0)} min</strong></div><p className="muted-copy">{scenarioApplied ? `The selected service adds ${delayMinutes} minutes in this demo scenario. Re-run the search to compare alternatives.` : "Apply a scenario to see the affected estimate."}</p></> : <p className="muted-copy">Plan a route first, then return here to test a disruption.</p>}
         </div>
       </div>
-
-      {/* Modals */}
-      <ApiInspectorModal
-        isOpen={isApiInspectorOpen}
-        onClose={() => setIsApiInspectorOpen(false)}
-        lastRequest={lastRequest}
-        lastResponse={routeResponse}
-      />
-      {/* AI Chat Assistant */}
-      <ChatPanel
-        onPlanRoute={(from, to) => {
-          setOrigin(from);
-          setDestination(to);
-          void handlePlanRoute();
-        }}
-      />
-
-      <LiveAlertsModal
-        isOpen={isAlertsOpen}
-        onClose={() => setIsAlertsOpen(false)}
-        cityId={selectedCity}
-      />
     </div>
+  );
+
+  const renderSaved = () => (
+    <div className="simple-screen">
+      <div className="page-heading"><p className="eyebrow">Saved journeys</p><h2>Your everyday routes, close at hand.</h2><p className="hero-copy">These journeys are saved only in this browser. Recalculate before travelling.</p></div>
+      {!savedJourneys.length ? <div className="empty-panel large-empty"><Bookmark size={30} /><h3>No saved journeys yet</h3><p>Save a route after planning it and it will appear here.</p><button className="primary-button" onClick={() => setScreen("home")}>Plan a journey</button></div> : <div className="saved-grid">{savedJourneys.map((journey) => <article className="saved-card" key={journey.id}><div><p className="eyebrow">{journey.name}</p><h3>{journey.origin} <span>→</span> {journey.destination}</h3><p className="muted-copy">Priority: {journey.priority}</p></div><div className="saved-actions"><button className="quiet-button" onClick={() => openSavedJourney(journey)}>Recalculate</button><button className="icon-button danger" aria-label="Remove journey" onClick={() => persistSavedJourneys(savedJourneys.filter((item) => item.id !== journey.id))}><X size={15} /></button></div></article>)}</div>}
+    </div>
+  );
+
+  return (
+    <main className="sa-app">
+      <header className="sa-header">
+        <button className="brand" onClick={() => setScreen("home")}><span className="brand-mark"><RouteIcon size={18} /></span><span><strong>TransitSaathi</strong><small>Delhi NCR journeys</small></span></button>
+        <nav className="desktop-nav"><SlidingNav activeScreen={screen} onChange={setScreen} /></nav>
+        <div className="header-actions"><button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button><button className="header-save" onClick={() => setScreen("saved")}><Bookmark size={15} /> {savedJourneys.length}</button></div>
+      </header>
+      <div className="mobile-nav">{NAV_ITEMS.map((item) => <button key={item.id} className={screen === item.id ? "active" : ""} onClick={() => setScreen(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
+      <div className="sa-content">
+        {screen === "home" && renderHome()}
+        {screen === "results" && renderResults()}
+        {screen === "chat" && renderChat()}
+        {screen === "disruptions" && renderDisruptions()}
+        {screen === "saved" && renderSaved()}
+      </div>
+      <ApiInspectorModal isOpen={isApiInspectorOpen} onClose={() => setIsApiInspectorOpen(false)} lastRequest={lastRequest} lastResponse={routeResponse} />
+      <LiveAlertsModal isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} cityId={selectedCity} />
+    </main>
   );
 }

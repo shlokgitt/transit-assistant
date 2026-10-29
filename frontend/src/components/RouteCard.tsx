@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Clock, IndianRupee, Navigation, Users, Leaf, ChevronRight, Zap, Star } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Clock, Navigation, Users, Leaf, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { RouteOption, TransitMode } from "@/types/transit";
 
 interface RouteCardProps {
@@ -42,24 +42,72 @@ const getCrowdConfig = (level: string) => {
 };
 
 export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelect }) => {
+  const [expandedLegs, setExpandedLegs] = useState<Record<number, boolean>>({});
+  const tiltRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const tagCfg = TAG_CONFIG[route.tag] || { emoji: "🔵", label: route.tag };
   const crowd = getCrowdConfig(route.crowdLevel);
   const tagClass = `tag-${route.tag.toLowerCase().replace("_", "-")}`;
 
+  const resetTilt = () => {
+    const tilt = tiltRef.current;
+    const card = cardRef.current;
+    if (!tilt || !card) return;
+    tilt.classList.remove("is-hover");
+    card.classList.remove("is-tilting");
+    card.style.setProperty("--tilt-rx", "0deg");
+    card.style.setProperty("--tilt-ry", "0deg");
+  };
+
+  const trackTilt = (event: React.PointerEvent<HTMLDivElement>) => {
+    const tilt = tiltRef.current;
+    const card = cardRef.current;
+    if (!tilt || !card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const bounds = tilt.getBoundingClientRect();
+    const px = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+    const py = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
+    const maxTilt = 8;
+    tilt.classList.add("is-hover");
+    card.classList.add("is-tilting");
+    card.style.setProperty("--tilt-ry", `${((px - 0.5) * maxTilt).toFixed(2)}deg`);
+    card.style.setProperty("--tilt-rx", `${((0.5 - py) * maxTilt).toFixed(2)}deg`);
+    card.style.setProperty("--tilt-gx", `${(px * 100).toFixed(1)}%`);
+    card.style.setProperty("--tilt-gy", `${(py * 100).toFixed(1)}%`);
+  };
+
   return (
     <div
-      onClick={onSelect}
-      className={`glass-card ${isSelected ? "active" : ""}`}
-      style={{ padding: "16px", cursor: "pointer", position: "relative", overflow: "hidden" }}
+      ref={tiltRef}
+      className="t-tilt"
+      onPointerMove={trackTilt}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") resetTilt();
+      }}
+      onPointerUp={resetTilt}
+      onPointerDown={(event) => {
+        if (event.pointerType !== "mouse") {
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch {
+            // Pointer capture is not available in every embedded browser.
+          }
+        }
+      }}
     >
-      {/* Selected glow accent line */}
-      {isSelected && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, bottom: 0, width: "3px",
-          background: "linear-gradient(180deg, #06b6d4, #3b82f6)",
-          borderRadius: "0 0 0 0",
-        }} />
-      )}
+      <div
+        ref={cardRef}
+        onClick={onSelect}
+        className={`t-tilt-card glass-card ${isSelected ? "active" : ""}`}
+        style={{ padding: "16px", cursor: "pointer", position: "relative", overflow: "hidden" }}
+      >
+        {/* Selected glow accent line */}
+        {isSelected && (
+          <div style={{
+            position: "absolute", top: 0, left: 0, bottom: 0, width: "3px",
+            background: "linear-gradient(180deg, #06b6d4, #3b82f6)",
+            borderRadius: "0 0 0 0",
+          }} />
+        )}
 
       {/* Top Row: Tag + Status Chips */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -154,6 +202,89 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                 <ChevronRight size={10} color="#64748b" />
                 <span style={{ color: "#cbd5e1" }}>{leg.to}</span>
               </div>
+              {(leg.mode === "bus" || leg.mode === "metro") &&
+                leg.intermediateStops &&
+                leg.intermediateStops.length > 0 && (
+                  <div style={{ marginTop: "7px" }}>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setExpandedLegs((current) => ({
+                          ...current,
+                          [i]: !current[i],
+                        }));
+                      }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "3px 0",
+                        border: 0,
+                        color: MODE_COLOR[leg.mode],
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "0.66rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {expandedLegs[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      {leg.intermediateStops.length} stops · view route
+                    </button>
+                    {expandedLegs[i] && (
+                      <div
+                        onClick={(event) => event.stopPropagation()}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "5px",
+                          marginTop: "4px",
+                          padding: "8px 10px",
+                          borderLeft: `2px solid ${MODE_COLOR[leg.mode]}`,
+                          borderRadius: "0 7px 7px 0",
+                          background: "rgba(255,255,255,0.035)",
+                        }}
+                      >
+                        {[leg.from, ...leg.intermediateStops, leg.to].map((stop, stopIndex, stops) => {
+                          const estimatedMinutes = Math.round(
+                            (leg.durationMinutes * stopIndex) / Math.max(stops.length - 1, 1)
+                          );
+                          return (
+                            <div
+                              key={`${i}-${stopIndex}-${stop}`}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "10px",
+                                color: stopIndex === 0 || stopIndex === stops.length - 1 ? "#f1f5f9" : "#aebbb2",
+                                fontSize: "0.68rem",
+                              }}
+                            >
+                              <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                                <span
+                                  style={{
+                                    width: stopIndex === 0 || stopIndex === stops.length - 1 ? "7px" : "5px",
+                                    height: stopIndex === 0 || stopIndex === stops.length - 1 ? "7px" : "5px",
+                                    borderRadius: "50%",
+                                    background: MODE_COLOR[leg.mode],
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                {stop}
+                              </span>
+                              <span style={{ color: "#718078", whiteSpace: "nowrap" }}>
+                                {estimatedMinutes} min
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <span style={{ marginTop: "2px", color: "#718078", fontSize: "0.58rem" }}>
+                          Stop times are estimated from the route duration.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
             </React.Fragment>
           );
         })}
@@ -206,7 +337,10 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <span className="stat-label" style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             <Leaf size={9} /> CO₂
           </span>
-          <span className="stat-value" style={{ color: "#4ade80" }}>{route.carbonEmissionsKg}kg</span>
+          <span className="stat-value" style={{ color: "#4ade80" }}>
+            {route.carbonEmissionsKg}kg
+            <small style={{ display: "block", fontSize: "0.55rem", color: "#64748b" }}>approx.</small>
+          </span>
         </div>
       </div>
 
@@ -218,6 +352,8 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
         <span style={{ fontSize: "0.6rem", color: "#4b5a6e", fontWeight: 600, whiteSpace: "nowrap" }}>
           {route.onTimeReliability}% reliable
         </span>
+      </div>
+        <div className="t-tilt-glare" aria-hidden="true" />
       </div>
     </div>
   );

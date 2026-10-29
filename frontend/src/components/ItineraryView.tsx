@@ -166,7 +166,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
             CO₂ EMISSIONS
           </span>
           <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4ade80" }}>
-            {route.carbonEmissionsKg} kg
+            {route.carbonEmissionsKg} kg approx.
           </span>
         </div>
         <div style={{ textAlign: "center" }}>
