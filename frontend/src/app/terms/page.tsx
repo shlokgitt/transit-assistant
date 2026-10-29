@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",
-  description: "Terms and Conditions of Service for TransitSaathi — Delhi NCR Multimodal Mobility.",
+  description: "Terms and Conditions of Service for Transit Route — Delhi NCR Multimodal Mobility.",
 };
 
 export default function TermsPage() {
@@ -57,7 +57,7 @@ export default function TermsPage() {
           </h1>
         </div>
         <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "32px" }}>
-          Last Updated: October 29, 2026 • TransitSaathi — Delhi NCR Multimodal Mobility
+          Last Updated: October 29, 2026 • Transit Route — Delhi NCR Multimodal Mobility
         </p>
 
         {/* Content Card */}
@@ -81,7 +81,7 @@ export default function TermsPage() {
               <Scale size={16} color="#3b82f6" /> 1. Nature of the Service
             </h2>
             <p style={{ margin: 0 }}>
-              TransitSaathi is a multimodal route planning and passenger assistance tool developed for educational, techfest demonstration, and informational navigation purposes across Delhi National Capital Region (NCR). The system plans itineraries across Delhi Metro, DTC public buses, auto-rickshaws, and walking connectors.
+              Transit Route is a multimodal route planning and passenger assistance tool developed for educational, techfest demonstration, and informational navigation purposes across Delhi National Capital Region (NCR). The system plans itineraries across Delhi Metro, DTC public buses, auto-rickshaws, and walking connectors.
             </p>
           </section>
 
@@ -101,7 +101,7 @@ export default function TermsPage() {
               <AlertTriangle size={16} color="#f59e0b" /> 3. Real-Time Transit Disclaimers
             </h2>
             <p style={{ margin: 0 }}>
-              While TransitSaathi incorporates live delay simulations and crowd modeling, public transit conditions in Delhi NCR can fluctuate due to weather, traffic bottlenecks, festival diversions, or emergency operational suspensions. Commuters are advised to factor in safety margins for airport or railway connections.
+              While Transit Route incorporates live delay simulations and crowd modeling, public transit conditions in Delhi NCR can fluctuate due to weather, traffic bottlenecks, festival diversions, or emergency operational suspensions. Commuters are advised to factor in safety margins for airport or railway connections.
             </p>
           </section>
 
@@ -110,7 +110,7 @@ export default function TermsPage() {
               4. Intellectual Property &amp; Open Data
             </h2>
             <p style={{ margin: 0 }}>
-              Public transit schedule and routing data are provided courtesy of Delhi Open Data / GTFS initiatives and OpenStreetMap contributors under Open Database License (ODbL). TransitSaathi makes no claim of ownership over official transit authority marks or municipal emblems.
+              Public transit schedule and routing data are provided courtesy of Delhi Open Data / GTFS initiatives and OpenStreetMap contributors under Open Database License (ODbL). Transit Route makes no claim of ownership over official transit authority marks or municipal emblems.
             </p>
           </section>
         </div>

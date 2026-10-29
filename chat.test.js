@@ -164,6 +164,44 @@ function executeTool(name, args) {
       if (!id) return { error: "Stop ID is required." };
       return stopDetails(id) ?? { error: `No stop found with ID "${id}".` };
     }
+    case "get_transit_status_and_delays": {
+      return {
+        systemHealth: "Normal operations",
+        alerts: [{ id: "del_alt_1", title: "Yellow Line Peak Headway" }],
+        activeDelays: [{ route: "03DOWN", delayMinutes: 8 }],
+      };
+    }
+    case "get_metro_fare": {
+      const from = String(args.from_station ?? "").trim();
+      const to = String(args.to_station ?? "").trim();
+      if (from && to) {
+        const route = planMetroByName(from, to);
+        if (!route.error) {
+          return {
+            from,
+            to,
+            standardFare: `₹${route.totalFare}`,
+            totalMinutes: route.totalMinutes,
+          };
+        }
+      }
+      return {
+        fareSlabs: [
+          { distance: "0 - 2 km", fare: "₹10" },
+          { distance: "> 32 km", fare: "₹60" },
+        ],
+      };
+    }
+    case "get_transit_guidance": {
+      const topic = String(args.topic ?? "general").toLowerCase();
+      const guidance = {
+        ticketing: "DMRC Smart Card offers 10% to 20% discounts.",
+        women_safety_pink_pass: "Women commute free with Pink Tickets on DTC buses.",
+        hours: "Metro runs 05:30 AM to 11:30 PM.",
+        helpline: "DMRC 155370, DTC 1800118181.",
+      };
+      return { info: guidance[topic] || guidance.ticketing };
+    }
     default:
       return { error: `Unknown tool: ${name}` };
   }
@@ -237,6 +275,48 @@ describe("Tool execution (chat endpoint logic)", () => {
   it("get_stop_details tool returns error for unknown ID", () => {
     const result = executeTool("get_stop_details", { stop_id: "unknown_999" });
     assert.ok(result.error);
+  });
+
+  it("get_transit_status_and_delays tool returns system status and delays", () => {
+    const result = executeTool("get_transit_status_and_delays", {});
+    assert.ok(!result.error);
+    assert.ok(result.systemHealth);
+    assert.ok(Array.isArray(result.alerts));
+  });
+
+  it("get_metro_fare tool returns fares between stations", () => {
+    const result = executeTool("get_metro_fare", {
+      from_station: "Karol Bagh",
+      to_station: "Rajiv Chowk",
+    });
+    assert.ok(!result.error);
+    assert.ok(result.standardFare);
+  });
+
+  it("get_metro_fare tool returns general slabs when stations omitted", () => {
+    const result = executeTool("get_metro_fare", {});
+    assert.ok(!result.error);
+    assert.ok(Array.isArray(result.fareSlabs));
+  });
+
+  it("get_transit_guidance tool returns guidance on ticketing and pink passes", () => {
+    const ticketing = executeTool("get_transit_guidance", { topic: "ticketing" });
+    assert.ok(!ticketing.error);
+    assert.ok(ticketing.info.includes("Smart Card"));
+
+    const passes = executeTool("get_transit_guidance", { topic: "women_safety_pink_pass" });
+    assert.ok(!passes.error);
+    assert.ok(passes.info.includes("Pink Tickets"));
+  });
+
+  it("planByName resolves conversational stop names with suffixes", () => {
+    const r1 = planByName("Karol Bagh, Delhi, India", "Gandhi Darshan, Delhi, India");
+    assert.ok(!r1.error, `Expected route, got error: ${r1.error}`);
+    assert.ok(r1.totalMinutes > 0);
+
+    const r2 = planByName("Rajiv Chowk Metro Station", "Kashmere Gate ISBT");
+    assert.ok(!r2.error, `Expected route, got error: ${r2.error}`);
+    assert.ok(r2.totalMinutes > 0);
   });
 
   it("unknown tool returns error", () => {

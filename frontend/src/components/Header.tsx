@@ -4,7 +4,7 @@ import React from "react";
 import { Code2, AlertTriangle, Radio, Zap } from "lucide-react";
 import { CITIES, SUPPORTED_CITIES } from "@/lib/transitData";
 
-const TransitPulseLogo = () => (
+const TransitRouteLogo = () => (
   <div style={{ position: "relative", width: "42px", height: "42px" }}>
     {/* Animated outer pulse ring */}
     <div
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
     >
       {/* Brand & City */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <TransitPulseLogo />
+        <TransitRouteLogo />
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h1
@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
                 textShadow: "0 0 30px rgba(59,130,246,0.3)",
               }}
             >
-              TransitPulse
+              Transit Route
             </h1>
             <span
               style={{

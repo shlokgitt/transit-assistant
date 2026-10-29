@@ -427,7 +427,7 @@ export default function Home() {
         <p className="hero-copy">Tell the assistant what matters—price, walking, crowding, or an explanation in Hindi.</p>
       </div>
       <div className="chat-screen-card">
-        <div className="chat-screen-intro"><div className="aside-icon"><Bot size={20} /></div><div><h3>TransitSaathi assistant</h3><p className="muted-copy">Route answers are grounded in the planner, not invented by the assistant.</p></div></div>
+        <div className="chat-screen-intro"><div className="aside-icon"><Bot size={20} /></div><div><h3>Transit Route assistant</h3><p className="muted-copy">Route answers are grounded in the planner, not invented by the assistant.</p></div></div>
         <div className="prompt-row"><span>Try asking</span>{["Find the cheapest route", "Avoid crowded stations", "Explain this in Hindi"].map((prompt) => <button key={prompt} onClick={() => { setChatPrompt(prompt); setScreen("chat"); }}>“{prompt}”</button>)}</div>
       </div>
       <ChatPanel initialPrompt={chatPrompt} onInitialPromptHandled={() => setChatPrompt(undefined)} onPlanRoute={(from, to) => { setOrigin(from); setDestination(to); void handlePlanRoute(); }} />
@@ -459,7 +459,7 @@ export default function Home() {
       <div className="page-heading">
         <p className="eyebrow">Saved journeys</p>
         <h2>Your everyday routes, close at hand.</h2>
-        <p className="hero-copy">Your saved routes sync with TransitSaathi so optional morning alerts can reach you.</p>
+        <p className="hero-copy">Your saved routes sync with Transit Route so optional morning alerts can reach you.</p>
       </div>
       {alertsError && <p className="inline-error">{alertsError}</p>}
       {!savedJourneys.length ? (
@@ -502,7 +502,7 @@ export default function Home() {
   return (
     <main className="sa-app">
       <header className="sa-header">
-        <button className="brand" onClick={() => setScreen("home")}><span className="brand-mark"><RouteIcon size={18} /></span><span><strong>TransitSaathi</strong><small>Delhi NCR journeys</small></span></button>
+        <button className="brand" onClick={() => setScreen("home")}><span className="brand-mark"><RouteIcon size={18} /></span><span><strong>Transit Route</strong><small>Delhi NCR journeys</small></span></button>
         <nav className="desktop-nav"><SlidingNav activeScreen={screen} onChange={setScreen} /></nav>
         <div className="header-actions">
           <button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button>
@@ -602,7 +602,7 @@ export default function Home() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontWeight: 600, color: "#94a3b8" }}>TransitSaathi</span>
+          <span style={{ fontWeight: 600, color: "#94a3b8" }}>Transit Route</span>
           <span>•</span>
           <span>Delhi NCR Multimodal Transit Planner</span>
         </div>

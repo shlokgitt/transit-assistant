@@ -81,7 +81,7 @@ export const CookieConsent: React.FC = () => {
       </div>
 
       <p style={{ margin: 0, lineHeight: 1.4, color: "#94a3b8" }}>
-        TransitSaathi uses browser local storage to save your recent route searches, favorite stations, and user preferences locally on your device. We do not sell your personal data. Read our{" "}
+        Transit Route uses browser local storage to save your recent route searches, favorite stations, and user preferences locally on your device. We do not sell your personal data. Read our{" "}
         <Link href="/privacy" style={{ color: "#38bdf8", textDecoration: "underline" }}>
           Privacy Policy
         </Link>

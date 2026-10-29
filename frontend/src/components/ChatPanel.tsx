@@ -405,7 +405,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       {/* ---- Floating Action Button ---- */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Close AI assistant" : "Open AI assistant"}
+        aria-label={isOpen ? "Close Transit Route assistant" : "Open Transit Route assistant"}
         className="chat-fab"
         style={{
           position: "fixed",
@@ -488,7 +488,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 backgroundClip: "text",
                 lineHeight: 1.2,
               }}>
-                TransitPulse AI
+                Transit Route AI
               </h3>
               <p style={{ fontSize: "0.65rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
                 <span style={{
@@ -563,7 +563,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 color: "#f1f5f9",
                 marginBottom: "6px",
               }}>
-                Ask me about transit
+                Ask Transit Route AI
               </h4>
               <p style={{
                 fontSize: "0.78rem",

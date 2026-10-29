@@ -31,7 +31,7 @@ export const ApiInspectorModal: React.FC<ApiInspectorModalProps> = ({
 
   if (!isOpen) return null;
 
-  const curlCommand = `curl -X POST https://api.transitpulse.io/api/v1/routes/plan \\
+  const curlCommand = `curl -X POST https://api.transitroute.io/api/v1/routes/plan \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(lastRequest, null, 2)}'`;
 

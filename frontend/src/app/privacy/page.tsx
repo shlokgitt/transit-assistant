@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Privacy Policy for TransitSaathi — Smart Multimodal Route Planner for Delhi NCR.",
+  description: "Privacy Policy for Transit Route — Smart Multimodal Route Planner for Delhi NCR.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
           </h1>
         </div>
         <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "32px" }}>
-          Effective Date: October 29, 2026 • TransitSaathi — Delhi NCR Multimodal Mobility
+          Effective Date: October 29, 2026 • Transit Route — Delhi NCR Multimodal Mobility
         </p>
 
         {/* Content Card */}
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
               <Eye size={16} color="#06b6d4" /> 1. Information We Collect
             </h2>
             <p style={{ margin: 0 }}>
-              TransitSaathi is built with privacy-first principles. We do not require account creation, passwords, or personal identity numbers. The information processed includes:
+              Transit Route is built with privacy-first principles. We do not require account creation, passwords, or personal identity numbers. The information processed includes:
             </p>
             <ul style={{ paddingLeft: "20px", marginTop: "8px", marginBottom: 0 }}>
               <li><strong>Transit Search Queries:</strong> Origin and destination station queries entered into the route planner.</li>
@@ -122,7 +122,7 @@ export default function PrivacyPolicyPage() {
               5. Contact & Data Deletion
             </h2>
             <p style={{ margin: 0 }}>
-              You may clear all stored route history at any time by clearing your browser cache and local storage, or clicking &ldquo;Remove&rdquo; on any saved journey card. For academic inquiries regarding TransitSaathi, reach out to the project repository.
+              You may clear all stored route history at any time by clearing your browser cache and local storage, or clicking &ldquo;Remove&rdquo; on any saved journey card. For academic inquiries regarding Transit Route, reach out to the project repository.
             </p>
           </section>
         </div>

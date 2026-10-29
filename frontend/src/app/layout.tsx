@@ -10,15 +10,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://transitsaathi.in"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://transitroute.in"),
   title: {
-    default: "TransitSaathi | Multimodal Transit Route Planner — Delhi NCR",
-    template: "%s | TransitSaathi",
+    default: "Transit Route | Multimodal Transit Route Planner — Delhi NCR",
+    template: "%s | Transit Route",
   },
   description:
     "AI-powered multimodal transit routing combining Delhi Metro, DTC Bus, Auto-rickshaw, and Walking for Delhi NCR with live fare calculations, crowd insights, and real route maps.",
   keywords: [
-    "TransitSaathi",
+    "Transit Route",
     "Delhi Metro route planner",
     "DTC bus routes",
     "multimodal transit Delhi NCR",
@@ -28,26 +28,26 @@ export const metadata: Metadata = {
     "Gurgaon metro",
     "Delhi NCR transport",
   ],
-  authors: [{ name: "TransitSaathi Team" }],
-  creator: "TransitSaathi",
-  publisher: "TransitSaathi",
+  authors: [{ name: "Transit Route Team" }],
+  creator: "Transit Route",
+  publisher: "Transit Route",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "TransitSaathi | Multimodal Transit Route Planner — Delhi NCR",
+    title: "Transit Route | Multimodal Transit Route Planner — Delhi NCR",
     description:
       "Find the fastest and cheapest multimodal routes combining Metro, Bus, Auto, and Walking across Delhi NCR.",
-    url: "https://transitsaathi.in",
-    siteName: "TransitSaathi",
+    url: "https://transitroute.in",
+    siteName: "Transit Route",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "TransitSaathi — Delhi NCR Multimodal Route Planner",
+        alt: "Transit Route — Delhi NCR Multimodal Route Planner",
       },
     ],
     locale: "en_IN",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TransitSaathi | Smart Delhi NCR Transit Planner",
+    title: "Transit Route | Smart Delhi NCR Transit Planner",
     description:
       "Multimodal journey planning across Delhi Metro, DTC bus, and first-mile autos.",
     images: ["/og-image.png"],

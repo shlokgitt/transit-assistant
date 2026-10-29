@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "404 — Station Not Found",
-  description: "The page or station you were looking for is not on the TransitSaathi network.",
+  description: "The page or station you were looking for is not on the Transit Route network.",
 };
 
 export default function NotFound() {

@@ -753,7 +753,7 @@ main,
   to { transform: rotate(360deg); }
 }
 
-/* TransitSaathi application shell */
+/* Transit Route application shell */
 :root {
   --sa-ink: #17211b;
   --sa-muted: #68756c;

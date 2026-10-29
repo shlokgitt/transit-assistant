@@ -1,6 +1,6 @@
 {
-  "name": "TransitSaathi",
-  "short_name": "TransitSaathi",
+  "name": "Transit Route",
+  "short_name": "Transit Route",
   "description": "Smart Multimodal Route Planner for Delhi NCR",
   "start_url": "/",
   "display": "standalone",

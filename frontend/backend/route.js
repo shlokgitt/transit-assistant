@@ -462,6 +462,17 @@ export function findStops(query) {
     }
   }
 
+  if (results.length === 0) {
+    const cleaned = query
+      .replace(/,\s*(?:delhi ncr|new delhi|delhi|noida|gurugram|gurgaon|ghaziabad|faridabad|india)\b/gi, "")
+      .replace(/\b(?:metro station|subway station|bus station|bus stand|bus stop|bus terminal|metro|station|terminal|isbt)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleaned && cleaned.toLowerCase() !== qRaw) {
+      return findStops(cleaned);
+    }
+  }
+
   return results;
 }
 
