@@ -1,0 +1,6 @@
+# Base directory is `frontend` (set in Netlify UI). The API routes import
+# ../route.js and ../metro-fares.js from the repo root, which depend on
+# packages in the root package.json, so install those before building.
+[build]
+  command = "npm install --prefix .. --omit=dev --no-audit --no-fund && npm run build"
+  publish = ".next"
