@@ -130,6 +130,76 @@ describe("findStops", () => {
     assert.deepEqual(findStops(undefined), []);
     assert.deepEqual(findStops(42), []);
   });
+
+  it("finds supported non-station NCR places", () => {
+    const results = findStops("Gaur City");
+    assert.ok(results.some((stop) => stop.type === "place"));
+  });
+
+  it("finds Crossings Republik as an NCR place", () => {
+    const results = findStops("Crossings Republik");
+    assert.ok(results.some((stop) => stop.name === "Crossings Republik"));
+  });
+});
+
+describe("planByName — non-station places", () => {
+  it("connects Gaur City to the nearest transit stop", () => {
+    const result = planByName("Noida Electronic City", "Gaur City", {
+      preference: "fastest",
+      period: "peak",
+    });
+
+    assertValidRoute(result);
+    assert.ok(result.legs.some((leg) => leg.mode === "metro"));
+    const finalLeg = result.legs.at(-1);
+    assert.equal(finalLeg.mode, "walk");
+    assert.equal(finalLeg.to, "Gaur City");
+    assert.ok(finalLeg.distanceKm > 0);
+  });
+
+  it("connects Karol Bagh to Crossings Republik", () => {
+    const result = planByName("Karol Bagh", "Crossings Republik", {
+      preference: "fastest",
+      period: "peak",
+    });
+
+    assertValidRoute(result);
+    assert.ok(result.legs.length > 1);
+    assert.equal(result.legs.at(-1).to, "Crossings Republik");
+  });
+
+  it("charges one DMRC fare across metro transfers", () => {
+    const result = planByName("Karol Bagh", "Crossings Republik", {
+      preference: "fastest",
+      period: "peak",
+    });
+
+    const metroFare = result.legs
+      .filter((leg) => leg.mode === "metro")
+      .reduce((sum, leg) => sum + leg.fare, 0);
+    assert.equal(result.totalFare, 54);
+    assert.equal(metroFare, 54);
+  });
+
+  it("keeps metro fare within the correct slab for other transfer journeys", () => {
+    const journeys = [
+      ["Karol Bagh Metro", "Hauz Khas Metro"],
+      ["Noida Electronic City", "Kashmere Gate Metro"],
+    ];
+
+    for (const [from, to] of journeys) {
+      const result = planByName(from, to, {
+        preference: "fastest",
+        period: "peak",
+      });
+      assertValidRoute(result);
+      const metroFare = result.legs
+        .filter((leg) => leg.mode === "metro")
+        .reduce((sum, leg) => sum + leg.fare, 0);
+      assert.equal(result.totalFare, metroFare);
+      assert.ok(metroFare <= 64, `${from} -> ${to} fare should not exceed ₹64`);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

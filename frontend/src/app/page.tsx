@@ -35,16 +35,31 @@ import {
 } from "@/types/transit";
 
 type Screen = "home" | "results" | "chat" | "disruptions" | "saved";
+
 type SavedJourney = {
   id: string;
   name: string;
-  origin: string;
-  destination: string;
-  priority: RoutingPriority;
-  createdAt: string;
+  from: string;
+  to: string;
+  preference: RoutingPriority;
+  email: string | null;
+  createdAt?: string;
 };
 
 const STORAGE_KEY = "transitsaathi-saved-journeys";
+const SAVED_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+
+function getJourneyFrom(journey: SavedJourney): string {
+  return journey.from || (journey as unknown as { origin?: string }).origin || "";
+}
+
+function getJourneyTo(journey: SavedJourney): string {
+  return journey.to || (journey as unknown as { destination?: string }).destination || "";
+}
+
+function getJourneyPreference(journey: SavedJourney): RoutingPriority {
+  return journey.preference || (journey as unknown as { priority?: RoutingPriority }).priority || "fastest";
+}
 
 const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
   { id: "home", label: "Plan a trip", icon: <Compass size={16} /> },
@@ -144,6 +159,13 @@ export default function Home() {
   const [isApiInspectorOpen, setIsApiInspectorOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(false);
+  const [alertEmail, setAlertEmail] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSuccessMessage, setSavedSuccessMessage] = useState<string | null>(null);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(10);
   const [scenarioApplied, setScenarioApplied] = useState(false);
   const [chatPrompt, setChatPrompt] = useState<string | undefined>();
@@ -160,10 +182,25 @@ export default function Home() {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) setSavedJourneys(JSON.parse(stored) as SavedJourney[]);
+      if (stored) {
+        setSavedJourneys(JSON.parse(stored) as SavedJourney[]);
+      }
     } catch {
       setSavedJourneys([]);
     }
+
+    void fetch(`${SAVED_API_BASE}/saved`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Saved routes unavailable.");
+        return (await response.json()) as SavedJourney[];
+      })
+      .then((routes) => {
+        if (Array.isArray(routes)) {
+          setSavedJourneys(routes);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(routes));
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   const persistSavedJourneys = (next: SavedJourney[]) => {
@@ -215,23 +252,74 @@ export default function Home() {
   }, [avoidCrowded, destination, origin, period, priority, selectedCity, selectedModes]);
 
   const openSavedJourney = (journey: SavedJourney) => {
-    setOrigin(journey.origin);
-    setDestination(journey.destination);
-    setPriority(journey.priority);
+    setOrigin(getJourneyFrom(journey));
+    setDestination(getJourneyTo(journey));
+    setPriority(getJourneyPreference(journey));
     setScreen("home");
   };
 
-  const saveCurrentJourney = () => {
+  const saveCurrentJourney = async () => {
     if (!origin || !destination) return;
-    const journey: SavedJourney = {
-      id: crypto.randomUUID(),
-      name: `${origin} to ${destination}`,
-      origin,
-      destination,
-      priority,
-      createdAt: new Date().toISOString(),
-    };
-    persistSavedJourneys([journey, ...savedJourneys]);
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: `${origin} to ${destination}`,
+        from: origin,
+        to: destination,
+        preference: priority,
+        ...(emailAlertsEnabled && alertEmail.trim() ? { email: alertEmail.trim() } : {}),
+      };
+
+      let newJourney: SavedJourney;
+      try {
+        const response = await fetch(`${SAVED_API_BASE}/saved`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Unable to save route.");
+        newJourney = data as SavedJourney;
+      } catch (networkOrApiError) {
+        console.warn("Backend save failed, saving locally:", networkOrApiError);
+        newJourney = {
+          id: `local-${crypto.randomUUID()}`,
+          name: payload.name,
+          from: payload.from,
+          to: payload.to,
+          preference: payload.preference,
+          email: payload.email || null,
+        };
+      }
+
+      const nextJourneys = [newJourney, ...savedJourneys.filter((j) => j.id !== newJourney.id)];
+      persistSavedJourneys(nextJourneys);
+      setIsSaveModalOpen(false);
+      setEmailAlertsEnabled(false);
+      setAlertEmail("");
+      setSavedSuccessMessage("Journey saved successfully!");
+      setTimeout(() => setSavedSuccessMessage(null), 3500);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Unable to save route.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const stopAlerts = async (id: string) => {
+    setAlertsError(null);
+    try {
+      const response = await fetch(`${SAVED_API_BASE}/saved/${encodeURIComponent(id)}/email`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Unable to stop alerts.");
+      const updated = (await response.json()) as SavedJourney;
+      const next = savedJourneys.map((journey) => (journey.id === id ? updated : journey));
+      persistSavedJourneys(next);
+    } catch (error) {
+      setAlertsError(error instanceof Error ? error.message : "Unable to stop alerts.");
+    }
   };
 
   const renderResults = () => (
@@ -260,7 +348,21 @@ export default function Home() {
               <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
             ))}
             {selectedRoute && (
-              <button className="save-journey-button" onClick={saveCurrentJourney}><Save size={16} /> Save this journey</button>
+              <div className="save-action-bar">
+                <button
+                  type="button"
+                  className="save-journey-button"
+                  onClick={() => {
+                    setSaveError(null);
+                    setIsSaveModalOpen(true);
+                  }}
+                >
+                  <Save size={16} /> Save this journey
+                </button>
+                {savedSuccessMessage && (
+                  <span className="save-success-pill">✓ {savedSuccessMessage}</span>
+                )}
+              </div>
             )}
           </div>
         ) : (
@@ -301,7 +403,12 @@ export default function Home() {
         </div>
         <div className="aside-card">
           <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent journeys</strong></div>
-          {savedJourneys.slice(0, 3).map((journey) => <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}><span>{journey.origin} → {journey.destination}</span><ChevronRight size={14} /></button>)}
+          {savedJourneys.slice(0, 3).map((journey) => (
+            <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}>
+              <span>{getJourneyFrom(journey)} → {getJourneyTo(journey)}</span>
+              <ChevronRight size={14} />
+            </button>
+          ))}
           {!savedJourneys.length && <p className="muted-copy">Saved journeys will appear here after your first trip.</p>}
         </div>
       </section>
@@ -345,8 +452,46 @@ export default function Home() {
 
   const renderSaved = () => (
     <div className="simple-screen">
-      <div className="page-heading"><p className="eyebrow">Saved journeys</p><h2>Your everyday routes, close at hand.</h2><p className="hero-copy">These journeys are saved only in this browser. Recalculate before travelling.</p></div>
-      {!savedJourneys.length ? <div className="empty-panel large-empty"><Bookmark size={30} /><h3>No saved journeys yet</h3><p>Save a route after planning it and it will appear here.</p><button className="primary-button" onClick={() => setScreen("home")}>Plan a journey</button></div> : <div className="saved-grid">{savedJourneys.map((journey) => <article className="saved-card" key={journey.id}><div><p className="eyebrow">{journey.name}</p><h3>{journey.origin} <span>→</span> {journey.destination}</h3><p className="muted-copy">Priority: {journey.priority}</p></div><div className="saved-actions"><button className="quiet-button" onClick={() => openSavedJourney(journey)}>Recalculate</button><button className="icon-button danger" aria-label="Remove journey" onClick={() => persistSavedJourneys(savedJourneys.filter((item) => item.id !== journey.id))}><X size={15} /></button></div></article>)}</div>}
+      <div className="page-heading">
+        <p className="eyebrow">Saved journeys</p>
+        <h2>Your everyday routes, close at hand.</h2>
+        <p className="hero-copy">Your saved routes sync with TransitSaathi so optional morning alerts can reach you.</p>
+      </div>
+      {alertsError && <p className="inline-error">{alertsError}</p>}
+      {!savedJourneys.length ? (
+        <div className="empty-panel large-empty">
+          <Bookmark size={30} />
+          <h3>No saved journeys yet</h3>
+          <p>Save a route after planning it and it will appear here.</p>
+          <button className="primary-button" onClick={() => setScreen("home")}>Plan a journey</button>
+        </div>
+      ) : (
+        <div className="saved-grid">
+          {savedJourneys.map((journey) => (
+            <article className="saved-card" key={journey.id}>
+              <div>
+                <p className="eyebrow">{journey.name}</p>
+                <h3>{getJourneyFrom(journey)} <span>→</span> {getJourneyTo(journey)}</h3>
+                <p className="muted-copy">Priority: {getJourneyPreference(journey)}</p>
+                {journey.email && <p className="alert-label">Alerts: {journey.email}</p>}
+              </div>
+              <div className="saved-actions">
+                <button className="quiet-button" onClick={() => openSavedJourney(journey)}>Recalculate</button>
+                {journey.email && (
+                  <button className="quiet-button" onClick={() => void stopAlerts(journey.id)}>Stop alerts</button>
+                )}
+                <button
+                  className="icon-button danger"
+                  aria-label="Remove journey"
+                  onClick={() => persistSavedJourneys(savedJourneys.filter((item) => item.id !== journey.id))}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -355,7 +500,10 @@ export default function Home() {
       <header className="sa-header">
         <button className="brand" onClick={() => setScreen("home")}><span className="brand-mark"><RouteIcon size={18} /></span><span><strong>TransitSaathi</strong><small>Delhi NCR journeys</small></span></button>
         <nav className="desktop-nav"><SlidingNav activeScreen={screen} onChange={setScreen} /></nav>
-        <div className="header-actions"><button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button><button className="header-save" onClick={() => setScreen("saved")}><Bookmark size={15} /> {savedJourneys.length}</button></div>
+        <div className="header-actions">
+          <button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button>
+          <button className="header-save" onClick={() => setScreen("saved")}><Bookmark size={15} /> {savedJourneys.length}</button>
+        </div>
       </header>
       <div className="mobile-nav">{NAV_ITEMS.map((item) => <button key={item.id} className={screen === item.id ? "active" : ""} onClick={() => setScreen(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
       <div className="sa-content">
@@ -365,6 +513,75 @@ export default function Home() {
         {screen === "disruptions" && renderDisruptions()}
         {screen === "saved" && renderSaved()}
       </div>
+
+      {isSaveModalOpen && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setIsSaveModalOpen(false)}>
+          <form
+            className="save-modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveCurrentJourney();
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="page-heading compact-heading">
+              <div>
+                <p className="eyebrow">Save journey</p>
+                <h2>{origin} <span>to</span> {destination}</h2>
+              </div>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => setIsSaveModalOpen(false)}
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <label className="alert-checkbox">
+              <input
+                type="checkbox"
+                checked={emailAlertsEnabled}
+                onChange={(event) => setEmailAlertsEnabled(event.target.checked)}
+              />
+              <span>Email me morning alerts (weekdays, 7:30 AM)</span>
+            </label>
+            {emailAlertsEnabled && (
+              <>
+                <label className="field-label" htmlFor="alert-email">Email address</label>
+                <input
+                  id="alert-email"
+                  className="email-field"
+                  type="email"
+                  required
+                  value={alertEmail}
+                  onChange={(event) => setAlertEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+                <p className="muted-copy">We only use this to send your commute alert. No account needed.</p>
+              </>
+            )}
+            {saveError && <p className="inline-error">{saveError}</p>}
+            <div className="saved-actions modal-actions">
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => setIsSaveModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving…" : "Save journey"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <ApiInspectorModal isOpen={isApiInspectorOpen} onClose={() => setIsApiInspectorOpen(false)} lastRequest={lastRequest} lastResponse={routeResponse} />
       <LiveAlertsModal isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} cityId={selectedCity} />
     </main>

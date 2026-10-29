@@ -32,6 +32,7 @@ const FARES = load("./data/fares.json", {
 });
 
 const DELAYS = load("./data/delays.json", {});
+const PLACES = load("./data/ncr-places.json", []);
 
 // Driving-road distances between consecutive GTFS stops, keyed "fromId>toId"
 // (directional). Built by build-road-cache.js. Entries that failed to fetch
@@ -121,12 +122,14 @@ const stopOf = (node) => {
   }
   return node.slice(2);
 };
-const nameOf = (id) => G.stops[id]?.name ?? `Stop ${id}`;
+const placeOf = (id) =>
+  id?.startsWith("PLACE:") ? PLACES[Number(id.slice(6))] : null;
+const nameOf = (id) => G.stops[id]?.name ?? placeOf(id)?.name ?? `Stop ${id}`;
 const hubOf = (id) => (G.adj[`M:${id}`] ? `M:${id}` : `S:${id}`);
 
 function distanceKm(a, b) {
-  const from = G.stops[a];
-  const to = G.stops[b];
+  const from = G.stops[a] || placeOf(a);
+  const to = G.stops[b] || placeOf(b);
 
   if (!from || !to) return 0;
 
@@ -173,6 +176,81 @@ function combineSources(sources) {
   return s.size === 1 ? [...s][0] : "mixed";
 }
 
+function metroFareClass(route) {
+  if (route === "metro:NoidaAqua") return "noida_metro";
+  if (route?.includes("Airport")) return "airport_express";
+  if (route?.includes("Rapid")) return "rapid_metro";
+  return "dmrc_standard";
+}
+
+function consolidateMetroFares(
+  legs,
+  totalFare,
+  fareAvailable,
+  fareEstimated,
+  dayType
+) {
+  let adjustedFare = totalFare;
+  let adjustedAvailable = fareAvailable;
+  let adjustedEstimated = fareEstimated;
+
+  for (let index = 0; index < legs.length; ) {
+    if (legs[index].mode !== "metro") {
+      index++;
+      continue;
+    }
+
+    const fareClass = metroFareClass(legs[index].route);
+    const group = [];
+    let cursor = index;
+    while (
+      cursor < legs.length &&
+      legs[cursor].mode === "metro" &&
+      metroFareClass(legs[cursor].route) === fareClass
+    ) {
+      group.push(legs[cursor]);
+      cursor++;
+    }
+
+    if (group.length > 1 && fareClass !== "rapid_metro") {
+      const combinedDistance = group.reduce(
+        (sum, leg) => sum + leg.distanceKm,
+        0
+      );
+      const combinedStations = group.reduce(
+        (sum, leg) => sum + leg.stops,
+        0
+      );
+      const fare = calculateMetroFare(group[0].route, {
+        fromName: group[0].from,
+        toName: group.at(-1).to,
+        stationCount: combinedStations,
+        distanceKm: combinedDistance,
+        dayType,
+      });
+      const previousFare = group.reduce((sum, leg) => sum + (leg.fare || 0), 0);
+
+      if (fare.amount === null) {
+        adjustedAvailable = false;
+      } else {
+        adjustedFare += fare.amount - previousFare;
+        adjustedEstimated ||= fare.estimated;
+        group.forEach((leg, groupIndex) => {
+          leg.fare = groupIndex === 0 ? fare.amount : 0;
+        });
+      }
+    }
+
+    index = cursor;
+  }
+
+  return {
+    totalFare: adjustedAvailable ? adjustedFare : null,
+    fareAvailable: adjustedAvailable,
+    fareEstimated: adjustedEstimated,
+  };
+}
+
 function isMetroRoute(routeName) {
   return typeof routeName === "string" && routeName.startsWith("metro:");
 }
@@ -216,18 +294,137 @@ function stateKey(node, activeBus) {
   return `${node}|${activeBus.routeId}|${bucket}|${stationCount}`;
 }
 
+function normalizeQuery(str) {
+  return String(str || "")
+    .toLowerCase()
+    .replace(/[-_./,()]/g, " ")
+    .replace(/\bsectors?\b/g, "sec")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const STOP_ALIASES = {
+  cp: ["GTFS:50"],
+  "c.p.": ["GTFS:50"],
+  "c p": ["GTFS:50"],
+  "connaught place": ["GTFS:50"],
+  connaught: ["GTFS:50"],
+  "rajiv chowk": ["GTFS:50"],
+  "noida sector 18": ["GTFS:82"],
+  "noida sec 18": ["GTFS:82"],
+  "sector 18 noida": ["GTFS:82"],
+  "sec 18 noida": ["GTFS:82"],
+  "sector 18": ["GTFS:82"],
+  "sec 18": ["GTFS:82"],
+  "noida sector 16": ["GTFS:83"],
+  "noida sec 16": ["GTFS:83"],
+  "sector 16 noida": ["GTFS:83"],
+  "sec 16 noida": ["GTFS:83"],
+  "noida sector 15": ["GTFS:84"],
+  "noida sec 15": ["GTFS:84"],
+  "sector 15 noida": ["GTFS:84"],
+  "sec 15 noida": ["GTFS:84"],
+  "noida sector 34": ["GTFS:233"],
+  "noida sec 34": ["GTFS:233"],
+  "sector 34 noida": ["GTFS:233"],
+  "noida sector 52": ["GTFS:234"],
+  "noida sec 52": ["GTFS:234"],
+  "sector 52 noida": ["GTFS:234"],
+  "noida sector 61": ["GTFS:235"],
+  "noida sec 61": ["GTFS:235"],
+  "sector 61 noida": ["GTFS:235"],
+  "noida sector 59": ["GTFS:236"],
+  "noida sec 59": ["GTFS:236"],
+  "sector 59 noida": ["GTFS:236"],
+  "noida sector 62": ["GTFS:237"],
+  "noida sec 62": ["GTFS:237"],
+  "sector 62 noida": ["GTFS:237"],
+  ndls: ["GTFS:49"],
+  "new delhi railway station": ["GTFS:49"],
+  dli: ["GTFS:47"],
+  "old delhi railway station": ["GTFS:47"],
+  "huda city centre": ["GTFS:206"],
+  "igi airport": ["GTFS:6"],
+  "t3 airport": ["GTFS:6"],
+  aiims: ["GTFS:183"],
+  iit: ["GTFS:414"],
+  "iit delhi": ["GTFS:414"],
+};
+
 export function findStops(query) {
   if (typeof query !== "string" || !query.trim()) return [];
 
-  const q = query.trim().toLowerCase();
+  const qRaw = query.trim().toLowerCase();
+  const qNorm = normalizeQuery(query);
+  const qTokens = qNorm.split(" ").filter(Boolean);
 
-  return Object.entries(G.stops)
-    .filter(([, stop]) => stop.name.toLowerCase().includes(q))
-    .map(([id, stop]) => ({ id, ...stop }));
+  const results = [];
+  const seen = new Set();
+
+  const aliasIds = STOP_ALIASES[qRaw] || STOP_ALIASES[qNorm];
+  if (aliasIds) {
+    for (const id of aliasIds) {
+      if (G.stops[id] && !seen.has(id)) {
+        results.push({ id, ...G.stops[id] });
+        seen.add(id);
+      }
+    }
+  }
+
+  const scoredTransit = [];
+  for (const [id, stop] of Object.entries(G.stops)) {
+    if (seen.has(id)) continue;
+    const nameRaw = stop.name.toLowerCase();
+    const nameNorm = normalizeQuery(stop.name);
+
+    let score = 0;
+    if (nameRaw === qRaw || nameNorm === qNorm) {
+      score = 100;
+    } else if (nameNorm.startsWith(qNorm) || nameRaw.startsWith(qRaw)) {
+      score = 80;
+    } else if (nameNorm.includes(qNorm)) {
+      score = 60;
+    } else if (qTokens.length > 1 && qTokens.every((t) => nameNorm.includes(t))) {
+      score = 40;
+    } else if (
+      nameRaw.includes(qRaw) &&
+      (qRaw.length > 3 || new RegExp(`\\b${qRaw}\\b`, "i").test(nameRaw))
+    ) {
+      score = 20;
+    }
+
+    if (score > 0) {
+      if (id.startsWith("GTFS:") && stop.name.includes("Metro")) score += 5;
+      scoredTransit.push({ score, stop: { id, ...stop } });
+    }
+  }
+
+  scoredTransit.sort((a, b) => b.score - a.score);
+  for (const item of scoredTransit) {
+    results.push(item.stop);
+    seen.add(item.stop.id);
+  }
+
+  const places = PLACES.flatMap((place, index) => {
+    const matches = [place.name, ...(place.aliases || [])].some((name) => {
+      const nRaw = name.toLowerCase();
+      const nNorm = normalizeQuery(name);
+      return (
+        nRaw.includes(qRaw) ||
+        nNorm.includes(qNorm) ||
+        (qTokens.length > 1 && qTokens.every((t) => nNorm.includes(t)))
+      );
+    });
+    return matches
+      ? [{ id: `PLACE:${index}`, name: place.name, ...place, type: "place" }]
+      : [];
+  });
+
+  return [...results, ...places];
 }
 
 export function stopCoordinates(id) {
-  const stop = G.stops[id];
+  const stop = G.stops[id] || placeOf(id);
   return stop ? { lat: stop.lat, lon: stop.lon } : null;
 }
 
@@ -236,10 +433,22 @@ export function stopName(id) {
 }
 
 export function stopDetails(id) {
-  const stop = G.stops[id];
+  const stop = G.stops[id] || placeOf(id);
   if (!stop) return null;
 
   const metroLines = new Set();
+  if (placeOf(id)) {
+    return {
+      id,
+      name: stop.name,
+      type: "place",
+      city: "delhi",
+      lat: stop.lat,
+      lng: stop.lon,
+      lines: [],
+    };
+  }
+
   for (const edge of G.adj[`M:${id}`] || []) {
     if (edge[2] === "board" && G.routes[edge[3]]) {
       metroLines.add(G.routes[edge[3]].replace(/^metro:/, ""));
@@ -254,6 +463,51 @@ export function stopDetails(id) {
     lat: stop.lat,
     lng: stop.lon,
     lines: [...metroLines],
+  };
+}
+
+function nearestTransitStop(place) {
+  return Object.entries(G.stops).reduce((nearest, [id, stop]) => {
+    const distance = distanceKm(place.id, id);
+    return !nearest || distance < nearest.distance
+      ? { id, stop, distance }
+      : nearest;
+  }, null);
+}
+
+function resolveEndpoint(matches) {
+  const transitStop = matches.find((match) => G.stops[match.id]);
+  if (transitStop) {
+    return {
+      match: transitStop,
+      transitIds: matches
+        .filter((match) => G.stops[match.id])
+        .map((match) => match.id),
+    };
+  }
+
+  const place = matches.find((match) => placeOf(match.id));
+  const nearest = place ? nearestTransitStop(place) : null;
+  return nearest
+    ? { match: place, transitIds: [nearest.id], accessStop: nearest }
+    : null;
+}
+
+function placeAccessLeg(place, accessStop, reverse = false) {
+  const distance = r1(distanceKm(place.id, accessStop.id) * WALKING_DETOUR_FACTOR);
+  const minutes = r1(distance * 12);
+  return {
+    mode: "walk",
+    fromId: reverse ? accessStop.id : place.id,
+    toId: reverse ? place.id : accessStop.id,
+    from: reverse ? nameOf(accessStop.id) : place.name,
+    to: reverse ? place.name : nameOf(accessStop.id),
+    minutes,
+    distanceKm: distance,
+    distanceSource: "straight-line",
+    fare: 0,
+    stopIds: reverse ? [accessStop.id, place.id] : [place.id, accessStop.id],
+    stops: 0,
   };
 }
 
@@ -671,24 +925,34 @@ export function plan(fromIds, toIds, opts = {}) {
     }
   }
 
+  const consolidatedFares = consolidateMetroFares(
+    legs,
+    totalFare,
+    fareAvailable,
+    fareEstimated,
+    dayType
+  );
+
   return {
     preference,
     period,
     totalMinutes: r1(totalMinutes),
-    totalFare: fareAvailable ? totalFare : null,
+    totalFare: consolidatedFares.totalFare,
     totalDistanceKm: r1(totalDistanceKm),
     distanceSource: combineSources(routeSources),
-    fareEstimate: fareAvailable && fareEstimated,
-    fareAvailable,
-    fareStatus: !fareAvailable
+    fareEstimate:
+      consolidatedFares.fareAvailable && consolidatedFares.fareEstimated,
+    fareAvailable: consolidatedFares.fareAvailable,
+    fareStatus: !consolidatedFares.fareAvailable
       ? "unavailable"
-      : fareEstimated
+      : consolidatedFares.fareEstimated
         ? "estimated"
         : "verified",
     fareNote:
       "Bus fares are estimates. Metro fares are available only for supported fare tables and reliable route calculations. Cheapest mode excludes unknown fares from confirmed cost comparisons.",
     cheapestConfirmed:
-      preference !== "cheapest" || (fareAvailable && !fareEstimated),
+      preference !== "cheapest" ||
+      (consolidatedFares.fareAvailable && !consolidatedFares.fareEstimated),
     legs,
   };
 }
@@ -705,11 +969,13 @@ export function planByName(fromName, toName, opts = {}) {
     return { error: `No stop matches "${toName}"` };
   }
 
-  const route = plan(
-    from.map((stop) => stop.id),
-    to.map((stop) => stop.id),
-    opts
-  );
+  const resolvedFrom = resolveEndpoint(from);
+  const resolvedTo = resolveEndpoint(to);
+  if (!resolvedFrom || !resolvedTo) {
+    return { error: "No usable transit points found for those places" };
+  }
+
+  const route = plan(resolvedFrom.transitIds, resolvedTo.transitIds, opts);
 
   if (!route) {
     return {
@@ -717,9 +983,40 @@ export function planByName(fromName, toName, opts = {}) {
     };
   }
 
+  const legs = [...route.legs];
+  if (resolvedFrom.accessStop) {
+    legs.unshift(
+      placeAccessLeg(
+        resolvedFrom.match,
+        resolvedFrom.accessStop
+      )
+    );
+  }
+  if (resolvedTo.accessStop) {
+    legs.push(
+      placeAccessLeg(
+        resolvedTo.match,
+        resolvedTo.accessStop,
+        true
+      )
+    );
+  }
+
+  const accessMinutes = legs.reduce((total, leg) => total + leg.minutes, 0);
+  const accessDistance = legs.reduce(
+    (total, leg) => total + (leg.distanceKm || 0),
+    0
+  );
+
   return {
     fromMatches: from.length,
     toMatches: to.length,
     ...route,
+    totalMinutes: r1(accessMinutes),
+    totalDistanceKm: r1(accessDistance),
+    distanceSource: combineSources(
+      legs.map((leg) => leg.distanceSource)
+    ),
+    legs,
   };
 }

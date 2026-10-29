@@ -1,0 +1,210 @@
+{
+  "name": "TransitSaathi - Weekday Morning Commute Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule: Weekdays 7:30 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/saved",
+        "options": {}
+      },
+      "id": "fetch-saved-routes",
+      "name": "Fetch Saved Routes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-email-condition",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-subscribers",
+      "name": "Filter Subscribed Commuters",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:3001/route?from={{ encodeURIComponent($json.from) }}&to={{ encodeURIComponent($json.to) }}&preference={{ $json.preference || 'fastest' }}",
+        "options": {}
+      },
+      "id": "fetch-live-route",
+      "name": "Calculate Current Route",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/delays?time=08:00",
+        "options": {}
+      },
+      "id": "fetch-delays",
+      "name": "Fetch Current Delays",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const subscriber = $('Filter Subscribed Commuters').item.json;\nconst routeData = $('Calculate Current Route').item.json;\nconst delaysData = $('Fetch Current Delays').item.json;\n\nconst routeLegs = routeData.legs || [];\nconst activeDelays = delaysData.delays || [];\n\n// Match delays against route transit legs\nconst matchedDelays = [];\nfor (const leg of routeLegs) {\n  if (leg.mode === 'bus' && leg.route) {\n    const match = activeDelays.find(d => String(d.route_id) === String(leg.route));\n    if (match) {\n      matchedDelays.push(`Bus ${leg.route}: +${match.delayMinutes} min (${match.reason})`);\n    }\n  }\n}\n\nlet statusSummary = 'All lines operating normally on your route.';\nif (matchedDelays.length > 0) {\n  statusSummary = `⚠️ Delays reported:\\n• ${matchedDelays.join('\\n• ')}`;\n}\n\nconst legsSummary = routeLegs\n  .map((l, i) => `${i + 1}. [${l.mode.toUpperCase()}${l.route ? ' ' + l.route : ''}] ${l.from} ➔ ${l.to} (${l.minutes}m)`)\n  .join('\\n');\n\nconst emailSubject = `TransitSaathi Morning Commute: ${subscriber.from} to ${subscriber.to}`;\nconst emailBody = `Good morning!\\n\\nHere is your commute update for today (${subscriber.name}):\\n\\nOrigin: ${subscriber.from}\\nDestination: ${subscriber.to}\\nEstimated Duration: ${routeData.totalMinutes || '—'} minutes\\nPreference: ${subscriber.preference || 'fastest'}\\n\\nJourney Steps:\\n${legsSummary}\\n\\nService Status:\\n${statusSummary}\\n\\nHave a safe trip!\\n\\nTransitSaathi Assistant\\nhttp://localhost:3000\\nTo unsubscribe: DELETE http://localhost:3001/saved/${subscriber.id}/email`;\n\nreturn [{\n  json: {\n    toEmail: subscriber.email,\n    recipientName: subscriber.name,\n    subject: emailSubject,\n    text: emailBody,\n    routeId: subscriber.id\n  }\n}];"
+      },
+      "id": "format-email-alert",
+      "name": "Compose Alert Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.toEmail }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "send-email-notification",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1560,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule: Weekdays 7:30 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Saved Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Saved Routes": {
+      "main": [
+        [
+          {
+            "node": "Filter Subscribed Commuters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Subscribed Commuters": {
+      "main": [
+        [
+          {
+            "node": "Calculate Current Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Current Route": {
+      "main": [
+        [
+          {
+            "node": "Fetch Delays",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Delays": {
+      "main": [
+        [
+          {
+            "node": "Compose Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "TransitSaathi"
+    },
+    {
+      "name": "Commute Alerts"
+    }
+  ]
+}

@@ -22086,9 +22086,13 @@
     "toName": "Hazarat Nizamuddin"
   },
   "16939>328": {
-    "error": "HTTP 403: {\"error\":\"Quota exceeded\"}",
     "from": "16939",
-    "to": "328"
+    "to": "328",
+    "distanceKm": 0.895,
+    "durationMin": 1.26,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Hazarat Nizamuddin",
+    "toName": "Ishpat Bhawan"
   },
   "1503>3358": {
     "from": "1503",
@@ -22127,9 +22131,13 @@
     "toName": "north block lane"
   },
   "16149>3986": {
-    "error": "fetch failed",
     "from": "16149",
-    "to": "3986"
+    "to": "3986",
+    "distanceKm": 0.574,
+    "durationMin": 1.5,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "north block lane",
+    "toName": "North Avenue"
   },
   "3986>876": {
     "from": "3986",
@@ -22150,9 +22158,13 @@
     "toName": "ISBT Nityanand Marg"
   },
   "16759>818": {
-    "error": "fetch failed",
     "from": "16759",
-    "to": "818"
+    "to": "818",
+    "distanceKm": 0.898,
+    "durationMin": 1.48,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "ISBT Nityanand Marg",
+    "toName": "Ludlow Castle"
   },
   "3084>524": {
     "from": "3084",
@@ -22182,9 +22194,13 @@
     "toName": "HOTEL SAMRAT ASHOK"
   },
   "16162>3048": {
-    "error": "fetch failed",
     "from": "16162",
-    "to": "3048"
+    "to": "3048",
+    "distanceKm": 0.729,
+    "durationMin": 1.29,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "HOTEL SAMRAT ASHOK",
+    "toName": "Race Course"
   },
   "2394>16164": {
     "from": "2394",
@@ -22196,9 +22212,13 @@
     "toName": "PATEL CHOWK"
   },
   "16164>1287": {
-    "error": "fetch failed",
     "from": "16164",
-    "to": "1287"
+    "to": "1287",
+    "distanceKm": 1.138,
+    "durationMin": 2.41,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "PATEL CHOWK",
+    "toName": "NDPO"
   },
   "1287>2255": {
     "from": "1287",
@@ -22246,9 +22266,13 @@
     "toName": "ISBT Bridge"
   },
   "16171>16170": {
-    "error": "fetch failed",
     "from": "16171",
-    "to": "16170"
+    "to": "16170",
+    "distanceKm": 0.251,
+    "durationMin": 0.4,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Jantar Mantar",
+    "toName": "Palika Kender"
   },
   "15353>1449": {
     "from": "15353",
@@ -22323,9 +22347,13 @@
     "toName": "Zero Pusta"
   },
   "2664>4161": {
-    "error": "fetch failed",
     "from": "2664",
-    "to": "4161"
+    "to": "4161",
+    "distanceKm": 17.211,
+    "durationMin": 15.04,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "New Usman Pur Pusta No-1",
+    "toName": "Lalita Park"
   },
   "16193>782": {
     "from": "16193",
@@ -22400,9 +22428,13 @@
     "toName": "REDFORT"
   },
   "16214>958": {
-    "error": "fetch failed",
     "from": "16214",
-    "to": "958"
+    "to": "958",
+    "distanceKm": 0.638,
+    "durationMin": 2.05,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "REDFORT",
+    "toName": "Jama Masjid"
   },
   "3645>15057": {
     "from": "3645",
@@ -22423,14 +22455,22 @@
     "toName": "PALACE CINEMA"
   },
   "16216>16217": {
-    "error": "fetch failed",
     "from": "16216",
-    "to": "16217"
+    "to": "16217",
+    "distanceKm": 0,
+    "durationMin": 0,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "PALACE CINEMA",
+    "toName": "ROSHNARA ROAD"
   },
   "16217>673": {
-    "error": "fetch failed",
     "from": "16217",
-    "to": "673"
+    "to": "673",
+    "distanceKm": 1.574,
+    "durationMin": 2.71,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "ROSHNARA ROAD",
+    "toName": "Roshnara Bagh"
   },
   "750>751": {
     "from": "750",
@@ -22514,9 +22554,13 @@
     "toName": "N.D. Rly. Station Gate No. 2"
   },
   "16228>1641": {
-    "error": "fetch failed",
     "from": "16228",
-    "to": "1641"
+    "to": "1641",
+    "distanceKm": 0.574,
+    "durationMin": 0.92,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "N.D. Rly. Station Gate No. 2",
+    "toName": "Dispensary Paharganj"
   },
   "356>358": {
     "from": "356",
@@ -22681,9 +22725,13 @@
     "toName": "kamla market"
   },
   "16968>16298": {
-    "error": "fetch failed",
     "from": "16968",
-    "to": "16298"
+    "to": "16298",
+    "distanceKm": 0.099,
+    "durationMin": 0.24,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "kamla market",
+    "toName": "Kamla Market / Ajmeri Gate"
   },
   "16298>1641": {
     "from": "16298",
@@ -22722,9 +22770,13 @@
     "toName": "11Murti"
   },
   "16235>879": {
-    "error": "fetch failed",
     "from": "16235",
-    "to": "879"
+    "to": "879",
+    "distanceKm": 0.898,
+    "durationMin": 1,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "11Murti",
+    "toName": "Palika Kutumb"
   },
   "16864>16865": {
     "from": "16864",
@@ -22736,14 +22788,22 @@
     "toName": "JLN Marg"
   },
   "16865>16866": {
-    "error": "fetch failed",
     "from": "16865",
-    "to": "16866"
+    "to": "16866",
+    "distanceKm": 0.22,
+    "durationMin": 0.47,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "JLN Marg",
+    "toName": "PS Kamla Market"
   },
   "16866>1036": {
-    "error": "fetch failed",
     "from": "16866",
-    "to": "1036"
+    "to": "1036",
+    "distanceKm": 0.22,
+    "durationMin": 0.32,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "PS Kamla Market",
+    "toName": "Ajmeri Gate / Kamla Market"
   },
   "1641>2709": {
     "from": "1641",
@@ -22971,9 +23031,13 @@
     "toName": "Jantar Mantar"
   },
   "16171>832": {
-    "error": "fetch failed",
     "from": "16171",
-    "to": "832"
+    "to": "832",
+    "distanceKm": 0.337,
+    "durationMin": 0.38,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Jantar Mantar",
+    "toName": "P S Parliament / Jantar Mantar"
   },
   "2254>1288": {
     "from": "2254",
@@ -22994,9 +23058,13 @@
     "toName": "Gole Market (Bhai Veer Singh Marg)"
   },
   "17053>2723": {
-    "error": "fetch failed",
     "from": "17053",
-    "to": "2723"
+    "to": "2723",
+    "distanceKm": 0.628,
+    "durationMin": 1.09,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Gole Market (Bhai Veer Singh Marg)",
+    "toName": "Rama Krishna Ashram Marg"
   },
   "3774>16250": {
     "from": "3774",
@@ -23017,9 +23085,13 @@
     "toName": "Ps Old Sabzi M"
   },
   "16272>671": {
-    "error": "fetch failed",
     "from": "16272",
-    "to": "671"
+    "to": "671",
+    "distanceKm": 0.962,
+    "durationMin": 1.74,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Ps Old Sabzi M",
+    "toName": "Ice Factory"
   },
   "16079>15056": {
     "from": "16079",
@@ -23040,9 +23112,13 @@
     "toName": "Motia Khan"
   },
   "16273>739": {
-    "error": "fetch failed",
     "from": "16273",
-    "to": "739"
+    "to": "739",
+    "distanceKm": 1.372,
+    "durationMin": 1.82,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Motia Khan",
+    "toName": "Paharganj Police Station"
   },
   "832>4329": {
     "from": "832",
@@ -23108,9 +23184,13 @@
     "toName": "Bhogal (Jungpura)"
   },
   "16696>2468": {
-    "error": "fetch failed",
     "from": "16696",
-    "to": "2468"
+    "to": "2468",
+    "distanceKm": 0.389,
+    "durationMin": 0.55,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Bhogal (Jungpura)",
+    "toName": "Rojdoot Hotel"
   },
   "15353>1557": {
     "from": "15353",
@@ -23131,9 +23211,13 @@
     "toName": "Motia Khan"
   },
   "16273>15056": {
-    "error": "fetch failed",
     "from": "16273",
-    "to": "15056"
+    "to": "15056",
+    "distanceKm": 0.736,
+    "durationMin": 1.23,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Motia Khan",
+    "toName": "P S Sadar Bazar"
   },
   "15056>739": {
     "from": "15056",
@@ -23154,9 +23238,13 @@
     "toName": "Jwahar Lal Nehru Marg"
   },
   "16277>743": {
-    "error": "fetch failed",
     "from": "16277",
-    "to": "743"
+    "to": "743",
+    "distanceKm": 0.469,
+    "durationMin": 1,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Jwahar Lal Nehru Marg",
+    "toName": "Zakir Husain College"
   },
   "1503>3586": {
     "from": "1503",
@@ -23213,9 +23301,13 @@
     "toName": "Liberty Cinema"
   },
   "16682>2431": {
-    "error": "fetch failed",
     "from": "16682",
-    "to": "2431"
+    "to": "2431",
+    "distanceKm": 0.71,
+    "durationMin": 1.12,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Liberty Cinema",
+    "toName": "Dev Nagar / Khalsa College"
   },
   "2425>330": {
     "from": "2425",
@@ -23245,9 +23337,13 @@
     "toName": "Kota House"
   },
   "15153>16297": {
-    "error": "fetch failed",
     "from": "15153",
-    "to": "16297"
+    "to": "16297",
+    "distanceKm": 1.677,
+    "durationMin": 3.41,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Ranjeet Nagar",
+    "toName": "Shadipur DTC Colony Metro Station"
   },
   "16297>730": {
     "from": "16297",
@@ -23277,9 +23373,13 @@
     "toName": "Zakir Husain College"
   },
   "15144>744": {
-    "error": "fetch failed",
     "from": "15144",
-    "to": "744"
+    "to": "744",
+    "distanceKm": 0.417,
+    "durationMin": 0.61,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Zakir Husain College",
+    "toName": "Turkman Gate / G B Pant Hosipatal"
   },
   "1863>1865": {
     "from": "1863",
@@ -23372,9 +23472,13 @@
     "toName": "Tis Hazari Animal Hospital"
   },
   "16311>111": {
-    "error": "fetch failed",
     "from": "16311",
-    "to": "111"
+    "to": "111",
+    "distanceKm": 2.386,
+    "durationMin": 3.69,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Tis Hazari Animal Hospital",
+    "toName": "Old Delhi Railway Station"
   },
   "1867>15046": {
     "from": "1867",
@@ -23413,9 +23517,13 @@
     "toName": "ISBT Nityanand Marg"
   },
   "16759>1561": {
-    "error": "fetch failed",
     "from": "16759",
-    "to": "1561"
+    "to": "1561",
+    "distanceKm": 0.534,
+    "durationMin": 1.04,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "ISBT Nityanand Marg",
+    "toName": "Mori Gate Terminal"
   },
   "16275>1506": {
     "from": "16275",
@@ -23436,9 +23544,13 @@
     "toName": "Nizamuddin Extension"
   },
   "15206>42": {
-    "error": "fetch failed",
     "from": "15206",
-    "to": "42"
+    "to": "42",
+    "distanceKm": 1.203,
+    "durationMin": 1.88,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Malka Ganj Terminal",
+    "toName": "Clock Tower"
   },
   "107>16333": {
     "from": "107",
@@ -23450,9 +23562,13 @@
     "toName": "St Stephen Hospital"
   },
   "16333>1561": {
-    "error": "fetch failed",
     "from": "16333",
-    "to": "1561"
+    "to": "1561",
+    "distanceKm": 0.869,
+    "durationMin": 1.32,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "St Stephen Hospital",
+    "toName": "Mori Gate Terminal"
   },
   "1951>5100": {
     "from": "1951",
@@ -23464,9 +23580,13 @@
     "toName": "Shiv Hanuman Mandir"
   },
   "5100>111": {
-    "error": "fetch failed",
     "from": "5100",
-    "to": "111"
+    "to": "111",
+    "distanceKm": 2.918,
+    "durationMin": 3.58,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Shiv Hanuman Mandir",
+    "toName": "Old Delhi Railway Station"
   },
   "15543>781": {
     "from": "15543",
@@ -23514,14 +23634,22 @@
     "toName": "New Delhi Railway Station Gate 2"
   },
   "16344>16345": {
-    "error": "fetch failed",
     "from": "16344",
-    "to": "16345"
+    "to": "16345",
+    "distanceKm": 4.572,
+    "durationMin": 7.16,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Laxminarain Temple",
+    "toName": "Kali Bari (R.K. Asharm Xing)"
   },
   "16345>1288": {
-    "error": "fetch failed",
     "from": "16345",
-    "to": "1288"
+    "to": "1288",
+    "distanceKm": 3.099,
+    "durationMin": 4.65,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Kali Bari (R.K. Asharm Xing)",
+    "toName": "Gurudwara Bangla Sahib"
   },
   "1289>1034": {
     "from": "1289",
@@ -23551,9 +23679,13 @@
     "toName": "ISBT Kashmere Gate (Lothian Road)"
   },
   "2664>15354": {
-    "error": "fetch failed",
     "from": "2664",
-    "to": "15354"
+    "to": "15354",
+    "distanceKm": 9.625,
+    "durationMin": 8.45,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "New Usman Pur Pusta No-1",
+    "toName": "Kaithwara"
   },
   "785>48": {
     "from": "785",
@@ -23565,9 +23697,13 @@
     "toName": "ISBT Nityanand Marg"
   },
   "16352>3263": {
-    "error": "fetch failed",
     "from": "16352",
-    "to": "3263"
+    "to": "3263",
+    "distanceKm": 0.875,
+    "durationMin": 1.16,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Welcome",
+    "toName": "Seelam Pur Metro Mall"
   },
   "3263>53": {
     "from": "3263",
@@ -23624,9 +23760,13 @@
     "toName": "Welcome Metro Station"
   },
   "16386>1849": {
-    "error": "fetch failed",
     "from": "16386",
-    "to": "1849"
+    "to": "1849",
+    "distanceKm": 1.463,
+    "durationMin": 2.55,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Ganesh Nagar West",
+    "toName": "Shakar Pur School Block"
   },
   "1851>1854": {
     "from": "1851",
@@ -23647,9 +23787,13 @@
     "toName": "ISBT Kasmiri Gate"
   },
   "16387>749": {
-    "error": "fetch failed",
     "from": "16387",
-    "to": "749"
+    "to": "749",
+    "distanceKm": 1.277,
+    "durationMin": 2.44,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "ISBT Kasmiri Gate",
+    "toName": "Guru Govind Singh University (Kashmere Gate)"
   },
   "749>108": {
     "from": "749",
@@ -23715,9 +23859,13 @@
     "toName": "Kendriya Terminal (Pt. Pant Marg)"
   },
   "16859>145": {
-    "error": "fetch failed",
     "from": "16859",
-    "to": "145"
+    "to": "145",
+    "distanceKm": 0.786,
+    "durationMin": 1.49,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Kendriya Terminal (Pt. Pant Marg)",
+    "toName": "Kendriya Terminal (Church Road)"
   },
   "1296>133": {
     "from": "1296",
@@ -23810,9 +23958,13 @@
     "toName": "Pant Nagar"
   },
   "15553>15716": {
-    "error": "fetch failed",
     "from": "15553",
-    "to": "15716"
+    "to": "15716",
+    "distanceKm": 17.866,
+    "durationMin": 22.22,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Toll Road Corner",
+    "toName": "MOTI BAGH"
   },
   "1720>3306": {
     "from": "1720",
@@ -23824,9 +23976,13 @@
     "toName": "Dhaula Kuan"
   },
   "15553>1718": {
-    "error": "fetch failed",
     "from": "15553",
-    "to": "1718"
+    "to": "1718",
+    "distanceKm": 17.879,
+    "durationMin": 22.24,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Toll Road Corner",
+    "toName": "South Moti Bagh (Ring Road)"
   },
   "145>874": {
     "from": "145",
@@ -23928,9 +24084,13 @@
     "toName": "Super Bazar Conn. Place"
   },
   "16434>1033": {
-    "error": "fetch failed",
     "from": "16434",
-    "to": "1033"
+    "to": "1033",
+    "distanceKm": 1.537,
+    "durationMin": 2.25,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Super Bazar Conn. Place",
+    "toName": "Shivaji Park"
   },
   "1034>1243": {
     "from": "1034",
@@ -23969,9 +24129,13 @@
     "toName": "TT Post under Pass"
   },
   "16386>16410": {
-    "error": "fetch failed",
     "from": "16386",
-    "to": "16410"
+    "to": "16410",
+    "distanceKm": 2.081,
+    "durationMin": 3.54,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Ganesh Nagar West",
+    "toName": "TT Post under Pass"
   },
   "16410>1116": {
     "from": "16410",
@@ -24001,9 +24165,13 @@
     "toName": "Sunder Nagar Market"
   },
   "16937>346": {
-    "error": "fetch failed",
     "from": "16937",
-    "to": "346"
+    "to": "346",
+    "distanceKm": 2.166,
+    "durationMin": 3.29,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Sunder Nagar Market",
+    "toName": "Sunder Nagar"
   },
   "351>135": {
     "from": "351",
@@ -24096,9 +24264,13 @@
     "toName": "Old Rajendra Nagar Market"
   },
   "15706>16942": {
-    "error": "fetch failed",
     "from": "15706",
-    "to": "16942"
+    "to": "16942",
+    "distanceKm": 2.733,
+    "durationMin": 3.63,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Old Rajendra Nagar Market",
+    "toName": "Shankar Road"
   },
   "16942>1451": {
     "from": "16942",
@@ -24128,9 +24300,13 @@
     "toName": "Kotah House"
   },
   "16530>15066": {
-    "error": "fetch failed",
     "from": "16530",
-    "to": "15066"
+    "to": "15066",
+    "distanceKm": 0.527,
+    "durationMin": 0.71,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Delhi Gate",
+    "toName": "Golcha Cinema"
   },
   "2976>15877": {
     "from": "2976",
@@ -24160,9 +24336,13 @@
     "toName": "Jhandewalan"
   },
   "16435>16436": {
-    "error": "fetch failed",
     "from": "16435",
-    "to": "16436"
+    "to": "16436",
+    "distanceKm": 1.959,
+    "durationMin": 2.95,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Jhandewalan",
+    "toName": "Sadhu Vaswani Marg"
   },
   "16436>15637": {
     "from": "16436",
@@ -24228,9 +24408,13 @@
     "toName": "N D R Station G No 2"
   },
   "15706>1278": {
-    "error": "fetch failed",
     "from": "15706",
-    "to": "1278"
+    "to": "1278",
+    "distanceKm": 2.543,
+    "durationMin": 3.21,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Old Rajendra Nagar Market",
+    "toName": "Rajender Nagar"
   },
   "1278>16942": {
     "from": "1278",
@@ -24305,9 +24489,13 @@
     "toName": "Railway Museum"
   },
   "4179>15823": {
-    "error": "fetch failed",
     "from": "4179",
-    "to": "15823"
+    "to": "15823",
+    "distanceKm": 1.221,
+    "durationMin": 1.72,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Railway Museum",
+    "toName": "German Ambessy"
   },
   "15823>15822": {
     "from": "15823",
@@ -24373,9 +24561,13 @@
     "toName": "THE LEELA PALACE KEMPINSKI"
   },
   "16485>3046": {
-    "error": "fetch failed",
     "from": "16485",
-    "to": "3046"
+    "to": "3046",
+    "distanceKm": 2.119,
+    "durationMin": 2.94,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "THE LEELA PALACE KEMPINSKI",
+    "toName": "Vinay Marg"
   },
   "3483>518": {
     "from": "3483",
@@ -24423,9 +24615,13 @@
     "toName": "Talkatora Stadium"
   },
   "16845>3482": {
-    "error": "fetch failed",
     "from": "16845",
-    "to": "3482"
+    "to": "3482",
+    "distanceKm": 0.692,
+    "durationMin": 1.05,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Talkatora Stadium",
+    "toName": "Kali Bari Marg Crossing"
   },
   "145>875": {
     "from": "145",
@@ -24446,9 +24642,13 @@
     "toName": "BIRLA MANDIR"
   },
   "16489>2014": {
-    "error": "fetch failed",
     "from": "16489",
-    "to": "2014"
+    "to": "2014",
+    "distanceKm": 0.198,
+    "durationMin": 0.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "BIRLA MANDIR",
+    "toName": "Gole Market"
   },
   "2014>16490": {
     "from": "2014",
@@ -24469,9 +24669,13 @@
     "toName": "Baba Bishamber Dass Ashram"
   },
   "4225>16989": {
-    "error": "fetch failed",
     "from": "4225",
-    "to": "16989"
+    "to": "16989",
+    "distanceKm": 0.112,
+    "durationMin": 0.15,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Baba Bishamber Dass Ashram",
+    "toName": "CPWD Office"
   },
   "1026>1027": {
     "from": "1026",
@@ -24519,9 +24723,13 @@
     "toName": "Delhi Secretariat"
   },
   "15880>1718": {
-    "error": "fetch failed",
     "from": "15880",
-    "to": "1718"
+    "to": "1718",
+    "distanceKm": 2.261,
+    "durationMin": 4.36,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Nanak Pura Comunity Centre",
+    "toName": "South Moti Bagh (Ring Road)"
   },
   "1719>15823": {
     "from": "1719",
@@ -24704,14 +24912,22 @@
     "toName": "Chitra Gupta Road"
   },
   "16589>16590": {
-    "error": "fetch failed",
     "from": "16589",
-    "to": "16590"
+    "to": "16590",
+    "distanceKm": 0.645,
+    "durationMin": 1.48,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Chitra Gupta Road",
+    "toName": "Rama Krishna Ashram Marg"
   },
   "16590>2015": {
-    "error": "fetch failed",
     "from": "16590",
-    "to": "2015"
+    "to": "2015",
+    "distanceKm": 0.771,
+    "durationMin": 1.68,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Rama Krishna Ashram Marg",
+    "toName": "Gole Market (Bhai Veer Singh Marg)"
   },
   "1284>1685": {
     "from": "1284",
@@ -24732,9 +24948,13 @@
     "toName": "sent. colam bus school"
   },
   "16597>1288": {
-    "error": "fetch failed",
     "from": "16597",
-    "to": "1288"
+    "to": "1288",
+    "distanceKm": 0.445,
+    "durationMin": 0.96,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "sent. colam bus school",
+    "toName": "Gurudwara Bangla Sahib"
   },
   "1774>16629": {
     "from": "1774",
@@ -24746,9 +24966,13 @@
     "toName": "Rani Jhansi Road Jhande Walan"
   },
   "16629>1109": {
-    "error": "fetch failed",
     "from": "16629",
-    "to": "1109"
+    "to": "1109",
+    "distanceKm": 0.517,
+    "durationMin": 0.72,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Rani Jhansi Road Jhande Walan",
+    "toName": "Panchkuian Road Banwari Lal Hospital"
   },
   "16688>2877": {
     "from": "16688",
@@ -24769,9 +24993,13 @@
     "toName": "D P S School"
   },
   "16599>1788": {
-    "error": "fetch failed",
     "from": "16599",
-    "to": "1788"
+    "to": "1788",
+    "distanceKm": 1.412,
+    "durationMin": 2.74,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "D P S School",
+    "toName": "Nizamuddin Extension"
   },
   "4257>16944": {
     "from": "4257",
@@ -24783,9 +25011,13 @@
     "toName": "S J Madrasa"
   },
   "16944>16600": {
-    "error": "fetch failed",
     "from": "16944",
-    "to": "16600"
+    "to": "16600",
+    "distanceKm": 2.135,
+    "durationMin": 3.02,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "S J Madrasa",
+    "toName": "Lodhi Road Crossing"
   },
   "2394>3498": {
     "from": "2394",
@@ -24878,14 +25110,22 @@
     "toName": "Race Course"
   },
   "16615>16616": {
-    "error": "fetch failed",
     "from": "16615",
-    "to": "16616"
+    "to": "16616",
+    "distanceKm": 0.339,
+    "durationMin": 0.73,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Race Course",
+    "toName": "HOTEL SAMRAT ASHOK"
   },
   "16616>3161": {
-    "error": "fetch failed",
     "from": "16616",
-    "to": "3161"
+    "to": "3161",
+    "distanceKm": 0.693,
+    "durationMin": 1.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "HOTEL SAMRAT ASHOK",
+    "toName": "Ashoka Hotel"
   },
   "3162>16485": {
     "from": "3162",
@@ -24897,9 +25137,13 @@
     "toName": "THE LEELA PALACE KEMPINSKI"
   },
   "16485>15842": {
-    "error": "fetch failed",
     "from": "16485",
-    "to": "15842"
+    "to": "15842",
+    "distanceKm": 2.028,
+    "durationMin": 2.65,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "THE LEELA PALACE KEMPINSKI",
+    "toName": "Palika Club"
   },
   "133>353": {
     "from": "133",
@@ -24920,14 +25164,22 @@
     "toName": "JLN Marg"
   },
   "16865>16968": {
-    "error": "fetch failed",
     "from": "16865",
-    "to": "16968"
+    "to": "16968",
+    "distanceKm": 0.405,
+    "durationMin": 0.69,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "JLN Marg",
+    "toName": "kamla market"
   },
   "16968>3159": {
-    "error": "fetch failed",
     "from": "16968",
-    "to": "3159"
+    "to": "3159",
+    "distanceKm": 0.289,
+    "durationMin": 0.83,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "kamla market",
+    "toName": "New Delhi Railway Station Gate 2"
   },
   "779>781": {
     "from": "779",
@@ -24966,9 +25218,13 @@
     "toName": "Model Basti"
   },
   "16619>2283": {
-    "error": "fetch failed",
     "from": "16619",
-    "to": "2283"
+    "to": "2283",
+    "distanceKm": 0.62,
+    "durationMin": 0.72,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Model Basti",
+    "toName": "Anand Parbat Industrial Area"
   },
   "2429>2431": {
     "from": "2429",
@@ -24980,9 +25236,13 @@
     "toName": "Dev Nagar / Khalsa College"
   },
   "16589>2878": {
-    "error": "fetch failed",
     "from": "16589",
-    "to": "2878"
+    "to": "2878",
+    "distanceKm": 0.466,
+    "durationMin": 0.88,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Chitra Gupta Road",
+    "toName": "Kalawati Hospital"
   },
   "830>16620": {
     "from": "830",
@@ -25021,9 +25281,13 @@
     "toName": "Kendriya Terminal / Gurudwara Rakab Gunj"
   },
   "16879>1287": {
-    "error": "fetch failed",
     "from": "16879",
-    "to": "1287"
+    "to": "1287",
+    "distanceKm": 0.628,
+    "durationMin": 0.93,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Kendriya Terminal / Gurudwara Rakab Gunj",
+    "toName": "NDPO"
   },
   "876>1287": {
     "from": "876",
@@ -25161,9 +25425,13 @@
     "toName": "Shastri Park DMRC Depot"
   },
   "16758>300": {
-    "error": "fetch failed",
     "from": "16758",
-    "to": "300"
+    "to": "300",
+    "distanceKm": 1.892,
+    "durationMin": 2.51,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Shastri Park DMRC Depot",
+    "toName": "ISBT Nityanand Marg"
   },
   "1719>16491": {
     "from": "1719",
@@ -25193,9 +25461,13 @@
     "toName": "South Moti Bagh (Ring Road)"
   },
   "16809>1409": {
-    "error": "fetch failed",
     "from": "16809",
-    "to": "1409"
+    "to": "1409",
+    "distanceKm": 10.882,
+    "durationMin": 14.66,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "South Moti Bagh (Ring Road)",
+    "toName": "Bala Sahib Gurudwara"
   },
   "15353>741": {
     "from": "15353",
@@ -25252,9 +25524,13 @@
     "toName": "Ps Parliamt S"
   },
   "16968>15709": {
-    "error": "fetch failed",
     "from": "16968",
-    "to": "15709"
+    "to": "15709",
+    "distanceKm": 0.153,
+    "durationMin": 0.51,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "kamla market",
+    "toName": "N D R Station G No 2"
   },
   "1289>1639": {
     "from": "1289",
@@ -25311,9 +25587,13 @@
     "toName": "Dispensary Paharganj"
   },
   "16627>16298": {
-    "error": "fetch failed",
     "from": "16627",
-    "to": "16298"
+    "to": "16298",
+    "distanceKm": 1.993,
+    "durationMin": 3.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Dispensary Paharganj",
+    "toName": "Kamla Market / Ajmeri Gate"
   },
   "16298>1277": {
     "from": "16298",
@@ -25334,14 +25614,22 @@
     "toName": "PS Kamla Market"
   },
   "16866>1243": {
-    "error": "fetch failed",
     "from": "16866",
-    "to": "1243"
+    "to": "1243",
+    "distanceKm": 0.338,
+    "durationMin": 0.73,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "PS Kamla Market",
+    "toName": "New Delhi Railway Station Gate 2"
   },
   "16575>16346": {
-    "error": "fetch failed",
     "from": "16575",
-    "to": "16346"
+    "to": "16346",
+    "distanceKm": 9.308,
+    "durationMin": 12.11,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "MUBARAK PUR DABAS",
+    "toName": "Jai Dev Park"
   },
   "737>16629": {
     "from": "737",
@@ -25353,9 +25641,13 @@
     "toName": "Rani Jhansi Road Jhande Walan"
   },
   "16629>16627": {
-    "error": "fetch failed",
     "from": "16629",
-    "to": "16627"
+    "to": "16627",
+    "distanceKm": 1.262,
+    "durationMin": 1.88,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Rani Jhansi Road Jhande Walan",
+    "toName": "Dispensary Paharganj"
   },
   "16298>1034": {
     "from": "16298",
@@ -25421,19 +25713,31 @@
     "toName": "Zakir Husain College"
   },
   "15144>16630": {
-    "error": "fetch failed",
     "from": "15144",
-    "to": "16630"
+    "to": "16630",
+    "distanceKm": 0.623,
+    "durationMin": 0.91,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Zakir Husain College",
+    "toName": "Delite Cinema"
   },
   "16630>16631": {
-    "error": "fetch failed",
     "from": "16630",
-    "to": "16631"
+    "to": "16631",
+    "distanceKm": 0.464,
+    "durationMin": 1.56,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Delite Cinema",
+    "toName": "Turkman Gate / G B Pant Hosipatal"
   },
   "16631>746": {
-    "error": "fetch failed",
     "from": "16631",
-    "to": "746"
+    "to": "746",
+    "distanceKm": 0.54,
+    "durationMin": 0.59,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Turkman Gate / G B Pant Hosipatal",
+    "toName": "Delhi Gate"
   },
   "15540>2190": {
     "from": "15540",
@@ -25463,9 +25767,13 @@
     "toName": "Shajahan Road UPSC"
   },
   "17109>15877": {
-    "error": "fetch failed",
     "from": "17109",
-    "to": "15877"
+    "to": "15877",
+    "distanceKm": 0.358,
+    "durationMin": 0.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Shajahan Road UPSC",
+    "toName": "Kota House"
   },
   "3326>1506": {
     "from": "3326",
@@ -25522,9 +25830,13 @@
     "toName": "Ravinder Rangshala"
   },
   "15744>2051": {
-    "error": "fetch failed",
     "from": "15744",
-    "to": "2051"
+    "to": "2051",
+    "distanceKm": 1.122,
+    "durationMin": 1.3,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Ravinder Rangshala",
+    "toName": "Ridge Road"
   },
   "2051>2053": {
     "from": "2051",
@@ -25608,14 +25920,22 @@
     "toName": "NDPO"
   },
   "16858>16844": {
-    "error": "fetch failed",
     "from": "16858",
-    "to": "16844"
+    "to": "16844",
+    "distanceKm": 0.565,
+    "durationMin": 1.25,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "NDPO",
+    "toName": "Kendriya Terminal / Gurudwara Rakab Gunj"
   },
   "16844>16860": {
-    "error": "fetch failed",
     "from": "16844",
-    "to": "16860"
+    "to": "16860",
+    "distanceKm": 0.968,
+    "durationMin": 1.81,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Kendriya Terminal / Gurudwara Rakab Gunj",
+    "toName": "RML Hospital"
   },
   "16860>16845": {
     "from": "16860",
@@ -25627,9 +25947,13 @@
     "toName": "Talkatora Stadium"
   },
   "16845>3553": {
-    "error": "fetch failed",
     "from": "16845",
-    "to": "3553"
+    "to": "3553",
+    "distanceKm": 0.968,
+    "durationMin": 1.17,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Talkatora Stadium",
+    "toName": "Upper Ridge Road"
   },
   "731>16875": {
     "from": "731",
@@ -25641,9 +25965,13 @@
     "toName": "East Patel Nagar"
   },
   "16875>1279": {
-    "error": "fetch failed",
     "from": "16875",
-    "to": "1279"
+    "to": "1279",
+    "distanceKm": 0.748,
+    "durationMin": 1.02,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "East Patel Nagar",
+    "toName": "Shankar Road"
   },
   "1281>3481": {
     "from": "1281",
@@ -25664,29 +25992,49 @@
     "toName": "Kendriya Terminal / Gurudwara Rakab Gunj"
   },
   "16879>16920": {
-    "error": "fetch failed",
     "from": "16879",
-    "to": "16920"
+    "to": "16920",
+    "distanceKm": 0.628,
+    "durationMin": 0.93,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Kendriya Terminal / Gurudwara Rakab Gunj",
+    "toName": "NDPO"
   },
   "16920>17052": {
-    "error": "fetch failed",
     "from": "16920",
-    "to": "17052"
+    "to": "17052",
+    "distanceKm": 0.435,
+    "durationMin": 0.82,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "NDPO",
+    "toName": "Gole Market (Sahitya Sadan)"
   },
   "17052>17053": {
-    "error": "fetch failed",
     "from": "17052",
-    "to": "17053"
+    "to": "17053",
+    "distanceKm": 0.374,
+    "durationMin": 0.5,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Gole Market (Sahitya Sadan)",
+    "toName": "Gole Market (Bhai Veer Singh Marg)"
   },
   "17053>16805": {
-    "error": "fetch failed",
     "from": "17053",
-    "to": "16805"
+    "to": "16805",
+    "distanceKm": 1.541,
+    "durationMin": 4.69,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Gole Market (Bhai Veer Singh Marg)",
+    "toName": "Shaheed Bhagat Singh Marg"
   },
   "16805>16620": {
-    "error": "fetch failed",
     "from": "16805",
-    "to": "16620"
+    "to": "16620",
+    "distanceKm": 1.693,
+    "durationMin": 2.48,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Shaheed Bhagat Singh Marg",
+    "toName": "Shivaji Stadium Terminal"
   },
   "448>15852": {
     "from": "448",
@@ -25698,9 +26046,13 @@
     "toName": "Bala Sahib Gurudwara"
   },
   "15852>15716": {
-    "error": "fetch failed",
     "from": "15852",
-    "to": "15716"
+    "to": "15716",
+    "distanceKm": 11.466,
+    "durationMin": 15.36,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Bala Sahib Gurudwara",
+    "toName": "MOTI BAGH"
   },
   "1720>16705": {
     "from": "1720",
@@ -25712,9 +26064,13 @@
     "toName": "ARSD College / Dhaula Kuan"
   },
   "16705>16706": {
-    "error": "fetch failed",
     "from": "16705",
-    "to": "16706"
+    "to": "16706",
+    "distanceKm": 0.724,
+    "durationMin": 1.36,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "ARSD College / Dhaula Kuan",
+    "toName": "Dhaula Kuan"
   },
   "16807>2372": {
     "from": "16807",
@@ -25735,14 +26091,22 @@
     "toName": "Satya Niketan / Gurudwara Moti Bagh"
   },
   "16808>16949": {
-    "error": "fetch failed",
     "from": "16808",
-    "to": "16949"
+    "to": "16949",
+    "distanceKm": 0.419,
+    "durationMin": 0.5,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Satya Niketan / Gurudwara Moti Bagh",
+    "toName": "Moti Bagh"
   },
   "16949>1409": {
-    "error": "fetch failed",
     "from": "16949",
-    "to": "1409"
+    "to": "1409",
+    "distanceKm": 10.859,
+    "durationMin": 14.63,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Moti Bagh",
+    "toName": "Bala Sahib Gurudwara"
   },
   "4556>16989": {
     "from": "4556",
@@ -25763,9 +26127,13 @@
     "toName": "Max Mueller Bhawan"
   },
   "16691>1779": {
-    "error": "fetch failed",
     "from": "16691",
-    "to": "1779"
+    "to": "1779",
+    "distanceKm": 0.397,
+    "durationMin": 0.8,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Max Mueller Bhawan",
+    "toName": "Bhartiya Vidya Bhawan"
   },
   "1779>16693": {
     "from": "1779",
@@ -25777,9 +26145,13 @@
     "toName": "Baroda House"
   },
   "16693>1782": {
-    "error": "fetch failed",
     "from": "16693",
-    "to": "1782"
+    "to": "1782",
+    "distanceKm": 0.864,
+    "durationMin": 1.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Baroda House",
+    "toName": "National Stadium"
   },
   "16800>3762": {
     "from": "16800",
@@ -25827,9 +26199,13 @@
     "toName": "Jhandewalan"
   },
   "16715>2294": {
-    "error": "fetch failed",
     "from": "16715",
-    "to": "2294"
+    "to": "2294",
+    "distanceKm": 0.658,
+    "durationMin": 0.88,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Jhandewalan",
+    "toName": "Faiz Road"
   },
   "2297>16718": {
     "from": "2297",
@@ -25841,9 +26217,13 @@
     "toName": "Khalsa College"
   },
   "16718>795": {
-    "error": "fetch failed",
     "from": "16718",
-    "to": "795"
+    "to": "795",
+    "distanceKm": 1.053,
+    "durationMin": 1.37,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Khalsa College",
+    "toName": "Liberty Cinema"
   },
   "801>16723": {
     "from": "801",
@@ -25864,9 +26244,13 @@
     "toName": "Sarai Rohilla Govt Qtrs (Rohtak Road)"
   },
   "16681>16682": {
-    "error": "fetch failed",
     "from": "16681",
-    "to": "16682"
+    "to": "16682",
+    "distanceKm": 0.387,
+    "durationMin": 0.39,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Sarai Rohilla Govt Qtrs (Rohtak Road)",
+    "toName": "Liberty Cinema"
   },
   "2431>16683": {
     "from": "2431",
@@ -25878,9 +26262,13 @@
     "toName": "Prahlad Market"
   },
   "16683>2434": {
-    "error": "fetch failed",
     "from": "16683",
-    "to": "2434"
+    "to": "2434",
+    "distanceKm": 0.447,
+    "durationMin": 0.54,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Prahlad Market",
+    "toName": "DB Gupta Market"
   },
   "2434>16685": {
     "from": "2434",
@@ -25892,9 +26280,13 @@
     "toName": "Faiz Road"
   },
   "16685>1774": {
-    "error": "fetch failed",
     "from": "16685",
-    "to": "1774"
+    "to": "1774",
+    "distanceKm": 0.574,
+    "durationMin": 0.79,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Faiz Road",
+    "toName": "Jhandewalan"
   },
   "739>16915": {
     "from": "739",
@@ -25906,8 +26298,12 @@
     "toName": "Dispensary Paharganj"
   },
   "16915>15709": {
-    "error": "fetch failed",
     "from": "16915",
-    "to": "15709"
+    "to": "15709",
+    "distanceKm": 2.048,
+    "durationMin": 3.66,
+    "method": "heigit-matrix-driving-car",
+    "fromName": "Dispensary Paharganj",
+    "toName": "N D R Station G No 2"
   }
 }

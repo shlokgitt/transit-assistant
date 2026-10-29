@@ -13,8 +13,11 @@ const port = Number(process.env.PORT || 3001);
 
 app.use((_request, response, next) => {
   response.setHeader("Access-Control-Allow-Origin", "*");
-  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (_request.method === "OPTIONS") {
+    return response.sendStatus(204);
+  }
   next();
 });
 app.use(express.json({ limit: "30kb" }));
@@ -26,6 +29,7 @@ const savedRoutes = [
     from: "Karol Bagh",
     to: "Gandhi Darshan",
     preference: "fastest",
+    email: null,
   },
 ];
 
@@ -51,11 +55,20 @@ function loadDelays() {
 }
 
 app.get("/saved", (_request, response) => {
-  response.type("application/json").json(savedRoutes);
+  response.type("application/json").json(
+    savedRoutes.map(({ id, name, from, to, preference, email }) => ({
+      id,
+      name,
+      from,
+      to,
+      preference,
+      email: email || null,
+    }))
+  );
 });
 
 app.post("/saved", (request, response) => {
-  const { name, from, to, preference } = request.body ?? {};
+  const { name, from, to, preference, email } = request.body ?? {};
   if (
     typeof name !== "string" ||
     typeof from !== "string" ||
@@ -69,15 +82,37 @@ app.post("/saved", (request, response) => {
     });
   }
 
+  let normalizedEmail = null;
+  if (email !== undefined && email !== null) {
+    if (typeof email !== "string") {
+      return response.status(400).json({ error: "Invalid email" });
+    }
+    normalizedEmail = email.trim().toLowerCase() || null;
+    if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return response.status(400).json({ error: "Invalid email" });
+    }
+  }
+
   const saved = {
     id: `r${savedRoutes.length + 1}`,
     name: name.trim(),
     from: from.trim(),
     to: to.trim(),
     preference: normalizePreference(preference),
+    email: normalizedEmail,
   };
   savedRoutes.push(saved);
   return response.status(201).type("application/json").json(saved);
+});
+
+app.delete("/saved/:id/email", (request, response) => {
+  const saved = savedRoutes.find((route) => route.id === request.params.id);
+  if (!saved) {
+    return response.status(404).json({ error: "Saved route not found" });
+  }
+
+  saved.email = null;
+  return response.type("application/json").json(saved);
 });
 
 app.get("/route", (request, response) => {

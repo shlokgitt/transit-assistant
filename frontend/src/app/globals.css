@@ -1583,3 +1583,125 @@ main,
     margin-top: 16px;
   }
 }
+
+
+/* Modal Backdrop & Save Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(14, 21, 38, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+.save-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border: 1px solid var(--sa-line);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16);
+  animation: modalScaleIn 0.22s ease-out;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.alert-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--sa-ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.alert-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sa-green-dark);
+  cursor: pointer;
+}
+
+.email-field {
+  width: 100%;
+  padding: 11px 14px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--sa-line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--sa-ink);
+  background: #fbfdfb;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.email-field:focus {
+  border-color: var(--sa-green);
+  box-shadow: 0 0 0 3px rgba(45, 133, 80, 0.12);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.alert-label {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sa-green-dark);
+  background: #edf5ef;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+.inline-error {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.save-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.save-success-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #166534;
+  background: #dcfce7;
+  padding: 6px 12px;
+  border-radius: 20px;
+  animation: fadeIn 0.25s ease;
+}
