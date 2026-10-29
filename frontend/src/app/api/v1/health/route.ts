@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findStops } from "../../../../../../backend/route.js";
+import { findStops } from "../../../../../backend/route.js";
 
 export async function GET() {
   try {
