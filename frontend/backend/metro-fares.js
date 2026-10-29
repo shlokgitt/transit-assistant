@@ -4,7 +4,22 @@ import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
 
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
-export const METRO_FARES_DIR = path.join(ROOT_DIR, "data", "metro-fares");
+function findMetroFaresDir() {
+  const candidates = [
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'data', 'metro-fares'),
+    path.join(process.cwd(), 'backend', 'data', 'metro-fares'),
+    path.join(process.cwd(), 'frontend', 'backend', 'data', 'metro-fares'),
+    path.join(process.cwd(), 'data', 'metro-fares'),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(path.join(dir, 'dmrc_standard_fares.csv'))) return dir;
+    } catch {}
+  }
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), 'data', 'metro-fares');
+}
+
+export const METRO_FARES_DIR = findMetroFaresDir();
 
 const DMRC_COLUMNS = [
   "min_km_inclusive",

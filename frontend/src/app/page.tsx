@@ -213,6 +213,7 @@ export default function Home() {
   const handlePlanRoute = useCallback(async () => {
     if (!origin.trim() || !destination.trim() || origin.trim() === destination.trim()) {
       setRouteError("Enter two different places to plan a journey.");
+      setScreen("results");
       return;
     }
 
@@ -248,6 +249,7 @@ export default function Home() {
       setRouteResponse(null);
       setSelectedRouteId(null);
       setRouteError(error instanceof Error ? error.message : "Route planning failed.");
+      setScreen("results");
     } finally {
       setIsLoading(false);
     }

@@ -43,10 +43,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Backend files (route.js, graph.json, data/) are copied into frontend/backend/
-  // by the prebuild script — no need to trace outside this directory.
   outputFileTracingIncludes: {
-    "/api/**/*": ["./backend/**/*"],
+    "/api/**/*": [
+      "./backend/**/*",
+      "./backend/*",
+      "./backend/data/**/*",
+      "./backend/data/metro-fares/*",
+    ],
   },
 
   async headers() {

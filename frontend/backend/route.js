@@ -3,7 +3,24 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { calculateMetroFare } from "./metro-fares.js";
 
-const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
+function findAssetDir(filename) {
+  const candidates = [
+    path.dirname(fileURLToPath(import.meta.url)),
+    path.join(process.cwd(), 'backend'),
+    path.join(process.cwd(), 'frontend', 'backend'),
+    process.cwd(),
+    path.join(process.cwd(), '..'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '..'),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(path.join(dir, filename))) return dir;
+    } catch {}
+  }
+  return path.dirname(fileURLToPath(import.meta.url));
+}
+
+const ROOT_DIR = findAssetDir('graph.json');
 const resolveRoot = (file) => path.join(ROOT_DIR, file);
 const G = JSON.parse(fs.readFileSync(resolveRoot("graph.json"), "utf8"));
 
