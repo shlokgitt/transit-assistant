@@ -80,6 +80,12 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     icon: <ModeIconBadge emoji="🚶" color="#06b6d4" glow="rgba(6,182,212,0.5)" />,
     color: "#06b6d4",
   },
+  {
+    id: "cab",
+    label: "Cab",
+    icon: <ModeIconBadge emoji="🚕" color="#f97316" glow="rgba(249,115,22,0.5)" />,
+    color: "#f97316",
+  },
 ];
 
 const PRIORITIES: { id: RoutingPriority; label: string; icon: React.ReactNode; badge: string }[] = [

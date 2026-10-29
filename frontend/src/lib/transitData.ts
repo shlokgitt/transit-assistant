@@ -195,11 +195,30 @@ export function resolveCoordinates(city: string, query: string, explicitLat?: nu
   if (explicitLat && explicitLng) {
     return { name: query, lat: explicitLat, lng: explicitLng };
   }
+  const q = query.toLowerCase().trim();
   const stops = STOPS_DB[city.toLowerCase()] || STOPS_DB["delhi"];
-  const match = stops.find((s) => s.name.toLowerCase().includes(query.toLowerCase()));
+
+  // 1. Direct or bidirectional match
+  const match = stops.find(
+    (s) =>
+      s.name.toLowerCase() === q ||
+      s.name.toLowerCase().includes(q) ||
+      q.includes(s.name.toLowerCase())
+  );
   if (match) {
     return { name: match.name, lat: match.lat, lng: match.lng };
   }
+
+  // 2. Token / word matching
+  const tokens = q.split(/[\s,()\-]+/).filter((t) => t.length > 2);
+  const tokenMatch = stops.find((s) => {
+    const sLower = s.name.toLowerCase();
+    return tokens.some((token) => sLower.includes(token));
+  });
+  if (tokenMatch) {
+    return { name: tokenMatch.name, lat: tokenMatch.lat, lng: tokenMatch.lng };
+  }
+
   // Fallback offset near city center
   const center = CITIES[city.toLowerCase()]?.center || CITIES["delhi"].center;
   const hash = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
