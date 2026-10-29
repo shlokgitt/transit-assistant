@@ -207,26 +207,6 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right: Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <button
-          onClick={onOpenAlerts}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: "rgba(245, 158, 11, 0.1)",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            color: "#fbbf24",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          <AlertTriangle size={14} />
-          <span>Live Alerts</span>
-        </button>
-
-        <button
           onClick={onOpenApiInspector}
           style={{
             display: "flex",

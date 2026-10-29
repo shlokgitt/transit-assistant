@@ -8,12 +8,14 @@ import {
   SlidersHorizontal,
   ShieldAlert,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import {
   TransitMode,
   RoutingPriority,
   StopItem,
   CityConfig,
+  JourneyConstraints,
 } from "@/types/transit";
 
 interface SearchPanelProps {
@@ -29,6 +31,10 @@ interface SearchPanelProps {
   onChangePriority: (p: RoutingPriority) => void;
   avoidCrowded: boolean;
   onToggleAvoidCrowded: () => void;
+  constraints?: JourneyConstraints;
+  onChangeConstraints?: (c: JourneyConstraints) => void;
+  constraintsEnabled?: boolean;
+  onToggleConstraintsEnabled?: (enabled: boolean) => void;
   onSearch: () => void;
   isLoading: boolean;
   onSelectPreset: (from: string, to: string) => void;
@@ -102,6 +108,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   onChangePriority,
   avoidCrowded,
   onToggleAvoidCrowded,
+  constraints,
+  onChangeConstraints,
+  constraintsEnabled = true,
+  onToggleConstraintsEnabled,
   onSearch,
   isLoading,
   onSelectPreset,
@@ -110,6 +120,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   const [destSuggestions, setDestSuggestions] = useState<StopItem[]>([]);
   const [showOriginDropdown, setShowOriginDropdown] = useState(false);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
+  const [showConstraints, setShowConstraints] = useState(false);
 
   const originRef = useRef<HTMLDivElement>(null);
   const destRef = useRef<HTMLDivElement>(null);
@@ -557,6 +568,299 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             );
           })}
         </div>
+      </div>
+
+      
+      {/* Hard Constraints & Reliability Preferences */}
+      <div
+        style={{
+          border: constraintsEnabled ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "10px",
+          background: constraintsEnabled ? "rgba(56, 189, 248, 0.03)" : "rgba(255, 255, 255, 0.02)",
+          overflow: "hidden",
+          transition: "all 0.2s ease",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "9px 12px",
+            background: "transparent",
+            color: "#e2e8f0",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+          }}
+        >
+          {/* Left: icon + title + ON/OFF toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              onClick={() => setShowConstraints(!showConstraints)}
+              style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}
+            >
+              <SlidersHorizontal size={13} color={constraintsEnabled ? "#38bdf8" : "#64748b"} />
+              <span style={{ color: constraintsEnabled ? "#e2e8f0" : "#94a3b8" }}>
+                Hard Constraints & Deadline
+              </span>
+            </div>
+
+            {/* ON / OFF Switch */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleConstraintsEnabled?.(!constraintsEnabled);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "2px 8px 2px 4px",
+                borderRadius: "999px",
+                background: constraintsEnabled
+                  ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.2))"
+                  : "rgba(255, 255, 255, 0.08)",
+                border: constraintsEnabled
+                  ? "1px solid rgba(16, 185, 129, 0.5)"
+                  : "1px solid rgba(255, 255, 255, 0.15)",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              title={constraintsEnabled ? "Constraints are ON — click to turn OFF" : "Constraints are OFF — click to turn ON"}
+              aria-label="Toggle hard constraints on or off"
+            >
+              <span
+                style={{
+                  width: "11px",
+                  height: "11px",
+                  borderRadius: "50%",
+                  background: constraintsEnabled ? "#10b981" : "#64748b",
+                  boxShadow: constraintsEnabled ? "0 0 6px #10b981" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  color: constraintsEnabled ? "#34d399" : "#94a3b8",
+                }}
+              >
+                {constraintsEnabled ? "ON" : "OFF"}
+              </span>
+            </button>
+
+            {constraintsEnabled && constraints && (constraints.maxBudget || constraints.maxWalkingDistanceMeters || constraints.maxTransfers !== undefined || constraints.requiredArrivalTime) ? (
+              <span style={{ fontSize: "0.62rem", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "1px 6px", borderRadius: "999px" }}>
+                Active
+              </span>
+            ) : null}
+          </div>
+
+          {/* Right: Expand / Collapse button */}
+          <button
+            type="button"
+            onClick={() => setShowConstraints(!showConstraints)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#94a3b8",
+              fontSize: "0.7rem",
+              cursor: "pointer",
+              padding: "4px 6px",
+            }}
+          >
+            {showConstraints ? "▲ Hide" : "▼ Configure"}
+          </button>
+        </div>
+
+        {showConstraints && (
+          <div
+            style={{
+              padding: "10px 12px 14px",
+              borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              background: "rgba(10, 16, 30, 0.6)",
+            }}
+          >
+            {/* Notice if constraints are OFF */}
+            {!constraintsEnabled && (
+              <div
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "6px",
+                  background: "rgba(245, 158, 11, 0.1)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  color: "#fbbf24",
+                  fontSize: "0.72rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                }}
+              >
+                <span>Constraints are currently <strong>OFF</strong>. Turn ON to enforce them in route planning.</span>
+                <button
+                  type="button"
+                  onClick={() => onToggleConstraintsEnabled?.(true)}
+                  style={{
+                    background: "linear-gradient(135deg, #10b981, #06b6d4)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "3px 8px",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Turn ON
+                </button>
+              </div>
+            )}
+
+            {/* Arrival Deadline */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Clock size={11} color="#60a5fa" /> Must Arrive Before:
+                </span>
+                {constraints?.requiredArrivalTime ? (
+                  <button
+                    type="button"
+                    onClick={() => onChangeConstraints?.({ ...constraints, requiredArrivalTime: undefined })}
+                    style={{ fontSize: "0.62rem", background: "none", border: "none", color: "#f87171", cursor: "pointer" }}
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+              <input
+                type="time"
+                value={constraints?.requiredArrivalTime || ""}
+                onChange={(e) => onChangeConstraints?.({ ...constraints, requiredArrivalTime: e.target.value || undefined })}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  color: "#f8fafc",
+                  fontSize: "0.75rem",
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            {/* Max Budget */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                  💰 Maximum Fare Budget:
+                </span>
+                <span style={{ fontSize: "0.68rem", color: "#34d399", fontWeight: 700 }}>
+                  {constraints?.maxBudget ? `₹${constraints.maxBudget}` : "No limit"}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "5px" }}>
+                {[undefined, 20, 30, 40, 50].map((b) => (
+                  <button
+                    key={b === undefined ? "none" : b}
+                    type="button"
+                    onClick={() => onChangeConstraints?.({ ...constraints, maxBudget: b })}
+                    style={{
+                      flex: 1,
+                      padding: "4px 0",
+                      borderRadius: "6px",
+                      fontSize: "0.68rem",
+                      background: constraints?.maxBudget === b ? "rgba(52, 211, 153, 0.2)" : "rgba(255, 255, 255, 0.04)",
+                      border: constraints?.maxBudget === b ? "1px solid #34d399" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: constraints?.maxBudget === b ? "#34d399" : "#cbd5e1",
+                      cursor: "pointer",
+                      fontWeight: constraints?.maxBudget === b ? 700 : 400,
+                    }}
+                  >
+                    {b === undefined ? "Any" : `₹${b}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Max Walking Distance */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                  🚶 Walking Limit:
+                </span>
+                <span style={{ fontSize: "0.68rem", color: "#38bdf8", fontWeight: 700 }}>
+                  {constraints?.maxWalkingDistanceMeters ? `${constraints.maxWalkingDistanceMeters}m` : "No limit"}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "5px" }}>
+                {[undefined, 300, 500, 800, 1500].map((w) => (
+                  <button
+                    key={w === undefined ? "none" : w}
+                    type="button"
+                    onClick={() => onChangeConstraints?.({ ...constraints, maxWalkingDistanceMeters: w })}
+                    style={{
+                      flex: 1,
+                      padding: "4px 0",
+                      borderRadius: "6px",
+                      fontSize: "0.68rem",
+                      background: constraints?.maxWalkingDistanceMeters === w ? "rgba(56, 189, 248, 0.2)" : "rgba(255, 255, 255, 0.04)",
+                      border: constraints?.maxWalkingDistanceMeters === w ? "1px solid #38bdf8" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: constraints?.maxWalkingDistanceMeters === w ? "#38bdf8" : "#cbd5e1",
+                      cursor: "pointer",
+                      fontWeight: constraints?.maxWalkingDistanceMeters === w ? 700 : 400,
+                    }}
+                  >
+                    {w === undefined ? "Any" : `${w}m`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Max Transfers */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                  🔄 Transfer Preference:
+                </span>
+                <span style={{ fontSize: "0.68rem", color: "#fbbf24", fontWeight: 700 }}>
+                  {constraints?.maxTransfers === 0 ? "Direct only (0)" : constraints?.maxTransfers === 1 ? "Max 1 interchange" : "Any interchanges"}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "5px" }}>
+                {[undefined, 0, 1, 2].map((t) => (
+                  <button
+                    key={t === undefined ? "none" : t}
+                    type="button"
+                    onClick={() => onChangeConstraints?.({ ...constraints, maxTransfers: t })}
+                    style={{
+                      flex: 1,
+                      padding: "4px 0",
+                      borderRadius: "6px",
+                      fontSize: "0.68rem",
+                      background: constraints?.maxTransfers === t ? "rgba(251, 191, 36, 0.2)" : "rgba(255, 255, 255, 0.04)",
+                      border: constraints?.maxTransfers === t ? "1px solid #fbbf24" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: constraints?.maxTransfers === t ? "#fbbf24" : "#cbd5e1",
+                      cursor: "pointer",
+                      fontWeight: constraints?.maxTransfers === t ? 700 : 400,
+                    }}
+                  >
+                    {t === undefined ? "Any" : t === 0 ? "Direct" : `≤ ${t}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Plan Route CTA Button */}

@@ -26,10 +26,13 @@ import { RouteCard } from "@/components/RouteCard";
 import { ItineraryView } from "@/components/ItineraryView";
 import { TransitMap } from "@/components/TransitMap";
 import { ChatPanel } from "@/components/ChatPanel";
+import { GeminiChatView } from "@/components/GeminiChatView";
 import { ApiInspectorModal } from "@/components/ApiInspectorModal";
 import { LiveAlertsModal } from "@/components/LiveAlertsModal";
 import { CITIES } from "@/lib/transitData";
 import {
+  JourneyConstraints,
+  DisruptionScenario,
   RoutePlanRequest,
   RoutePlanResponse,
   RoutingPriority,
@@ -171,6 +174,15 @@ export default function Home() {
   const [delayMinutes, setDelayMinutes] = useState(10);
   const [scenarioApplied, setScenarioApplied] = useState(false);
   const [chatPrompt, setChatPrompt] = useState<string | undefined>();
+  const [constraints, setConstraints] = useState<JourneyConstraints>({});
+  const [constraintsEnabled, setConstraintsEnabled] = useState(true);
+  const [scenario, setScenario] = useState<DisruptionScenario>({ active: false });
+  const [simService, setSimService] = useState("metro-blue");
+  const [simStation, setSimStation] = useState("Rajiv Chowk");
+  const [simCrowdLevel, setSimCrowdLevel] = useState<"low" | "medium" | "high">("high");
+  const [simDisable, setSimDisable] = useState(false);
+  const [simIsLoading, setSimIsLoading] = useState(false);
+  const [simResult, setSimResult] = useState<null | { baseline: import("@/types/transit").RoutePlanResponse; affected: import("@/types/transit").RoutePlanResponse }>(null);
 
   const city = CITIES[selectedCity] || CITIES.delhi;
   const selectedRoute = useMemo(
@@ -210,7 +222,7 @@ export default function Home() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
-  const handlePlanRoute = useCallback(async () => {
+  const handlePlanRoute = useCallback(async (overrideScenario?: DisruptionScenario) => {
     if (!origin.trim() || !destination.trim() || origin.trim() === destination.trim()) {
       setRouteError("Enter two different places to plan a journey.");
       setScreen("results");
@@ -219,6 +231,18 @@ export default function Home() {
 
     setIsLoading(true);
     setRouteError(null);
+
+    // Build constraints object – only include if enabled and fields are actually set
+    const activeConstraints: JourneyConstraints = {};
+    if (constraintsEnabled) {
+      if (constraints.maxBudget) activeConstraints.maxBudget = constraints.maxBudget;
+      if (constraints.maxWalkingDistanceMeters) activeConstraints.maxWalkingDistanceMeters = constraints.maxWalkingDistanceMeters;
+      if (constraints.maxTransfers !== undefined) activeConstraints.maxTransfers = constraints.maxTransfers;
+      if (constraints.requiredArrivalTime) activeConstraints.requiredArrivalTime = constraints.requiredArrivalTime;
+    }
+
+    const activeScenario = overrideScenario ?? (scenario.active ? scenario : undefined);
+
     const requestPayload: RoutePlanRequest = {
       city: selectedCity,
       origin: { query: origin.trim() },
@@ -228,8 +252,10 @@ export default function Home() {
         allowedModes: selectedModes,
         avoidCrowded,
         period,
-        maxWalkingDistanceMeters: 1200,
+        maxWalkingDistanceMeters: (constraintsEnabled && constraints.maxWalkingDistanceMeters) || 1200,
       },
+      ...(Object.keys(activeConstraints).length ? { constraints: activeConstraints } : {}),
+      ...(activeScenario ? { scenario: activeScenario } : {}),
     };
     setLastRequest(requestPayload);
 
@@ -253,7 +279,48 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [avoidCrowded, destination, origin, period, priority, selectedCity, selectedModes]);
+  }, [avoidCrowded, constraints, constraintsEnabled, destination, origin, period, priority, scenario, selectedCity, selectedModes]);
+
+  const handleSimulate = async () => {
+    if (!origin.trim() || !destination.trim()) {
+      alert("Please plan a route first from the 'Plan a trip' screen.");
+      return;
+    }
+    setSimIsLoading(true);
+    try {
+      // Build scenario from simulator controls
+      const builtScenario: DisruptionScenario = {
+        active: true,
+        serviceDelays: delayMinutes > 0 ? { [simService]: delayMinutes } : {},
+        stationCrowd: { [simStation]: simCrowdLevel },
+        disabledServices: simDisable ? [simService] : [],
+        description: `[Simulated] ${simService} delayed by ${delayMinutes}m at ${simStation}`,
+      };
+
+      const basePayload: RoutePlanRequest = {
+        city: selectedCity,
+        origin: { query: origin.trim() },
+        destination: { query: destination.trim() },
+        preferences: { routingPriority: priority, allowedModes: selectedModes, avoidCrowded, period },
+      };
+
+      const [baseRes, affectedRes] = await Promise.all([
+        fetch("/api/v1/routes/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(basePayload) }),
+        fetch("/api/v1/routes/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...basePayload, scenario: builtScenario }) }),
+      ]);
+
+      const baseline = (await baseRes.json()) as RoutePlanResponse;
+      const affected = (await affectedRes.json()) as RoutePlanResponse;
+
+      setSimResult({ baseline, affected });
+      setScenario(builtScenario);
+      setScenarioApplied(true);
+    } catch {
+      // handled gracefully
+    } finally {
+      setSimIsLoading(false);
+    }
+  };
 
   const openSavedJourney = (journey: SavedJourney) => {
     setOrigin(getJourneyFrom(journey));
@@ -396,7 +463,7 @@ export default function Home() {
           <h2>Make the next journey feel simple.</h2>
           <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
         </div>
-        <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={setPriority} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={handlePlanRoute} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} />
+        <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={setPriority} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
       </section>
       <section className="home-aside">
         <div className="aside-card route-note">
@@ -420,39 +487,234 @@ export default function Home() {
   );
 
   const renderChat = () => (
-    <div className="simple-screen">
-      <div className="page-heading">
-        <p className="eyebrow">Travel chat</p>
-        <h2>Ask for a better way there.</h2>
-        <p className="hero-copy">Tell the assistant what matters—price, walking, crowding, or an explanation in Hindi.</p>
-      </div>
-      <div className="chat-screen-card">
-        <div className="chat-screen-intro"><div className="aside-icon"><Bot size={20} /></div><div><h3>Transit Route assistant</h3><p className="muted-copy">Route answers are grounded in the planner, not invented by the assistant.</p></div></div>
-        <div className="prompt-row"><span>Try asking</span>{["Find the cheapest route", "Avoid crowded stations", "Explain this in Hindi"].map((prompt) => <button key={prompt} onClick={() => { setChatPrompt(prompt); setScreen("chat"); }}>“{prompt}”</button>)}</div>
-      </div>
-      <ChatPanel initialPrompt={chatPrompt} onInitialPromptHandled={() => setChatPrompt(undefined)} onPlanRoute={(from, to) => { setOrigin(from); setDestination(to); void handlePlanRoute(); }} />
-    </div>
+    <GeminiChatView
+      initialPrompt={chatPrompt}
+      onInitialPromptHandled={() => setChatPrompt(undefined)}
+      onPlanRoute={(from, to) => {
+        setOrigin(from);
+        setDestination(to);
+        setScreen("results");
+        void handlePlanRoute();
+      }}
+      onNavigateScreen={(targetScreen) => setScreen(targetScreen)}
+    />
   );
 
-  const renderDisruptions = () => (
-    <div className="simple-screen">
-      <div className="page-heading"><p className="eyebrow">Scenario lab</p><h2>See how a delay changes the journey.</h2><p className="hero-copy">This is a simulation. It does not represent live disruptions.</p></div>
-      <div className="simulator-grid">
-        <div className="aside-card">
-          <div className="aside-card-heading"><TriangleAlert size={16} /><strong>Simulated disruption</strong></div>
-          <label className="field-label">Service</label><select className="select-field"><option>Metro · Blue Line</option><option>Bus · Route 534</option></select>
-          <label className="field-label">Added delay: {delayMinutes} minutes</label><input className="range-field" type="range" min="0" max="30" step="5" value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} />
-          <div className="range-labels"><span>On time</span><span>30 min</span></div>
-          <button className="primary-button" onClick={() => setScenarioApplied(true)}><Sparkles size={16} /> Apply scenario</button>
-          <button className="quiet-button full-width" onClick={() => { setDelayMinutes(0); setScenarioApplied(false); }}>Reset</button>
+  const renderDisruptions = () => {
+    const baselineRoute = simResult?.baseline?.routes?.[0];
+    const affectedRoute = simResult?.affected?.routes?.[0];
+    const comparison = simResult?.affected?.comparison;
+    const delayImpact = comparison?.delayImpactMinutes ?? (affectedRoute && baselineRoute ? affectedRoute.totalDurationMinutes - baselineRoute.totalDurationMinutes : 0);
+
+    return (
+      <div className="simple-screen">
+        <div className="page-heading">
+          <p className="eyebrow">Scenario lab</p>
+          <h2>What-if disruption simulator</h2>
+          <p className="hero-copy">
+            ⚠️ All events are <strong>simulated</strong>. They do not represent live disruptions.
+          </p>
         </div>
-        <div className="aside-card comparison-card">
-          <p className="eyebrow">Before / after</p>
-          {selectedRoute ? <><div className="comparison-row"><span>Baseline</span><strong>{selectedRoute.totalDurationMinutes} min</strong></div><div className="comparison-row"><span>Simulated estimate</span><strong>{selectedRoute.totalDurationMinutes + (scenarioApplied ? delayMinutes : 0)} min</strong></div><p className="muted-copy">{scenarioApplied ? `The selected service adds ${delayMinutes} minutes in this demo scenario. Re-run the search to compare alternatives.` : "Apply a scenario to see the affected estimate."}</p></> : <p className="muted-copy">Plan a route first, then return here to test a disruption.</p>}
+
+        {(!origin.trim() || !destination.trim()) && (
+          <div className="aside-card" style={{ marginBottom: "12px", borderColor: "rgba(251, 191, 36, 0.3)", background: "rgba(251, 191, 36, 0.06)" }}>
+            <p className="muted-copy">ℹ️ Plan a route first from the "Plan a trip" screen so the simulator has a journey to affect.</p>
+            <button className="primary-button" style={{ marginTop: "8px" }} onClick={() => setScreen("home")}>
+              Plan a journey first
+            </button>
+          </div>
+        )}
+
+        <div className="simulator-grid">
+          {/* Controls Panel */}
+          <div className="aside-card">
+            <div className="aside-card-heading">
+              <TriangleAlert size={16} />
+              <strong>Simulated disruption controls</strong>
+            </div>
+
+            {/* Service selector */}
+            <label className="field-label">Affected Service</label>
+            <select
+              className="select-field"
+              value={simService}
+              onChange={(e) => setSimService(e.target.value)}
+            >
+              <option value="metro-blue">Metro · Blue Line</option>
+              <option value="metro-yellow">Metro · Yellow Line</option>
+              <option value="metro-red">Metro · Red Line</option>
+              <option value="metro-green">Metro · Green Line</option>
+              <option value="bus-534">Bus · Route 534</option>
+              <option value="bus-03down">Bus · Route 03DOWN</option>
+              <option value="bus-general">Bus · General DTC</option>
+            </select>
+
+            {/* Delay slider */}
+            <label className="field-label" style={{ marginTop: "10px" }}>
+              Added delay: <strong style={{ color: delayMinutes > 0 ? "#fb7185" : "#34d399" }}>{delayMinutes} minutes</strong>
+            </label>
+            <input
+              className="range-field"
+              type="range"
+              min="0"
+              max="30"
+              step="5"
+              value={delayMinutes}
+              onChange={(e) => setDelayMinutes(Number(e.target.value))}
+            />
+            <div className="range-labels"><span>On time</span><span>+30 min</span></div>
+
+            {/* Station crowd */}
+            <label className="field-label" style={{ marginTop: "10px" }}>Simulated crowd at station</label>
+            <select
+              className="select-field"
+              value={simStation}
+              onChange={(e) => setSimStation(e.target.value)}
+            >
+              <option>Rajiv Chowk</option>
+              <option>Kashmere Gate</option>
+              <option>Central Secretariat</option>
+              <option>Botanical Garden</option>
+              <option>Hauz Khas</option>
+              <option>Karol Bagh</option>
+            </select>
+            <select
+              className="select-field"
+              style={{ marginTop: "6px" }}
+              value={simCrowdLevel}
+              onChange={(e) => setSimCrowdLevel(e.target.value as "low" | "medium" | "high")}
+            >
+              <option value="high">High Crowd</option>
+              <option value="medium">Moderate Crowd</option>
+              <option value="low">Low Crowd</option>
+            </select>
+
+            {/* Disable service */}
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px", cursor: "pointer", fontSize: "0.78rem", color: "#e2e8f0" }}>
+              <input
+                type="checkbox"
+                checked={simDisable}
+                onChange={(e) => setSimDisable(e.target.checked)}
+                style={{ accentColor: "#f43f5e" }}
+              />
+              <span>Temporarily disable this service</span>
+            </label>
+
+            {/* Buttons */}
+            <button
+              className="primary-button"
+              style={{ marginTop: "14px", opacity: simIsLoading ? 0.7 : 1 }}
+              disabled={simIsLoading || !origin.trim()}
+              onClick={() => void handleSimulate()}
+            >
+              <Sparkles size={15} />
+              {simIsLoading ? "Simulating…" : "Apply & Simulate"}
+            </button>
+            <button
+              className="quiet-button full-width"
+              style={{ marginTop: "6px" }}
+              onClick={() => {
+                setDelayMinutes(10);
+                setSimDisable(false);
+                setSimStation("Rajiv Chowk");
+                setSimCrowdLevel("high");
+                setSimResult(null);
+                setScenario({ active: false });
+                setScenarioApplied(false);
+              }}
+            >
+              Reset to Normal
+            </button>
+          </div>
+
+          {/* Comparison Panel */}
+          <div className="aside-card comparison-card">
+            <p className="eyebrow" style={{ marginBottom: "8px" }}>Before / After comparison</p>
+
+            {!simResult ? (
+              <p className="muted-copy">
+                {origin.trim() ? "Configure a disruption and click ‘Apply & Simulate’ to see the impact." : "Plan a route first, then return here."}
+              </p>
+            ) : (
+              <>
+                {/* Journey info */}
+                <p style={{ fontSize: "0.72rem", color: "#60a5fa", marginBottom: "10px", fontWeight: 600 }}>
+                  {origin} → {destination}
+                </p>
+
+                {/* Baseline row */}
+                <div className="comparison-row">
+                  <span>✅ Baseline (no disruption)</span>
+                  <strong style={{ color: "#34d399" }}>
+                    {baselineRoute?.totalDurationMinutes ?? "—"} min · {baselineRoute?.totalFare != null ? `₹${baselineRoute.totalFare}` : "—"}
+                  </strong>
+                </div>
+
+                {/* Simulated row */}
+                <div className="comparison-row">
+                  <span>⚠️ Simulated ({simService.replace("-", " ")} +{delayMinutes}m)</span>
+                  <strong style={{ color: delayImpact > 0 ? "#fb7185" : "#34d399" }}>
+                    {affectedRoute?.totalDurationMinutes ?? "—"} min
+                    {delayImpact > 0 && <span style={{ fontSize: "0.68rem" }}> (+{delayImpact}m)</span>}
+                  </strong>
+                </div>
+
+                {/* Comparison explanation */}
+                {comparison && (
+                  <p className="muted-copy" style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", borderLeft: "3px solid rgba(251, 191, 36, 0.4)", fontSize: "0.72rem" }}>
+                    {comparison.impactExplanation}
+                  </p>
+                )}
+
+                {/* Alternative recommendation */}
+                {comparison?.alternativeRecommended && comparison.alternativeExplanation && (
+                  <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)" }}>
+                    <p style={{ fontSize: "0.68rem", fontWeight: 700, color: "#38bdf8", marginBottom: "4px" }}>💡 Recommended alternative:</p>
+                    <p style={{ fontSize: "0.72rem", color: "#cbd5e1" }}>{comparison.alternativeExplanation}</p>
+                  </div>
+                )}
+
+                {/* Reliability of affected route */}
+                {affectedRoute?.reliabilityDetails && (
+                  <div style={{ marginTop: "10px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{
+                      fontSize: "0.66rem",
+                      padding: "3px 8px",
+                      borderRadius: "999px",
+                      fontWeight: 700,
+                      background: affectedRoute.reliabilityDetails.reliabilityBand === "High" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+                      color: affectedRoute.reliabilityDetails.reliabilityBand === "High" ? "#34d399" : "#fbbf24",
+                      border: `1px solid ${affectedRoute.reliabilityDetails.reliabilityBand === "High" ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)"}`
+                    }}>
+                      {affectedRoute.reliabilityDetails.reliabilityBand} Reliability ({affectedRoute.reliabilityDetails.reliabilityPercentage}%)
+                    </span>
+                    <span style={{ fontSize: "0.66rem", color: "#94a3b8", padding: "3px 6px", background: "rgba(255,255,255,0.04)", borderRadius: "999px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      [Simulated scenario data]
+                    </span>
+                  </div>
+                )}
+
+                {/* View full affected results CTA */}
+                <button
+                  className="quiet-button full-width"
+                  style={{ marginTop: "12px" }}
+                  onClick={() => {
+                    if (simResult?.affected) {
+                      setRouteResponse(simResult.affected);
+                      setSelectedRouteId(simResult.affected.summary.recommendedRouteId || simResult.affected.routes[0]?.id || null);
+                      setScreen("results");
+                    }
+                  }}
+                >
+                  View full simulated results →
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSaved = () => (
     <div className="simple-screen">
@@ -510,7 +772,7 @@ export default function Home() {
         </div>
       </header>
       <div className="mobile-nav">{NAV_ITEMS.map((item) => <button key={item.id} className={screen === item.id ? "active" : ""} onClick={() => setScreen(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
-      <div className="sa-content">
+      <div className="sa-content" style={screen === "chat" ? { width: "100%", maxWidth: "100%", margin: 0, padding: 0 } : undefined}>
         {screen === "home" && renderHome()}
         {screen === "results" && renderResults()}
         {screen === "chat" && renderChat()}
@@ -587,6 +849,7 @@ export default function Home() {
       )}
 
       {/* Footer with legal & compliance links */}
+      {screen !== "chat" && (
       <footer
         style={{
           borderTop: "1px solid rgba(255, 255, 255, 0.08)",
@@ -628,6 +891,7 @@ export default function Home() {
           </button>
         </div>
       </footer>
+      )}
 
       <ApiInspectorModal isOpen={isApiInspectorOpen} onClose={() => setIsApiInspectorOpen(false)} lastRequest={lastRequest} lastResponse={routeResponse} />
       <LiveAlertsModal isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} cityId={selectedCity} />

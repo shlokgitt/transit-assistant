@@ -134,7 +134,108 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
         </div>
       </div>
 
-      {/* Route Title */}
+      {/* Recommendation Reason & Constraint Status */}
+        {route.recommendationReason && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "6px",
+              padding: "7px 10px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.08))",
+              border: "1px solid rgba(56, 189, 248, 0.25)",
+              marginBottom: "8px",
+              fontSize: "0.72rem",
+              color: "#93c5fd",
+              lineHeight: 1.4,
+            }}
+          >
+            <span style={{ fontSize: "12px", flexShrink: 0 }}>💡</span>
+            <div>
+              <strong style={{ color: "#38bdf8", display: "block", marginBottom: "1px", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Why Recommended
+              </strong>
+              <span>{route.recommendationReason}</span>
+            </div>
+          </div>
+        )}
+
+        {route.constraintsEvaluation &&
+          (route.constraintsEvaluation.budgetSatisfied !== null ||
+            route.constraintsEvaluation.walkingSatisfied !== null ||
+            route.constraintsEvaluation.transfersSatisfied !== null ||
+            route.constraintsEvaluation.deadlineSatisfied !== null ||
+            !route.constraintsEvaluation.satisfiesAll) && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              marginBottom: "8px",
+              fontSize: "0.68rem",
+              fontWeight: 600,
+              background: route.constraintsEvaluation.satisfiesAll ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
+              border: route.constraintsEvaluation.satisfiesAll ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(245, 158, 11, 0.3)",
+              color: route.constraintsEvaluation.satisfiesAll ? "#34d399" : "#fbbf24",
+            }}
+          >
+            <span>{route.constraintsEvaluation.satisfiesAll ? "✓ All Constraints Met" : `⚠️ Closest Alternative: ${route.constraintsEvaluation.violations.join(", ")}`}</span>
+          </div>
+        )}
+
+        {route.reliabilityDetails && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "8px",
+              padding: "6px 8px",
+              borderRadius: "6px",
+              background: "rgba(255, 255, 255, 0.025)",
+              border: "1px solid rgba(255, 255, 255, 0.06)",
+              fontSize: "0.66rem",
+            }}
+          >
+            <span style={{
+              fontWeight: 700,
+              color: route.reliabilityDetails.reliabilityBand === "High" ? "#34d399" : route.reliabilityDetails.reliabilityBand === "Moderate" ? "#38bdf8" : "#fb7185"
+            }}>
+              ● {route.reliabilityDetails.reliabilityBand} ({route.reliabilityDetails.reliabilityPercentage}%)
+            </span>
+            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>•</span>
+            <span style={{ color: "#94a3b8" }}>
+              Buffer: <strong style={{ color: "#e2e8f0" }}>~{route.reliabilityDetails.transferBufferMinutes}m</strong>
+            </span>
+            {route.reliabilityDetails.potentialDelayImpactMinutes > 0 && (
+              <>
+                <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>•</span>
+                <span style={{ color: "#fb7185", fontWeight: 600 }}>
+                  +{route.reliabilityDetails.potentialDelayImpactMinutes}m delay risk
+                </span>
+              </>
+            )}
+            {route.reliabilityDetails.isSimulated && (
+              <span style={{
+                marginLeft: "auto",
+                fontSize: "0.58rem",
+                padding: "1px 5px",
+                borderRadius: "4px",
+                background: "rgba(245, 158, 11, 0.15)",
+                color: "#fbbf24",
+                border: "1px solid rgba(245, 158, 11, 0.3)"
+              }}>
+                Simulated
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Route Title */}
       <h3 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#f1f5f9", marginBottom: "10px", lineHeight: 1.3 }}>
         {route.title}
       </h3>

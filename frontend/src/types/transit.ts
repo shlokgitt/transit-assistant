@@ -46,6 +46,47 @@ export interface RouteLeg {
   coordinates: [number, number][]; // [lat, lng][]
 }
 
+export interface DisruptionScenario {
+  active: boolean;
+  serviceDelays?: Record<string, number>;
+  stationCrowd?: Record<string, CrowdLevel>;
+  disabledServices?: string[];
+  disabledConnections?: { from: string; to: string }[];
+  description?: string;
+}
+
+export interface JourneyConstraints {
+  maxBudget?: number;
+  maxWalkingDistanceMeters?: number;
+  maxTransfers?: number;
+  requiredArrivalTime?: string; // e.g. "09:00"
+  departureTime?: string; // e.g. "08:15"
+  avoidCrowded?: boolean;
+}
+
+export interface ConstraintEvaluation {
+  satisfied: boolean;
+  satisfiesAll: boolean;
+  violations: string[];
+  budgetSatisfied?: boolean | null;
+  walkingSatisfied?: boolean | null;
+  transfersSatisfied?: boolean | null;
+  deadlineSatisfied?: boolean | null;
+}
+
+export interface ReliabilityDetails {
+  scheduledDurationMinutes: number;
+  estimatedTotalDurationMinutes: number;
+  transferBufferMinutes: number;
+  potentialDelayImpactMinutes: number;
+  delayExposureScore: number;
+  confidenceLevel: "high" | "medium" | "simulated";
+  reliabilityPercentage: number;
+  reliabilityBand: "High" | "Moderate" | "Low";
+  transferCount: number;
+  isSimulated?: boolean;
+}
+
 export interface RouteOption {
   id: string;
   tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "COMFORT" | "TRAFFIC_BUSTER" | "ECO";
@@ -65,6 +106,12 @@ export interface RouteOption {
   departureTime?: string;
   arrivalTime?: string;
   legs: RouteLeg[];
+  constraintsEvaluation?: ConstraintEvaluation;
+  reliabilityDetails?: ReliabilityDetails;
+  recommendationReason?: string;
+  isSimulatedAlternative?: boolean;
+  scheduledDurationMinutes?: number;
+  transferBufferMinutes?: number;
 }
 
 export interface RoutePlanRequest {
@@ -88,6 +135,8 @@ export interface RoutePlanRequest {
     period?: TimePeriod;
     maxWalkingDistanceMeters?: number;
   };
+  constraints?: JourneyConstraints;
+  scenario?: DisruptionScenario;
 }
 
 export interface RoutePlanResponse {
@@ -116,6 +165,23 @@ export interface RoutePlanResponse {
     cheapestRouteId: string;
   };
   routes: RouteOption[];
+  scenarioApplied?: boolean;
+  scenarioDetails?: DisruptionScenario | null;
+  comparison?: {
+    baselineRouteTitle: string;
+    baselineDurationMinutes: number;
+    simulatedDurationMinutes: number;
+    delayImpactMinutes: number;
+    impactExplanation: string;
+    alternativeRecommended: boolean;
+    alternativeExplanation?: string;
+  } | null;
+  constraintSummary?: {
+    hasConstraints: boolean;
+    allSatisfied: boolean;
+    unmetConstraints: string[];
+    explanation?: string;
+  };
   error?: string;
 }
 

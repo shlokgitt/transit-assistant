@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RoutePlanRequest, RoutingPriority } from "@/types/transit";
+import {
+  RoutePlanRequest,
+  RoutePlanResponse,
+  RoutingPriority,
+  RouteOption,
+  RouteLeg,
+  JourneyConstraints,
+  DisruptionScenario,
+  ConstraintEvaluation,
+  ReliabilityDetails,
+  CrowdLevel,
+} from "@/types/transit";
 import {
   periodFor,
   planMetroByName,
@@ -7,6 +18,9 @@ import {
   planByName,
   stopCoordinates,
   stopName,
+  evaluateRouteConstraints,
+  calculateRouteReliability,
+  generateRouteExplanation,
 } from "../../../../../../backend/route.js";
 
 type PlannerLeg = {
@@ -32,6 +46,8 @@ type PlannerResponse = {
   distanceSource: "road" | "straight-line" | "mixed" | null;
   totalFare: number | null;
   legs: PlannerLeg[];
+  scenarioApplied?: boolean;
+  scenarioDetails?: unknown;
 };
 
 function normalizeRoutingPriority(
@@ -124,17 +140,17 @@ function formatRouteTitle(legs: PlannerLeg[]): string {
 function buildPlannerRoute(
   plannerResponse: PlannerResponse,
   id: string,
-  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO"
-) {
+  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO" | "COMFORT" | "TRAFFIC_BUSTER",
+  constraints?: JourneyConstraints,
+  scenario?: DisruptionScenario | null,
+  isAlternative = false,
+  baselineRoute?: RouteOption | null
+): RouteOption | null {
   const firstLeg = plannerResponse.legs[0];
   if (!firstLeg) return null;
 
-  // Keep transit legs as pure walk/transit - do not inject auto into planned routes
   const processedLegs = plannerResponse.legs;
-
-  const routeModes = [
-    ...new Set(processedLegs.map((leg) => leg.mode)),
-  ];
+  const routeModes = [...new Set(processedLegs.map((leg) => leg.mode))];
 
   const totalMinutes = Number(
     processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
@@ -143,6 +159,48 @@ function buildPlannerRoute(
     (sum, leg) => sum + (leg.fare || 0),
     0
   );
+
+  const vehicleLegs = processedLegs.filter((l) => l.mode !== "walk");
+  const transfersCount = Math.max(0, vehicleLegs.length - 1);
+
+  // Reliability calculations
+  const rawRoute = {
+    totalMinutes,
+    totalFare,
+    legs: processedLegs,
+    fareStatus: "verified",
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reliabilityDetails = calculateRouteReliability(rawRoute, scenario as any) as ReliabilityDetails | null;
+  const hasUserConstraints = Boolean(
+    constraints &&
+      (constraints.maxBudget !== undefined ||
+        constraints.maxWalkingDistanceMeters !== undefined ||
+        constraints.maxTransfers !== undefined ||
+        Boolean(constraints.requiredArrivalTime) ||
+        Boolean(constraints.avoidCrowded))
+  );
+  const constraintsEvaluation = hasUserConstraints
+    ? (evaluateRouteConstraints(
+        rawRoute,
+        constraints,
+        constraints?.departureTime
+      ) as ConstraintEvaluation | undefined)
+    : undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recommendationReason = generateRouteExplanation(
+    { ...rawRoute, tag, reliabilityDetails, constraintsEvaluation, totalMinutes },
+    hasUserConstraints ? constraints : undefined,
+    scenario as any,
+    isAlternative,
+    baselineRoute as any
+  ) as string;
+
+  const hasHighCrowd = processedLegs.some((leg) => leg.crowd === "high");
+  const hasMedCrowd = processedLegs.some((leg) => leg.crowd === "medium");
+  const crowdLevel: CrowdLevel = hasHighCrowd ? "high" : hasMedCrowd ? "medium" : "low";
+
+  const totalDelayMin = Math.max(0, ...processedLegs.map((leg) => leg.delayMin || 0));
 
   return {
     id,
@@ -156,13 +214,16 @@ function buildPlannerRoute(
     totalFare,
     carbonEmissionsKg: estimatedCarbonKg(processedLegs),
     caloriesBurned: 0,
-    transfersCount: Math.max(0, routeModes.length - 1),
-    crowdLevel: "unknown" as const,
-    delayMinutes: Math.max(
-      0,
-      ...processedLegs.map((leg) => leg.delayMin || 0)
-    ),
-    onTimeReliability: 100,
+    transfersCount,
+    crowdLevel,
+    delayMinutes: totalDelayMin,
+    onTimeReliability: reliabilityDetails ? reliabilityDetails.reliabilityPercentage : 96,
+    scheduledDurationMinutes: reliabilityDetails ? reliabilityDetails.scheduledDurationMinutes : totalMinutes,
+    transferBufferMinutes: reliabilityDetails ? reliabilityDetails.transferBufferMinutes : 5,
+    reliabilityDetails: reliabilityDetails ?? undefined,
+    constraintsEvaluation,
+    recommendationReason,
+    isSimulatedAlternative: isAlternative,
     legs: processedLegs.map((leg, index) => {
       const ids = leg.stopIds || [leg.fromId, leg.toId];
       const coordinates = coordinatesFor(ids);
@@ -185,7 +246,7 @@ function buildPlannerRoute(
             ? leg.route?.replace(/^metro:/, "")
             : undefined,
         provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
-        crowdLevel: leg.crowd === "high" ? "high" : "medium",
+        crowdLevel: leg.crowd === "high" ? "high" : leg.crowd === "low" ? "low" : "medium",
         delayMinutes: leg.delayMin,
         coordinates:
           coordinates.length >= 2
@@ -223,322 +284,265 @@ export async function POST(request: NextRequest) {
     const requestedPriority = normalizeRoutingPriority(
       body.preferences?.routingPriority ?? "fastest"
     );
+    const period = plannerPeriod(body.preferences?.period);
+    const avoidCrowded = body.preferences?.avoidCrowded ?? body.constraints?.avoidCrowded ?? false;
+    const constraints = body.constraints;
+    const scenario = body.scenario?.active ? body.scenario : null;
 
-    const plannerResponse = planByName(
-      body.origin.query,
-      body.destination.query,
-      {
-        preference: requestedPriority,
-        period: plannerPeriod(body.preferences?.period),
-        avoidCrowded: body.preferences?.avoidCrowded ?? false,
-      }
-    ) as PlannerResponse | { error: string };
+    // 1. Calculate Baseline Routes (without scenario)
+    const baselineFastest = planByName(body.origin.query, body.destination.query, {
+      preference: "fastest",
+      period,
+      avoidCrowded,
+      scenario: undefined,
+    }) as PlannerResponse | { error: string };
 
-    if ("error" in plannerResponse) {
+    if ("error" in baselineFastest) {
       return NextResponse.json(
-        { success: false, error: plannerResponse.error },
+        { success: false, error: baselineFastest.error },
         { status: 404 }
       );
     }
+
+    const baselineCheapest = planByName(body.origin.query, body.destination.query, {
+      preference: "cheapest",
+      period,
+      avoidCrowded,
+      scenario: undefined,
+    }) as PlannerResponse | { error: string };
 
     const allowedModes = new Set(
       body.preferences?.allowedModes || ["metro", "bus", "auto", "walk"]
     );
 
-    if (allowedModes.size === 1 && allowedModes.has("walk")) {
-      const walkingResponse = planWalkingByName(
-        body.origin.query,
-        body.destination.query
-      ) as PlannerResponse | { error: string };
+    // Build baseline recommended route
+    const baselineRecommendedRoute = buildPlannerRoute(
+      baselineFastest,
+      "route_baseline",
+      "RECOMMENDED",
+      constraints,
+      null,
+      false,
+      null
+    );
 
-      if ("error" in walkingResponse) {
-        return NextResponse.json(
-          { success: false, error: walkingResponse.error },
-          { status: 404 }
-        );
-      }
+    // 2. Scenario-affected routing if scenario is active
+    let primaryPlannerResponse = baselineFastest;
+    let scenarioApplied = false;
+    let comparison: { baselineRouteTitle: string; baselineDurationMinutes: number; simulatedDurationMinutes: number; delayImpactMinutes: number; impactExplanation: string; alternativeRecommended: boolean; alternativeExplanation?: string; } | null = null;
 
-      const walkingLeg = walkingResponse.legs[0];
-      const walkingCoordinates = coordinatesFor([
-        walkingLeg.fromId,
-        walkingLeg.toId,
-      ]);
-      const route = {
-        id: "route_real_walking",
-        tag: "RECOMMENDED" as const,
-        title: "Walking route",
-        summary: "Walk",
-        summaryModes: ["walk" as const],
-        totalDurationMinutes: walkingResponse.totalMinutes,
-        totalDistanceKm: walkingResponse.totalDistanceKm,
-        distanceSource: walkingResponse.distanceSource,
-        totalFare: 0,
-        carbonEmissionsKg: 0,
-        caloriesBurned: 0,
-        transfersCount: 0,
-        crowdLevel: "low" as const,
-        delayMinutes: 0,
-        onTimeReliability: 100,
-        legs: [
-          {
-            legIndex: 0,
-            mode: "walk" as const,
-            from: walkingLeg.from,
-            to: walkingLeg.to,
-            durationMinutes: walkingLeg.minutes,
-            distanceKm: walkingLeg.distanceKm || 0,
-            distanceSource: walkingLeg.distanceSource,
-            fare: 0,
-            instruction: `Walk from ${walkingLeg.from} to ${walkingLeg.to}`,
-            coordinates: walkingCoordinates,
-          },
-        ],
-      };
-
-      return NextResponse.json({
-        success: true,
-        queryId: `req_${body.city.toLowerCase()}_walk_${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        city: { id: "delhi", name: "Delhi NCR", currency: "₹" },
-        origin: {
-          name: walkingLeg.from,
-          lat: walkingCoordinates[0][0],
-          lng: walkingCoordinates[0][1],
-        },
-        destination: {
-          name: walkingLeg.to,
-          lat: walkingCoordinates[1][0],
-          lng: walkingCoordinates[1][1],
-        },
-        summary: {
-          totalRoutes: 1,
-          recommendedRouteId: route.id,
-          fastestRouteId: route.id,
-          cheapestRouteId: route.id,
-        },
-        routes: [route],
-      });
-    }
-
-    if (allowedModes.size === 1 && allowedModes.has("metro")) {
-      const metroResponse = planMetroByName(
-        body.origin.query,
-        body.destination.query
-      ) as PlannerResponse | { error: string };
-
-      if ("error" in metroResponse) {
-        return NextResponse.json(
-          { success: false, error: metroResponse.error },
-          { status: 404 }
-        );
-      }
-
-      const firstLeg = metroResponse.legs[0];
-      const lastLeg = metroResponse.legs.at(-1);
-      if (!firstLeg || !lastLeg) {
-        return NextResponse.json(
-          { success: false, error: "The planner returned no metro legs" },
-          { status: 502 }
-        );
-      }
-
-      const route = {
-        id: "route_real_metro",
-        tag: "RECOMMENDED" as const,
-        title: "Metro route",
-        summary: metroResponse.legs.map((leg) => leg.mode).join(" ➔ "),
-        summaryModes: [
-          ...new Set(metroResponse.legs.map((leg) => leg.mode)),
-        ] as ("metro" | "walk")[],
-        totalDurationMinutes: metroResponse.totalMinutes,
-        totalDistanceKm: metroResponse.totalDistanceKm,
-        distanceSource: metroResponse.distanceSource,
-        totalFare: metroResponse.totalFare,
-        carbonEmissionsKg: estimatedCarbonKg(metroResponse.legs),
-        caloriesBurned: 0,
-        transfersCount: Math.max(
-          0,
-          metroResponse.legs.filter(
-            (leg, index) =>
-              index > 0 &&
-              leg.mode === "metro" &&
-              metroResponse.legs[index - 1]?.mode === "metro" &&
-              leg.route !== metroResponse.legs[index - 1]?.route
-          ).length
-        ),
-        crowdLevel: "unknown" as const,
-        delayMinutes: 0,
-        onTimeReliability: 100,
-        legs: metroResponse.legs.map((leg, index) => {
-          const coordinates = coordinatesFor(leg.stopIds || [leg.fromId, leg.toId]);
-          return {
-            legIndex: index,
-            mode: leg.mode,
-            from: leg.from,
-            to: leg.to,
-            durationMinutes: leg.minutes,
-            distanceKm: leg.distanceKm || 0,
-            distanceSource: leg.distanceSource,
-            fare: leg.fare ?? 0,
-            instruction: `Follow the ${leg.mode} leg from ${leg.from} to ${leg.to}`,
-            lineName:
-              leg.mode === "metro"
-                ? leg.route?.replace(/^metro:/, "")
-                : undefined,
-            stopsCount: leg.stops,
-            coordinates,
-          };
-        }),
-      };
-
-      const originStop = stopCoordinates(firstLeg.fromId);
-      const destinationStop = stopCoordinates(lastLeg.toId);
-      if (!originStop || !destinationStop) {
-        return NextResponse.json(
-          { success: false, error: "The planner returned an unknown stop" },
-          { status: 502 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        queryId: `req_${body.city.toLowerCase()}_metro_${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        city: { id: "delhi", name: "Delhi NCR", currency: "₹" },
-        origin: { name: firstLeg.from, lat: originStop.lat, lng: originStop.lon },
-        destination: {
-          name: lastLeg.to,
-          lat: destinationStop.lat,
-          lng: destinationStop.lon,
-        },
-        summary: {
-          totalRoutes: 1,
-          recommendedRouteId: route.id,
-          fastestRouteId: route.id,
-          cheapestRouteId: route.id,
-        },
-        routes: [route],
-      });
-    }
-
-    const routeModes = [
-      ...new Set(plannerResponse.legs.map((leg) => leg.mode)),
-    ];
-
-    if (routeModes.some((mode) => !allowedModes.has(mode))) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `No route is available using only: ${[...allowedModes].join(", ")}`,
-        },
-        { status: 422 }
-      );
-    }
-
-    const firstLeg = plannerResponse.legs[0];
-    const lastLeg = plannerResponse.legs.at(-1);
-    if (!firstLeg || !lastLeg) {
-      return NextResponse.json(
-        { success: false, error: "The planner returned no navigable legs" },
-        { status: 502 }
-      );
-    }
-
-    const originStop = stopCoordinates(firstLeg.fromId);
-    const destinationStop = stopCoordinates(lastLeg.toId);
-    if (!originStop || !destinationStop) {
-      return NextResponse.json(
-        { success: false, error: "The planner returned an unknown stop" },
-        { status: 502 }
-      );
-    }
-
-    const variants = [
-      {
-        id: "route_real_planner",
-        tag: "RECOMMENDED" as const,
+    if (scenario) {
+      scenarioApplied = true;
+      const scenarioPlan = planByName(body.origin.query, body.destination.query, {
         preference: requestedPriority,
-      },
-      {
-        id: "route_real_fastest",
-        tag: "FASTEST" as const,
-        preference: "fastest" as const,
-      },
-      {
-        id: "route_real_cheapest",
-        tag: "CHEAPEST" as const,
-        preference: "cheapest" as const,
-      },
-    ];
+        period,
+        avoidCrowded,
+        scenario,
+      }) as PlannerResponse | { error: string };
 
-    const routes = variants
-      .map((variant) => {
-        const result =
-          variant.preference === requestedPriority
-            ? plannerResponse
-            : planByName(body.origin.query, body.destination.query, {
-                preference: variant.preference,
-                period: plannerPeriod(body.preferences?.period),
-                avoidCrowded: body.preferences?.avoidCrowded ?? false,
-              });
-
-        if (!result || "error" in result) return null;
-        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag);
-        if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
-          return null;
-        }
-        return candidate;
-      })
-      .filter((route): route is NonNullable<typeof route> => route !== null)
-
-    const explicitAlternatives = [
-      {
-        id: "route_real_metro",
-        tag: "FASTEST" as const,
-        enabled: allowedModes.has("metro"),
-        result: planMetroByName(
-          body.origin.query,
-          body.destination.query
-        ),
-      },
-      {
-        id: "route_real_walking",
-        tag: "ECO" as const,
-        enabled: allowedModes.has("walk"),
-        result: planWalkingByName(
-          body.origin.query,
-          body.destination.query
-        ),
-      },
-    ]
-      .filter((alternative) => alternative.enabled)
-      .map((alternative) => {
-        if ("error" in alternative.result) return null;
-        const candidate = buildPlannerRoute(alternative.result as PlannerResponse, alternative.id, alternative.tag);
-        if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
-          return null;
-        }
-        return candidate;
-      })
-      .filter((route): route is NonNullable<typeof route> => route !== null);
-
-    const routeIds = new Set(routes.map((route) => route.id));
-    for (const alternative of explicitAlternatives) {
-      if (!routeIds.has(alternative.id)) {
-        routes.push(alternative);
+      if (!("error" in scenarioPlan)) {
+        primaryPlannerResponse = scenarioPlan;
       }
     }
 
-    const recommendedRoute =
-      routes.find((route) => route.tag === "RECOMMENDED") || routes[0];
-    if (!recommendedRoute) {
+    // 3. Candidate routes collection
+    const candidateVariants: {
+      id: string;
+      tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO";
+      result: PlannerResponse;
+      isAlternative?: boolean;
+    }[] = [];
+
+    // Main route under current conditions
+    candidateVariants.push({
+      id: scenarioApplied ? "route_simulated_current" : "route_real_planner",
+      tag: "RECOMMENDED",
+      result: primaryPlannerResponse,
+      isAlternative: scenarioApplied,
+    });
+
+    // Cheapest alternative under current conditions
+    const currentCheapest = scenarioApplied
+      ? (planByName(body.origin.query, body.destination.query, {
+          preference: "cheapest",
+          period,
+          avoidCrowded,
+          scenario,
+        }) as PlannerResponse)
+      : baselineCheapest;
+
+    if (!("error" in currentCheapest)) {
+      candidateVariants.push({
+        id: "route_real_cheapest",
+        tag: "CHEAPEST",
+        result: currentCheapest,
+      });
+    }
+
+    // Metro-only alternative
+    if (allowedModes.has("metro")) {
+      const metroPlan = planMetroByName(
+        body.origin.query,
+        body.destination.query
+      ) as PlannerResponse | { error: string };
+      if (!("error" in metroPlan)) {
+        candidateVariants.push({
+          id: "route_real_metro",
+          tag: "FASTEST",
+          result: metroPlan,
+        });
+      }
+    }
+
+    // Walking-only alternative
+    if (allowedModes.has("walk")) {
+      const walkPlan = planWalkingByName(
+        body.origin.query,
+        body.destination.query
+      ) as PlannerResponse | { error: string };
+      if (!("error" in walkPlan)) {
+        candidateVariants.push({
+          id: "route_real_walking",
+          tag: "ECO",
+          result: walkPlan,
+        });
+      }
+    }
+
+    // If scenario is active, also compute an alternative that bypasses disrupted services
+    if (scenarioApplied && scenario && (scenario.serviceDelays || scenario.disabledServices)) {
+      const allDisrupted = [
+        ...(scenario?.disabledServices || []),
+        ...Object.keys(scenario?.serviceDelays || {}),
+      ];
+      const bypassPlan = planByName(body.origin.query, body.destination.query, {
+        preference: requestedPriority,
+        period,
+        avoidCrowded: true,
+        scenario: scenario ? {
+          ...scenario,
+          disabledServices: allDisrupted,
+        } : { active: true, disabledServices: allDisrupted },
+      }) as PlannerResponse | { error: string };
+
+      if (!("error" in bypassPlan)) {
+        candidateVariants.push({
+          id: "route_simulated_bypass",
+          tag: "RECOMMENDED",
+          result: bypassPlan,
+          isAlternative: true,
+        });
+      }
+    }
+
+    // 4. Build RouteOption objects
+    const routes: RouteOption[] = [];
+    const seenTitlesAndModes = new Set<string>();
+
+    for (const variant of candidateVariants) {
+      const candidate = buildPlannerRoute(
+        variant.result,
+        variant.id,
+        variant.tag,
+        constraints,
+        scenario ?? undefined,
+        variant.isAlternative,
+        baselineRecommendedRoute
+      );
+
+      if (!candidate) continue;
+      if (candidate.legs.some((leg) => !allowedModes.has(leg.mode))) continue;
+
+      const signature = `${candidate.title}_${candidate.totalDurationMinutes}_${candidate.totalFare}`;
+      if (!seenTitlesAndModes.has(signature)) {
+        seenTitlesAndModes.add(signature);
+        routes.push(candidate);
+      }
+    }
+
+    if (routes.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No route is available using the selected modes" },
+        { success: false, error: "No feasible route found meeting your transportation modes" },
         { status: 422 }
       );
     }
 
-    const route = recommendedRoute;
+    // 5. Evaluate and enforce constraints
+    const validRoutes = routes.filter((r) => r.constraintsEvaluation?.satisfied !== false);
+    const hasConstraints = Boolean(
+      constraints &&
+        (constraints.maxBudget !== undefined ||
+          constraints.maxWalkingDistanceMeters !== undefined ||
+          constraints.maxTransfers !== undefined ||
+          constraints.requiredArrivalTime ||
+          constraints.avoidCrowded)
+    );
+
+    let constraintSummary: { hasConstraints: boolean; allSatisfied: boolean; unmetConstraints: string[]; explanation?: string; } | undefined = undefined;
+
+    if (hasConstraints) {
+      const allSatisfied = validRoutes.length > 0;
+      const allViolations = [
+        ...new Set(routes.flatMap((r) => r.constraintsEvaluation?.violations || [])),
+      ];
+
+      constraintSummary = {
+        hasConstraints: true,
+        allSatisfied,
+        unmetConstraints: allSatisfied ? [] : allViolations,
+        explanation: allSatisfied
+          ? `Found ${validRoutes.length} route(s) satisfying all your hard constraints.`
+          : `No route met all specified constraints (${allViolations.join("; ")}). Showing closest alternatives with detailed trade-offs.`,
+      };
+    }
+
+    // 6. Rank routes
+    // Priority: Constraint satisfaction first -> Then requested priority or reliability
+    routes.sort((a, b) => {
+      const aSat = a.constraintsEvaluation?.satisfied !== false ? 1 : 0;
+      const bSat = b.constraintsEvaluation?.satisfied !== false ? 1 : 0;
+      if (aSat !== bSat) return bSat - aSat; // Satisfied routes first
+
+      if (requestedPriority === "cheapest") {
+        return (a.totalFare ?? 999) - (b.totalFare ?? 999);
+      }
+      return a.totalDurationMinutes - b.totalDurationMinutes;
+    });
+
+    // Ensure the top route carries the RECOMMENDED tag
+    routes[0].tag = "RECOMMENDED";
+
+    // 7. Calculate comparison if scenario was active
+    if (scenarioApplied && baselineRecommendedRoute) {
+      const activeRecommended = routes[0];
+      const baselineMins = baselineRecommendedRoute.totalDurationMinutes;
+      const simulatedMins = activeRecommended.totalDurationMinutes;
+      const delayDiff = Number((simulatedMins - baselineMins).toFixed(1));
+
+      const delayedNames = Object.keys(scenario?.serviceDelays || {}).join(", ");
+      const impactText =
+        delayDiff > 0
+          ? `Simulated conditions on ${delayedNames || "selected services"} add ~${delayDiff} min to your baseline journey (${baselineMins} min ➔ ${simulatedMins} min).`
+          : delayDiff < 0
+          ? `Alternative route is ~${Math.abs(delayDiff)} min faster than the baseline route under current disruptions.`
+          : `Journey duration remains on track (~${simulatedMins} min) by utilizing alternative services.`;
+
+      comparison = {
+        baselineRouteTitle: baselineRecommendedRoute.title,
+        baselineDurationMinutes: baselineMins,
+        simulatedDurationMinutes: simulatedMins,
+        delayImpactMinutes: Math.max(0, delayDiff),
+        impactExplanation: impactText,
+        alternativeRecommended: delayDiff > 0 || routes.some((r) => r.isSimulatedAlternative),
+        alternativeExplanation: activeRecommended.recommendationReason,
+      };
+    }
+
+    const firstLeg = routes[0].legs[0];
+    const lastLeg = routes[0].legs.at(-1);
+
+    const originCoordinates = firstLeg ? firstLeg.coordinates[0] || [28.6139, 77.209] : [28.6139, 77.209];
+    const destCoordinates = lastLeg ? lastLeg.coordinates.at(-1) || [28.6139, 77.209] : [28.6139, 77.209];
 
     return NextResponse.json(
       {
@@ -547,24 +551,28 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
         city: { id: "delhi", name: "Delhi NCR", currency: "₹" },
         origin: {
-          name: firstLeg.from,
-          lat: originStop.lat,
-          lng: originStop.lon,
+          name: firstLeg ? firstLeg.from : body.origin.query,
+          lat: originCoordinates[0],
+          lng: originCoordinates[1],
         },
         destination: {
-          name: lastLeg.to,
-          lat: destinationStop.lat,
-          lng: destinationStop.lon,
+          name: lastLeg ? lastLeg.to : body.destination.query,
+          lat: destCoordinates[0],
+          lng: destCoordinates[1],
         },
         summary: {
           totalRoutes: routes.length,
-          recommendedRouteId: route.id,
+          recommendedRouteId: routes[0].id,
           fastestRouteId:
-            routes.find((candidate) => candidate.tag === "FASTEST")?.id || route.id,
+            routes.find((c) => c.tag === "FASTEST")?.id || routes[0].id,
           cheapestRouteId:
-            routes.find((candidate) => candidate.tag === "CHEAPEST")?.id || route.id,
+            routes.find((c) => c.tag === "CHEAPEST")?.id || routes[0].id,
         },
         routes,
+        scenarioApplied,
+        scenarioDetails: scenario,
+        comparison,
+        constraintSummary,
       },
       { status: 200 }
     );
