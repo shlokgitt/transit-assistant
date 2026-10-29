@@ -5,8 +5,6 @@ import {
   Sparkles,
   Plus,
   Send,
-  Mic,
-  MicOff,
   Compass,
   Clock,
   BookOpen,
@@ -176,38 +174,9 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCopiedId, setIsCopiedId] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Stop listening cleanly
-  const stopListening = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // ignore
-      }
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-    setVoiceStatus(null);
-  }, []);
-
-  // Clean up speech recognition on unmount
-  useEffect(() => {
-    return () => {
-      stopListening();
-    };
-  }, [stopListening]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -226,7 +195,6 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
     async (textToSend?: string) => {
       const text = (textToSend ?? input).trim();
       if (!text || isLoading) return;
-      stopListening();
 
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -297,93 +265,6 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
     setIsCopiedId(id);
     setTimeout(() => setIsCopiedId(null), 2000);
   };
-
-  const toggleListening = async () => {
-    if (typeof window === "undefined") return;
-
-    // If currently listening, stop
-    if (isListening) {
-      stopListening();
-      return;
-    }
-
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setVoiceStatus("⚠️ Speech recognition is not supported in this preview. Open in Chrome or Edge.");
-      setTimeout(() => setVoiceStatus(null), 5000);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setVoiceStatus("Listening... Speak now");
-      };
-
-      recognition.onresult = (event: any) => {
-        let fullTranscript = "";
-        for (let i = 0; i < event.results.length; ++i) {
-          fullTranscript += event.results[i][0].transcript;
-        }
-
-        const trimmed = fullTranscript.trim();
-        if (trimmed) {
-          setInput(trimmed);
-          setVoiceStatus(`"${trimmed}"`);
-
-          // Auto-stop after 3 seconds of silence following recognized words
-          if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-          }
-          silenceTimerRef.current = setTimeout(() => {
-            stopListening();
-          }, 3000);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.warn("Speech recognition error:", event?.error);
-        if (event?.error === "no-speech") {
-          // ignore momentary silence
-          return;
-        }
-        if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
-          setVoiceStatus("⚠️ Mic permission needed. If using IDE preview, open http://localhost:3000 in Chrome/Edge.");
-          setTimeout(() => setVoiceStatus(null), 7000);
-        } else if (event?.error === "network") {
-          setVoiceStatus("⚠️ Speech service network error. Ensure internet connection.");
-          setTimeout(() => setVoiceStatus(null), 5000);
-        } else {
-          setVoiceStatus(`⚠️ Voice status: ${event?.error || "stopped"}`);
-          setTimeout(() => setVoiceStatus(null), 4000);
-        }
-        stopListening();
-      };
-
-      recognition.onend = () => {
-        stopListening();
-        inputRef.current?.focus();
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err: any) {
-      console.error("Speech recognition could not be started:", err);
-      setVoiceStatus("⚠️ Could not start voice input.");
-      setTimeout(() => setVoiceStatus(null), 3000);
-      setIsListening(false);
-    }
-  };
-
 
   const handleRouteClick = (route: RouteResult) => {
     if (!onPlanRoute || !route.legs?.length) return;
@@ -774,45 +655,13 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                   fontSize: "2.35rem",
                   fontWeight: 600,
                   color: "#f1f5f9",
-                  marginBottom: voiceStatus ? "14px" : "28px",
+                  marginBottom: "28px",
                   letterSpacing: "-0.02em",
                   textAlign: "center",
-                  transition: "margin 0.2s ease",
                 }}
               >
                 Where should we start?
               </h1>
-
-              {/* Live Voice Status Indicator */}
-              {voiceStatus && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "6px 14px",
-                    borderRadius: "20px",
-                    background: isListening ? "rgba(59, 130, 246, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                    border: isListening ? "1px solid rgba(59, 130, 246, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)",
-                    color: isListening ? "#93c5fd" : "#fca5a5",
-                    fontSize: "0.8rem",
-                    fontWeight: 500,
-                    marginBottom: "16px",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: isListening ? "#ef4444" : "#f87171",
-                      boxShadow: isListening ? "0 0 8px #ef4444" : "none",
-                      animation: isListening ? "pulseMic 1.2s infinite" : "none",
-                    }}
-                  />
-                  <span>{voiceStatus}</span>
-                </div>
-              )}
 
               {/* Centered Input Bar */}
               <div
@@ -820,14 +669,12 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                   width: "100%",
                   borderRadius: "28px",
                   background: "#1e212b",
-                  border: isListening ? "1px solid #3b82f6" : "1px solid rgba(255, 255, 255, 0.12)",
-                  boxShadow: isListening
-                    ? "0 0 25px rgba(59, 130, 246, 0.3), 0 10px 35px rgba(0, 0, 0, 0.45)"
-                    : "0 10px 35px rgba(0, 0, 0, 0.45)",
-                  padding: "8px 12px 8px 18px",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  boxShadow: "0 10px 35px rgba(0, 0, 0, 0.45)",
+                  padding: "10px 18px",
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
+                  gap: "12px",
                   marginBottom: "24px",
                   transition: "border 0.2s ease, box-shadow 0.2s ease",
                 }}
@@ -844,7 +691,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                       void handleSend();
                     }
                   }}
-                  placeholder={isListening ? "Listening... Speak your transit question" : "Ask TransitRouteAI..."}
+                  placeholder="Ask TransitRouteAI..."
                   style={{
                     flex: 1,
                     background: "transparent",
@@ -856,58 +703,6 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                   }}
                 />
 
-                {/* Tap to Speak (Mic Button) */}
-                <button
-                  type="button"
-                  onClick={toggleListening}
-                  title={isListening ? "Listening... Tap to stop" : "Tap to speak"}
-                  aria-label={isListening ? "Stop listening" : "Tap to speak"}
-                  style={{
-                    position: "relative",
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "50%",
-                    background: isListening ? "rgba(239, 68, 68, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                    border: isListening ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid rgba(255, 255, 255, 0.08)",
-                    color: isListening ? "#ef4444" : "#94a3b8",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s ease",
-                    flexShrink: 0,
-                    animation: isListening ? "pulseMic 1.5s ease-in-out infinite" : "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isListening) {
-                      e.currentTarget.style.color = "#ffffff";
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isListening) {
-                      e.currentTarget.style.color = "#94a3b8";
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                    }
-                  }}
-                >
-                  {isListening ? <MicOff size={17} /> : <Mic size={17} />}
-                  {isListening && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: "-2px",
-                        right: "-2px",
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: "#ef4444",
-                        boxShadow: "0 0 6px #ef4444",
-                      }}
-                    />
-                  )}
-                </button>
-
                 {/* Send Button */}
                 <button
                   type="button"
@@ -916,12 +711,12 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                   title="Send message"
                   aria-label="Send message"
                   style={{
-                    width: "36px",
-                    height: "36px",
+                    width: "34px",
+                    height: "34px",
                     borderRadius: "50%",
-                    background: input.trim() ? "#3b82f6" : "rgba(255, 255, 255, 0.04)",
+                    background: input.trim() ? "#3b82f6" : "rgba(255, 255, 255, 0.06)",
                     border: "none",
-                    color: input.trim() ? "#ffffff" : "#475569",
+                    color: input.trim() ? "#ffffff" : "#64748b",
                     cursor: input.trim() ? "pointer" : "default",
                     display: "flex",
                     alignItems: "center",
@@ -1211,52 +1006,18 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
               zIndex: 30,
             }}
           >
-            {/* Live Voice Status Indicator */}
-            {voiceStatus && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "5px 14px",
-                  borderRadius: "20px",
-                  background: isListening ? "rgba(59, 130, 246, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                  border: isListening ? "1px solid rgba(59, 130, 246, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)",
-                  color: isListening ? "#93c5fd" : "#fca5a5",
-                  fontSize: "0.78rem",
-                  fontWeight: 500,
-                  marginBottom: "8px",
-                }}
-              >
-                <span
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: isListening ? "#ef4444" : "#f87171",
-                    boxShadow: isListening ? "0 0 8px #ef4444" : "none",
-                    animation: isListening ? "pulseMic 1.2s infinite" : "none",
-                  }}
-                />
-                <span>{voiceStatus}</span>
-              </div>
-            )}
-
             <div
               style={{
                 width: "100%",
                 maxWidth: "760px",
                 borderRadius: "28px",
                 background: "#1e212b",
-                border: isListening ? "1px solid #3b82f6" : "1px solid rgba(255, 255, 255, 0.12)",
-                boxShadow: isListening
-                  ? "0 0 25px rgba(59, 130, 246, 0.3), 0 10px 30px rgba(0, 0, 0, 0.4)"
-                  : "0 10px 30px rgba(0, 0, 0, 0.4)",
-                padding: "6px 12px 6px 18px",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+                padding: "8px 18px",
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                transition: "border 0.2s ease, box-shadow 0.2s ease",
+                gap: "12px",
               }}
             >
               <input
@@ -1270,7 +1031,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                     void handleSend();
                   }
                 }}
-                placeholder={isListening ? "Listening... Speak your transit question" : "Ask TransitRouteAI..."}
+                placeholder="Ask TransitRouteAI..."
                 style={{
                   flex: 1,
                   background: "transparent",
@@ -1281,58 +1042,6 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                 }}
               />
 
-              {/* Tap to Speak (Mic Button) */}
-              <button
-                type="button"
-                onClick={toggleListening}
-                title={isListening ? "Listening... Tap to stop" : "Tap to speak"}
-                aria-label={isListening ? "Stop listening" : "Tap to speak"}
-                style={{
-                  position: "relative",
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  background: isListening ? "rgba(239, 68, 68, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                  border: isListening ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid rgba(255, 255, 255, 0.08)",
-                  color: isListening ? "#ef4444" : "#94a3b8",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.2s ease",
-                  flexShrink: 0,
-                  animation: isListening ? "pulseMic 1.5s ease-in-out infinite" : "none",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isListening) {
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isListening) {
-                    e.currentTarget.style.color = "#94a3b8";
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                  }
-                }}
-              >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                {isListening && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "-2px",
-                      right: "-2px",
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "50%",
-                      background: "#ef4444",
-                      boxShadow: "0 0 6px #ef4444",
-                    }}
-                  />
-                )}
-              </button>
-
               {/* Send Button */}
               <button
                 type="button"
@@ -1341,12 +1050,12 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
                 title="Send message"
                 aria-label="Send message"
                 style={{
-                  width: "34px",
-                  height: "34px",
+                  width: "32px",
+                  height: "32px",
                   borderRadius: "50%",
-                  background: input.trim() ? "#3b82f6" : "rgba(255, 255, 255, 0.04)",
+                  background: input.trim() ? "#3b82f6" : "rgba(255, 255, 255, 0.06)",
                   border: "none",
-                  color: input.trim() ? "#ffffff" : "#475569",
+                  color: input.trim() ? "#ffffff" : "#64748b",
                   cursor: input.trim() ? "pointer" : "default",
                   display: "flex",
                   alignItems: "center",
@@ -1364,18 +1073,8 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
             </p>
           </div>
         )}
-        {/* Keyframe animations for Voice recording and UI */}
+        {/* Keyframe animations for UI */}
         <style>{`
-          @keyframes pulseMic {
-            0%, 100% {
-              transform: scale(1);
-              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-            }
-            50% {
-              transform: scale(1.08);
-              box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.3);
-            }
-          }
           @keyframes chatDotBounce {
             0%, 80%, 100% {
               transform: scale(0.6);
