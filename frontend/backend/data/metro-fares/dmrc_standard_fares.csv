@@ -1,0 +1,7 @@
+﻿min_km_inclusive,max_km_exclusive,weekday_fare_inr,sunday_holiday_fare_inr,time_limit_minutes
+0,2,11,11,65
+2,5,21,11,
+5,12,32,21,
+12,21,43,32,100
+21,32,54,43,180
+32,,64,54,

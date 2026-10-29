@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findStops, stopDetails } from "../../../../../../../route.js";
+import { findStops, stopDetails } from "../../../../../../backend/route.js";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

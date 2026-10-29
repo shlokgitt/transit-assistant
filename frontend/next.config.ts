@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { NextConfig } from "next";
 
-// Load environment variables from the project root .env file.
+// Load environment variables from the project root .env file (local dev only).
 (function loadRootEnv() {
   try {
     const envPath = path.resolve(process.cwd(), "..", ".env");
@@ -15,7 +15,7 @@ import type { NextConfig } from "next";
       if (!process.env[key]) process.env[key] = trimmed.slice(eq + 1);
     }
   } catch {
-    /* Root .env not found - GROQ_API_KEY must be set via environment */
+    /* Root .env not found — GROQ_API_KEY must be set via environment variable */
   }
 })();
 
@@ -43,15 +43,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Turbopack / Webpack monorepo root pointing to repository root
-  turbopack: {
-    root: path.resolve(process.cwd(), ".."),
-  },
-
-  // Ensure Vercel Serverless Functions trace and package graph.json & data files
-  outputFileTracingRoot: path.resolve(process.cwd(), ".."),
+  // Backend files (route.js, graph.json, data/) are copied into frontend/backend/
+  // by the prebuild script — no need to trace outside this directory.
   outputFileTracingIncludes: {
-    "/api/**/*": ["../graph.json", "../route.js", "../metro-fares.js", "../data/**/*"],
+    "/api/**/*": ["./backend/**/*"],
   },
 
   async headers() {

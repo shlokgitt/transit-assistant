@@ -1,0 +1,33 @@
+{
+  "dataset_name": "Delhi NCR Metro Fare Reference Dataset",
+  "version": "1.0.0",
+  "created_date": "2026-10-25",
+  "currency": "INR",
+  "scope": "Officially published single-journey fare rules/tables for DMRC, Airport Express, and Noida Metro, plus a Rapid Metro source note.",
+  "important_limitations": [
+    "Manually structured from official operator webpages; this is not an operator-provided downloadable dataset.",
+    "DMRC standard fares depend on actual network travel distance and day type.",
+    "Airport Express fares are an origin-destination matrix.",
+    "Noida Metro fares depend on number of stations and day type.",
+    "Rapid Metro fare note should be verified before production use.",
+    "Smart-card discounts, passes, penalties, and special concessions are not modeled."
+  ],
+  "sources": [
+    {
+      "operator": "DMRC standard network",
+      "url": "https://delhimetrorail.com/fare"
+    },
+    {
+      "operator": "DMRC Airport Express",
+      "url": "https://delhimetrorail.com/fare-for-airport-express-line"
+    },
+    {
+      "operator": "Noida Metro (NMRC)",
+      "url": "https://www.nmrcnoida.com/Passenger-Information/Metro-Rail/Fare-Table"
+    },
+    {
+      "operator": "Rapid Metro Gurgaon",
+      "url": "https://new.delhimetrorail.com/en/rapid-metro"
+    }
+  ]
+}

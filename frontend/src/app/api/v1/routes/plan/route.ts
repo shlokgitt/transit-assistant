@@ -7,7 +7,7 @@ import {
   planByName,
   stopCoordinates,
   stopName,
-} from "../../../../../../../route.js";
+} from "../../../../../../backend/route.js";
 
 type PlannerLeg = {
   mode: "walk" | "bus" | "metro" | "auto";

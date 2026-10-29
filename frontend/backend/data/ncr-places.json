@@ -1,0 +1,348 @@
+[
+  {
+    "name": "Connaught Place",
+    "aliases": [
+      "Connaught Place",
+      "CP",
+      "C.P.",
+      "Rajiv Chowk",
+      "CP New Delhi",
+      "Connaught Place Delhi"
+    ],
+    "lat": 28.632896,
+    "lon": 77.219574
+  },
+  {
+    "name": "Noida Sector 18",
+    "aliases": [
+      "Noida Sector 18",
+      "Sector 18 Noida",
+      "Noida Sec 18",
+      "Sec 18 Noida",
+      "Atta Market Noida"
+    ],
+    "lat": 28.570843,
+    "lon": 77.326088
+  },
+  {
+    "name": "Gaur City",
+    "aliases": [
+      "Gaur City",
+      "Gaur City 1",
+      "Gaur City Greater Noida"
+    ],
+    "lat": 28.6087,
+    "lon": 77.4359
+  },
+  {
+    "name": "Gaur City Mall",
+    "aliases": [
+      "Gaur City Mall"
+    ],
+    "lat": 28.6102,
+    "lon": 77.4352
+  },
+  {
+    "name": "Greater Noida West",
+    "aliases": [
+      "Greater Noida West",
+      "Noida Extension",
+      "Noida Extension Greater Noida"
+    ],
+    "lat": 28.6081,
+    "lon": 77.4382
+  },
+  {
+    "name": "Noida Sector 137",
+    "aliases": [
+      "Noida Sector 137",
+      "Sector 137 Noida"
+    ],
+    "lat": 28.5095,
+    "lon": 77.4032
+  },
+  {
+    "name": "Noida Sector 143",
+    "aliases": [
+      "Noida Sector 143",
+      "Sector 143 Noida"
+    ],
+    "lat": 28.5027,
+    "lon": 77.4256
+  },
+  {
+    "name": "Noida Sector 150",
+    "aliases": [
+      "Noida Sector 150",
+      "Sector 150 Noida"
+    ],
+    "lat": 28.4744,
+    "lon": 77.4823
+  },
+  {
+    "name": "Noida Sector 168",
+    "aliases": [
+      "Noida Sector 168",
+      "Sector 168 Noida"
+    ],
+    "lat": 28.4933,
+    "lon": 77.4437
+  },
+  {
+    "name": "Noida Techzone 4",
+    "aliases": [
+      "Noida Techzone 4",
+      "Techzone 4",
+      "Greater Noida Techzone 4"
+    ],
+    "lat": 28.6194,
+    "lon": 77.4565
+  },
+  {
+    "name": "Knowledge Park Greater Noida",
+    "aliases": [
+      "Knowledge Park Greater Noida",
+      "Knowledge Park 1",
+      "Knowledge Park 2"
+    ],
+    "lat": 28.4595,
+    "lon": 77.5001
+  },
+  {
+    "name": "Pari Chowk Greater Noida",
+    "aliases": [
+      "Pari Chowk",
+      "Pari Chowk Greater Noida"
+    ],
+    "lat": 28.4652,
+    "lon": 77.5089
+  },
+  {
+    "name": "Yamuna Expressway",
+    "aliases": [
+      "Yamuna Expressway",
+      "Yamuna Expressway Greater Noida"
+    ],
+    "lat": 28.455,
+    "lon": 77.555
+  },
+  {
+    "name": "Gurugram Sohna Road",
+    "aliases": [
+      "Sohna Road",
+      "Gurgaon Sohna Road",
+      "Sohna Road Gurugram"
+    ],
+    "lat": 28.4068,
+    "lon": 77.0434
+  },
+  {
+    "name": "Golf Course Extension Road",
+    "aliases": [
+      "Golf Course Extension Road",
+      "Gurugram Golf Course Extension"
+    ],
+    "lat": 28.4148,
+    "lon": 77.0768
+  },
+  {
+    "name": "New Gurgaon",
+    "aliases": [
+      "New Gurgaon",
+      "Gurugram Sector 81",
+      "Gurgaon Sector 81"
+    ],
+    "lat": 28.389,
+    "lon": 76.976
+  },
+  {
+    "name": "Dwarka Expressway",
+    "aliases": [
+      "Dwarka Expressway",
+      "Northern Peripheral Road"
+    ],
+    "lat": 28.449,
+    "lon": 76.998
+  },
+  {
+    "name": "Manesar",
+    "aliases": [
+      "Manesar",
+      "IMT Manesar",
+      "Gurugram Manesar"
+    ],
+    "lat": 28.3515,
+    "lon": 76.9365
+  },
+  {
+    "name": "Raj Nagar Extension Ghaziabad",
+    "aliases": [
+      "Raj Nagar Extension",
+      "Raj Nagar Extension Ghaziabad"
+    ],
+    "lat": 28.7042,
+    "lon": 77.4395
+  },
+  {
+    "name": "Crossings Republik",
+    "aliases": [
+      "Crossings Republik",
+      "Crossing Republik Ghaziabad"
+    ],
+    "lat": 28.6301,
+    "lon": 77.4354
+  },
+  {
+    "name": "Indirapuram",
+    "aliases": [
+      "Indirapuram Ghaziabad",
+      "Indirapuram"
+    ],
+    "lat": 28.6417,
+    "lon": 77.3716
+  },
+  {
+    "name": "Vasundhara Ghaziabad",
+    "aliases": [
+      "Vasundhara Ghaziabad",
+      "Vasundhara"
+    ],
+    "lat": 28.661,
+    "lon": 77.374
+  },
+  {
+    "name": "Loni",
+    "aliases": [
+      "Loni Ghaziabad",
+      "Loni"
+    ],
+    "lat": 28.751,
+    "lon": 77.289
+  },
+  {
+    "name": "Greater Faridabad",
+    "aliases": [
+      "Greater Faridabad",
+      "Neharpar Faridabad",
+      "Faridabad Neharpar"
+    ],
+    "lat": 28.4088,
+    "lon": 77.351
+  },
+  {
+    "name": "Ballabhgarh",
+    "aliases": [
+      "Ballabhgarh"
+    ],
+    "lat": 28.3407,
+    "lon": 77.3177
+  },
+  {
+    "name": "Tigaon Faridabad",
+    "aliases": [
+      "Tigaon",
+      "Tigaon Faridabad"
+    ],
+    "lat": 28.402,
+    "lon": 77.382
+  },
+  {
+    "name": "Narela",
+    "aliases": [
+      "Narela Delhi",
+      "Narela"
+    ],
+    "lat": 28.8526,
+    "lon": 77.0929
+  },
+  {
+    "name": "Bawana",
+    "aliases": [
+      "Bawana Delhi",
+      "Bawana"
+    ],
+    "lat": 28.798,
+    "lon": 77.034
+  },
+  {
+    "name": "Burari",
+    "aliases": [
+      "Burari Delhi",
+      "Burari"
+    ],
+    "lat": 28.752,
+    "lon": 77.199
+  },
+  {
+    "name": "Najafgarh",
+    "aliases": [
+      "Najafgarh Delhi",
+      "Najafgarh"
+    ],
+    "lat": 28.6092,
+    "lon": 76.9798
+  },
+  {
+    "name": "Chhatarpur",
+    "aliases": [
+      "Chhatarpur Delhi",
+      "Chhatarpur"
+    ],
+    "lat": 28.5067,
+    "lon": 77.175
+  },
+  {
+    "name": "Vasant Kunj",
+    "aliases": [
+      "Vasant Kunj Delhi",
+      "Vasant Kunj"
+    ],
+    "lat": 28.542,
+    "lon": 77.155
+  },
+  {
+    "name": "Mahipalpur",
+    "aliases": [
+      "Mahipalpur Delhi",
+      "Mahipalpur"
+    ],
+    "lat": 28.548,
+    "lon": 77.126
+  },
+  {
+    "name": "Sangam Vihar",
+    "aliases": [
+      "Sangam Vihar Delhi",
+      "Sangam Vihar"
+    ],
+    "lat": 28.503,
+    "lon": 77.249
+  },
+  {
+    "name": "Sonipat",
+    "aliases": [
+      "Sonipat",
+      "Sonepat"
+    ],
+    "lat": 28.9931,
+    "lon": 77.0151
+  },
+  {
+    "name": "Kundli",
+    "aliases": [
+      "Kundli Sonipat",
+      "Kundli"
+    ],
+    "lat": 28.879,
+    "lon": 77.116
+  },
+  {
+    "name": "Bahadurgarh",
+    "aliases": [
+      "Bahadurgarh Haryana",
+      "Bahadurgarh"
+    ],
+    "lat": 28.6924,
+    "lon": 76.924
+  }
+]

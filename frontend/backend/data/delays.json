@@ -1,0 +1,83 @@
+
+{
+  "metadata": {
+    "city": "Delhi",
+    "data_type": "simulated",
+    "description": "Sample bus delay and crowd information for demonstration",
+    "live_data": false,
+    "time_periods": [
+      "morning",
+      "afternoon",
+      "evening",
+      "night"
+    ]
+  },
+  "delays": [
+    {
+      "route_id": "03DOWN",
+      "time_period": "morning",
+      "delay_minutes": 8,
+      "crowd_level": "high"
+    },
+    {
+      "route_id": "534",
+      "time_period": "morning",
+      "delay_minutes": 10,
+      "crowd_level": "high"
+    },
+    {
+      "route_id": "534",
+      "time_period": "afternoon",
+      "delay_minutes": 3,
+      "crowd_level": "medium"
+    },
+    {
+      "route_id": "534",
+      "time_period": "evening",
+      "delay_minutes": 8,
+      "crowd_level": "high"
+    },
+    {
+      "route_id": "540",
+      "time_period": "morning",
+      "delay_minutes": 5,
+      "crowd_level": "medium"
+    },
+    {
+      "route_id": "540",
+      "time_period": "afternoon",
+      "delay_minutes": 2,
+      "crowd_level": "low"
+    },
+    {
+      "route_id": "540",
+      "time_period": "evening",
+      "delay_minutes": 12,
+      "crowd_level": "high"
+    },
+    {
+      "route_id": "620",
+      "time_period": "morning",
+      "delay_minutes": 4,
+      "crowd_level": "medium"
+    },
+    {
+      "route_id": "620",
+      "time_period": "afternoon",
+      "delay_minutes": 1,
+      "crowd_level": "low"
+    },
+    {
+      "route_id": "620",
+      "time_period": "evening",
+      "delay_minutes": 6,
+      "crowd_level": "medium"
+    },
+    {
+      "route_id": "534",
+      "time_period": "night",
+      "delay_minutes": 2,
+      "crowd_level": "low"
+    }
+  ]
+}
