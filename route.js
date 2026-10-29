@@ -5,16 +5,31 @@ import { calculateMetroFare } from "./metro-fares.js";
 
 function findAssetDir(filename) {
   const candidates = [
-    path.dirname(fileURLToPath(import.meta.url)),
     path.join(process.cwd(), 'backend'),
     path.join(process.cwd(), 'frontend', 'backend'),
+    path.dirname(fileURLToPath(import.meta.url)),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'backend'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '..'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'backend'),
     process.cwd(),
     path.join(process.cwd(), '..'),
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '..'),
+    path.join(process.cwd(), '..', 'backend'),
+    path.join(process.cwd(), '..', 'frontend', 'backend'),
   ];
   for (const dir of candidates) {
     try {
       if (fs.existsSync(path.join(dir, filename))) return dir;
+    } catch {}
+  }
+  for (const base of [process.cwd(), path.dirname(fileURLToPath(import.meta.url))]) {
+    try {
+      const entries = fs.readdirSync(base, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const sub = path.join(base, entry.name);
+          if (fs.existsSync(path.join(sub, filename))) return sub;
+        }
+      }
     } catch {}
   }
   return path.dirname(fileURLToPath(import.meta.url));
