@@ -124,35 +124,13 @@ function formatRouteTitle(legs: PlannerLeg[]): string {
 function buildPlannerRoute(
   plannerResponse: PlannerResponse,
   id: string,
-  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO",
-  allowAuto: boolean = true
+  tag: "FASTEST" | "CHEAPEST" | "RECOMMENDED" | "ECO"
 ) {
   const firstLeg = plannerResponse.legs[0];
   if (!firstLeg) return null;
 
-  // Enhance long access legs (> 1.5km from/to a place) with Auto if allowed
-  const processedLegs = plannerResponse.legs.map((leg, index) => {
-    const isFirstOrLast =
-      index === 0 || index === plannerResponse.legs.length - 1;
-    if (
-      allowAuto &&
-      isFirstOrLast &&
-      leg.mode === "walk" &&
-      (leg.distanceKm || 0) > 1.5
-    ) {
-      const distance = leg.distanceKm || 0;
-      const autoMinutes = Math.round(Math.max(5, distance * 2.5));
-      const autoFare = Math.round(30 + Math.max(0, distance - 1.5) * 10);
-      return {
-        ...leg,
-        mode: "auto" as const,
-        minutes: autoMinutes,
-        fare: autoFare,
-        instruction: `Take an auto from ${leg.from} to ${leg.to}`,
-      };
-    }
-    return leg;
-  });
+  // Keep transit legs as pure walk/transit - do not inject auto into planned routes
+  const processedLegs = plannerResponse.legs;
 
   const routeModes = [
     ...new Set(processedLegs.map((leg) => leg.mode)),
@@ -198,10 +176,7 @@ function buildPlannerRoute(
         distanceKm: leg.distanceKm || 0,
         distanceSource: leg.distanceSource,
         fare: leg.fare ?? 0,
-        instruction:
-          leg.mode === "auto"
-            ? `Take an auto from ${leg.from} to ${leg.to}`
-            : `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
+        instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
         stopsCount: leg.stops,
         intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
@@ -209,12 +184,7 @@ function buildPlannerRoute(
           leg.mode === "metro"
             ? leg.route?.replace(/^metro:/, "")
             : undefined,
-        provider:
-          leg.mode === "bus"
-            ? "GTFS bus data"
-            : leg.mode === "auto"
-            ? "Delhi NCR Auto Service"
-            : "GTFS transit data",
+        provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
         crowdLevel: leg.crowd === "high" ? "high" : "medium",
         delayMinutes: leg.delayMin,
         coordinates:
@@ -513,7 +483,7 @@ export async function POST(request: NextRequest) {
               });
 
         if (!result || "error" in result) return null;
-        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag, allowedModes.has("auto"));
+        const candidate = buildPlannerRoute(result as PlannerResponse, variant.id, variant.tag);
         if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
           return null;
         }
@@ -544,7 +514,7 @@ export async function POST(request: NextRequest) {
       .filter((alternative) => alternative.enabled)
       .map((alternative) => {
         if ("error" in alternative.result) return null;
-        const candidate = buildPlannerRoute(alternative.result as PlannerResponse, alternative.id, alternative.tag, allowedModes.has("auto"));
+        const candidate = buildPlannerRoute(alternative.result as PlannerResponse, alternative.id, alternative.tag);
         if (!candidate || candidate.legs.some((leg) => !allowedModes.has(leg.mode))) {
           return null;
         }
