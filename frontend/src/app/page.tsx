@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Bookmark,
@@ -581,6 +583,49 @@ export default function Home() {
           </form>
         </div>
       )}
+
+      {/* Footer with legal & compliance links */}
+      <footer
+        style={{
+          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          padding: "20px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          fontSize: "0.75rem",
+          color: "#64748b",
+          background: "rgba(4, 6, 15, 0.6)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontWeight: 600, color: "#94a3b8" }}>TransitSaathi</span>
+          <span>•</span>
+          <span>Delhi NCR Multimodal Transit Planner</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <Link href="/privacy" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>
+            Privacy Policy
+          </Link>
+          <Link href="/terms" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>
+            Terms & Conditions
+          </Link>
+          <button
+            onClick={() => setIsApiInspectorOpen(true)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#38bdf8",
+              cursor: "pointer",
+              fontSize: "0.75rem",
+              padding: 0,
+            }}
+          >
+            API Contract
+          </button>
+        </div>
+      </footer>
 
       <ApiInspectorModal isOpen={isApiInspectorOpen} onClose={() => setIsApiInspectorOpen(false)} lastRequest={lastRequest} lastResponse={routeResponse} />
       <LiveAlertsModal isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} cityId={selectedCity} />

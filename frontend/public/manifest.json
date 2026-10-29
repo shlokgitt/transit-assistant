@@ -1,0 +1,16 @@
+{
+  "name": "TransitSaathi",
+  "short_name": "TransitSaathi",
+  "description": "Smart Multimodal Route Planner for Delhi NCR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04060f",
+  "theme_color": "#04060f",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

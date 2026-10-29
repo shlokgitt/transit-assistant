@@ -3,8 +3,6 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 // Load environment variables from the project root .env file.
-// Next.js only auto-loads .env from the frontend/ directory; the shared
-// GROQ_API_KEY lives one level up in the repository root.
 (function loadRootEnv() {
   try {
     const envPath = path.resolve(process.cwd(), "..", ".env");
@@ -17,16 +15,51 @@ import type { NextConfig } from "next";
       if (!process.env[key]) process.env[key] = trimmed.slice(eq + 1);
     }
   } catch {
-    /* Root .env not found — GROQ_API_KEY must be set via environment */
+    /* Root .env not found - GROQ_API_KEY must be set via environment */
   }
 })();
 
+const securityHeaders = [
+  // Enforce HTTPS via Strict-Transport-Security (1 year, include subdomains)
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains; preload",
+  },
+  // Prevent clickjacking
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+  // Prevent MIME-sniffing
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  // Referrer policy
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  // Permissions Policy
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(self)",
+  },
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
     root: path.resolve(process.cwd(), ".."),
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 
