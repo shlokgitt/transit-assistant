@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
 
 
     const allowedModes = new Set(
-body.preferences?.allowedModes || (body as any).selectedModes || ["metro", "bus", "train", "walk"]
+      body.preferences?.allowedModes || (body as any).selectedModes || ["metro", "bus", "train", "auto", "walk"]
     );
 
     // Build all baseline options to identify the true optimal baseline route
@@ -533,6 +533,7 @@ if (!("error" in primaryPlannerResponse)) {
       if (!candidate) continue;
       // Access walking (to/from stations) is allowed on any transit route.
       // Pure walking routes are only allowed if the user selected "walk".
+      // Auto routes are only allowed if the user selected "auto".
       const hasDisallowedTransit = candidate.legs.some(
         (leg) => leg.mode !== "walk" && leg.mode !== "auto" && !allowedModes.has(leg.mode)
       );
@@ -540,6 +541,9 @@ if (!("error" in primaryPlannerResponse)) {
 
       const isWalkOnly = candidate.legs.every((leg) => leg.mode === "walk");
       if (isWalkOnly && !allowedModes.has("walk")) continue;
+
+      const isAutoOnly = candidate.legs.every((leg) => leg.mode === "auto");
+      if (isAutoOnly && !allowedModes.has("auto")) continue;
 
       const existing = candidateByTitle.get(candidate.title);
       if (!existing) {
@@ -717,94 +721,99 @@ if (!("error" in primaryPlannerResponse)) {
         const walkDist = Math.round(directDistKm * 1.2 * 10) / 10;
         const walkMins = Math.round(walkDist * 12);
         const isAuto = walkMins > 10;
-        const autoMins = Math.max(3, Math.round(walkDist * 2.5));
-        const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
-        const directLegMode: TransitMode = isAuto ? "auto" : "walk";
-        const directDuration = isAuto ? autoMins : walkMins;
-        const directFare = isAuto ? null : 0;
-        const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
-        const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
-        const directWalk: RouteOption = {
-          id: isAuto ? "route_direct_auto" : "route_direct_walk",
-          title: directTitle,
-          summary: directSummary,
-          totalDurationMinutes: directDuration,
-          totalDistanceKm: walkDist,
-          distanceSource: "straight-line",
-          totalFare: directFare,
-          summaryModes: [directLegMode],
-          tag: isAuto ? "COMFORT" : "ECO",
-          carbonEmissionsKg: isAuto ? Math.round(walkDist * 0.08 * 10) / 10 : 0,
-          caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
-          transfersCount: 0,
-          crowdLevel: "low",
-          delayMinutes: 0,
-          onTimeReliability: 99,
-          recommendationReason: isAuto
-            ? `Direct local auto (~${autoMins} min) with point-to-point travel and no transit transfers.`
-            : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
-          legs: [
-            {
-              legIndex: 0,
-              mode: directLegMode,
-              from: originCoord.name,
-              to: destCoord.name,
-              durationMinutes: directDuration,
-              distanceKm: walkDist,
-              fare: directFare,
-              lineName: isAuto ? "Local Auto" : undefined,
-              instruction: isAuto
-                ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min)`
-                : `Walk from ${originCoord.name} to ${destCoord.name}`,
-              coordinates: [
-                [originCoord.lat, originCoord.lng],
-                [destCoord.lat, destCoord.lng],
-              ],
-            },
-          ],
-        };
-        routes.push(directWalk);
+        if ((isAuto && allowedModes.has("auto")) || (!isAuto && allowedModes.has("walk"))) {
+          const autoMins = Math.max(3, Math.round(walkDist * 2.5));
+          const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
+          const directLegMode: TransitMode = isAuto ? "auto" : "walk";
+          const directDuration = isAuto ? autoMins : walkMins;
+          const directFare = isAuto ? null : 0;
+          const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
+          const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
+          const directWalk: RouteOption = {
+            id: isAuto ? "route_direct_auto" : "route_direct_walk",
+            title: directTitle,
+            summary: directSummary,
+            totalDurationMinutes: directDuration,
+            totalDistanceKm: walkDist,
+            distanceSource: "straight-line",
+            totalFare: directFare,
+            summaryModes: [directLegMode],
+            tag: isAuto ? "COMFORT" : "ECO",
+            carbonEmissionsKg: isAuto ? Math.round(walkDist * 0.08 * 10) / 10 : 0,
+            caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
+            transfersCount: 0,
+            crowdLevel: "low",
+            delayMinutes: 0,
+            onTimeReliability: 99,
+            recommendationReason: isAuto
+              ? `Direct local auto (~${autoMins} min) with point-to-point travel and no transit transfers.`
+              : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
+            legs: [
+              {
+                legIndex: 0,
+                mode: directLegMode,
+                from: originCoord.name,
+                to: destCoord.name,
+                durationMinutes: directDuration,
+                distanceKm: walkDist,
+                fare: directFare,
+                lineName: isAuto ? "Local Auto" : undefined,
+                instruction: isAuto
+                  ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min)`
+                  : `Walk from ${originCoord.name} to ${destCoord.name}`,
+                coordinates: [
+                  [originCoord.lat, originCoord.lng],
+                  [destCoord.lat, destCoord.lng],
+                ],
+              },
+            ],
+          };
+          routes.push(directWalk);
+        }
       }
     }
 
-    // Universal Rule: If walking time is more than 10 mins on ANY route, replace with local auto:
-    routes.forEach((route) => {
-      let routeAutoFare = 0;
-      let replacedWalk = false;
+    // Universal Rule: If walking time is more than 10 mins on ANY route, replace with local auto (if auto is allowed):
+    if (allowedModes.has("auto")) {
+      routes.forEach((route) => {
+        let replacedWalk = false;
 
-      route.legs.forEach((leg) => {
-        if (leg.mode === "walk" && leg.durationMinutes > 10) {
-          const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
-          const autoMins = Math.max(3, Math.round(dist * 2.5));
-          const autoFare = Math.max(25, Math.round(dist * 12 + 10));
+        route.legs.forEach((leg) => {
+          if (leg.mode === "walk" && leg.durationMinutes > 10) {
+            const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
+            const autoMins = Math.max(3, Math.round(dist * 2.5));
 
-          leg.mode = "auto";
-          leg.durationMinutes = autoMins;
-          leg.distanceKm = dist;
-          leg.fare = null;
-          leg.lineName = "Local Auto";
-          leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min)`;
-          replacedWalk = true;
+            leg.mode = "auto";
+            leg.durationMinutes = autoMins;
+            leg.distanceKm = dist;
+            leg.fare = null;
+            leg.lineName = "Local Auto";
+            leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min)`;
+            replacedWalk = true;
+          }
+        });
+
+        if (replacedWalk) {
+          route.summaryModes = [...new Set(route.legs.map((l) => l.mode))];
+          route.totalDurationMinutes = Number(
+            route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
+          );
+        }
+
+        const isAllAuto = route.legs.every((l) => l.mode === "auto");
+        if (isAllAuto) {
+          route.totalFare = null;
+          route.title = "Local Auto";
+          if (route.tag === "ECO") {
+            route.tag = "COMFORT";
+          }
+          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
         }
       });
-
-      if (replacedWalk) {
-        route.summaryModes = [...new Set(route.legs.map((l) => l.mode))];
-        route.totalDurationMinutes = Number(
-          route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
-        );
-      }
-
-      const isAllAuto = route.legs.every((l) => l.mode === "auto");
-      if (isAllAuto) {
-        route.totalFare = null;
-        route.title = "Local Auto";
-        if (route.tag === "ECO") {
-          route.tag = "COMFORT";
-        }
-        route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
-      }
-    });
+    } else {
+      // Auto mode is disabled by user: filter out all routes that rely on auto
+      routes = routes.filter((r) => !r.legs.some((l) => l.mode === "auto"));
+    }
 
     // Deduplicate: Keep at most one direct auto route and one direct walk route
     const seenDirectTitles = new Set<string>();
@@ -879,7 +888,7 @@ if (!("error" in primaryPlannerResponse)) {
     });
 
     // Ensure the top route carries the RECOMMENDED tag ONLY if it is not direct local auto
-    if (!routes[0].legs.every((l) => l.mode === "auto")) {
+    if (routes.length > 0 && !routes[0].legs.every((l) => l.mode === "auto")) {
       routes[0].tag = "RECOMMENDED";
     }
 
@@ -1039,11 +1048,24 @@ if (!("error" in primaryPlannerResponse)) {
       }
     }
 
-    const firstLeg = routes[0].legs[0];
-    const lastLeg = routes[0].legs.at(-1);
+    if (allowedModes.has("auto")) {
+      const hasAuto = routes.some((r) => r.legs.some((l) => l.mode === "auto"));
+      if (!hasAuto) {
+        unavailableModes.push({
+          mode: "auto",
+          reason: directDistKm > 50
+            ? "Distance exceeds standard local auto service range (>50 km)."
+            : "Direct walking under 10 minutes preferred; local auto not required for short hop.",
+          source: "dataset",
+        });
+      }
+    }
 
-    const originCoordinates = firstLeg ? firstLeg.coordinates[0] || [28.6139, 77.209] : [28.6139, 77.209];
-    const destCoordinates = lastLeg ? lastLeg.coordinates.at(-1) || [28.6139, 77.209] : [28.6139, 77.209];
+    const firstLeg = routes[0]?.legs[0];
+    const lastLeg = routes[0]?.legs.at(-1);
+
+    const originCoordinates = firstLeg ? firstLeg.coordinates[0] || [originCoord.lat, originCoord.lng] : [originCoord.lat, originCoord.lng];
+    const destCoordinates = lastLeg ? lastLeg.coordinates.at(-1) || [destCoord.lat, destCoord.lng] : [destCoord.lat, destCoord.lng];
 
     return NextResponse.json(
       {
