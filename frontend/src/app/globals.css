@@ -3840,3 +3840,19 @@ pre {
     box-sizing: border-box !important;
   }
 }
+
+.simulator-grid .aside-card {
+  color: #f1f5f9;
+}
+
+.simulator-grid .aside-card .aside-card-heading {
+  color: #f59e0b !important;
+}
+
+.simulator-grid .field-label {
+  color: #cbd5e1 !important;
+}
+
+.simulator-grid .range-labels {
+  color: #94a3b8 !important;
+}

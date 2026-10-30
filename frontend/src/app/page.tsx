@@ -621,19 +621,22 @@ export default function Home() {
         )}
 
         <div className="simulator-grid">
-          {/* Controls Panel */}
-          <div className="aside-card">
-            <div className="aside-card-heading">
-              <TriangleAlert size={16} />
-              <strong>Simulated disruption controls</strong>
+                    {/* Controls Panel */}
+          <div className="aside-card" style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#f59e0b", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <TriangleAlert size={16} color="#f59e0b" />
+              <span>Simulated Disruption Controls</span>
             </div>
 
             {/* Service selector */}
-            <label className="field-label">Affected Service</label>
+            <label className="field-label" style={{ display: "block", color: "#e2e8f0", fontSize: "0.74rem", fontWeight: 600, marginBottom: "6px" }}>
+              Affected Service
+            </label>
             <select
               className="select-field"
               value={simService}
               onChange={(e) => setSimService(e.target.value)}
+              style={{ color: "#ffffff", background: "rgba(15, 23, 42, 0.85)", borderColor: "rgba(255, 255, 255, 0.15)" }}
             >
               <option value="metro-blue">Metro · Blue Line</option>
               <option value="metro-yellow">Metro · Yellow Line</option>
@@ -645,9 +648,14 @@ export default function Home() {
             </select>
 
             {/* Delay slider */}
-            <label className="field-label" style={{ marginTop: "10px" }}>
-              Added delay: <strong style={{ color: delayMinutes > 0 ? "#fb7185" : "#34d399" }}>{delayMinutes} minutes</strong>
-            </label>
+            <div style={{ marginTop: "14px", marginBottom: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="field-label" style={{ color: "#e2e8f0", fontSize: "0.74rem", fontWeight: 600, margin: 0 }}>
+                Added Delay
+              </label>
+              <strong style={{ color: delayMinutes > 0 ? "#fb7185" : "#34d399", fontSize: "0.78rem", fontWeight: 700 }}>
+                {delayMinutes} {delayMinutes === 1 ? "minute" : "minutes"}
+              </strong>
+            </div>
             <input
               className="range-field"
               type="range"
@@ -656,15 +664,22 @@ export default function Home() {
               step="5"
               value={delayMinutes}
               onChange={(e) => setDelayMinutes(Number(e.target.value))}
+              style={{ accentColor: "#f59e0b", cursor: "pointer" }}
             />
-            <div className="range-labels"><span>On time</span><span>+30 min</span></div>
+            <div className="range-labels" style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8", fontSize: "0.68rem", marginTop: "3px" }}>
+              <span>On time</span>
+              <span>+30 min</span>
+            </div>
 
             {/* Station crowd */}
-            <label className="field-label" style={{ marginTop: "10px" }}>Simulated crowd at station</label>
+            <label className="field-label" style={{ display: "block", color: "#e2e8f0", fontSize: "0.74rem", fontWeight: 600, marginTop: "14px", marginBottom: "6px" }}>
+              Simulated Crowd at Station
+            </label>
             <select
               className="select-field"
               value={simStation}
               onChange={(e) => setSimStation(e.target.value)}
+              style={{ color: "#ffffff", background: "rgba(15, 23, 42, 0.85)", borderColor: "rgba(255, 255, 255, 0.15)" }}
             >
               <option>Rajiv Chowk</option>
               <option>Kashmere Gate</option>
@@ -673,11 +688,15 @@ export default function Home() {
               <option>Hauz Khas</option>
               <option>Karol Bagh</option>
             </select>
+
+            <label className="field-label" style={{ display: "block", color: "#e2e8f0", fontSize: "0.74rem", fontWeight: 600, marginTop: "10px", marginBottom: "6px" }}>
+              Crowd Level
+            </label>
             <select
               className="select-field"
-              style={{ marginTop: "6px" }}
               value={simCrowdLevel}
               onChange={(e) => setSimCrowdLevel(e.target.value as "low" | "medium" | "high")}
+              style={{ color: "#ffffff", background: "rgba(15, 23, 42, 0.85)", borderColor: "rgba(255, 255, 255, 0.15)" }}
             >
               <option value="high">High Crowd</option>
               <option value="medium">Moderate Crowd</option>
@@ -685,12 +704,12 @@ export default function Home() {
             </select>
 
             {/* Disable service */}
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px", cursor: "pointer", fontSize: "0.78rem", color: "#e2e8f0" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "14px", cursor: "pointer", fontSize: "0.78rem", color: "#f1f5f9", fontWeight: 500 }}>
               <input
                 type="checkbox"
                 checked={simDisable}
                 onChange={(e) => setSimDisable(e.target.checked)}
-                style={{ accentColor: "#f43f5e" }}
+                style={{ accentColor: "#f43f5e", width: "15px", height: "15px", cursor: "pointer" }}
               />
               <span>Temporarily disable this service</span>
             </label>
