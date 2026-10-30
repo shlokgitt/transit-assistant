@@ -426,7 +426,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <div className="stat-box">
             <span className="stat-label">💰 Fare</span>
             <span className="stat-value" style={{ color: "#34d399", fontSize: "1.05rem" }}>
-              {route.totalFare === null ? "Unavailable" : `₹${route.totalFare}`}
+              {route.totalFare === null || route.summaryModes.every((m) => m === "auto") ? "Unavailable" : `₹${route.totalFare}`}
             </span>
           </div>
           <div className="stat-box">

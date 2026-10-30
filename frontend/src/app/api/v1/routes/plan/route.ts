@@ -182,9 +182,9 @@ function buildPlannerRoute(
         minutes: autoMinutes,
         distanceKm: dist,
         distanceSource: "road" as const,
-        fare: autoFare,
+        fare: null,
         lineName: "Local Auto",
-        instruction: `Take local auto to ${leg.to} (~${autoMinutes} min, ₹${autoFare})`,
+        instruction: `Take local auto to ${leg.to} (~${autoMinutes} min)`,
         route: undefined,
       };
     }
@@ -197,16 +197,13 @@ function buildPlannerRoute(
   const totalMinutes = Number(
     processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
   );
-  const autoFareSum = processedLegs
-    .filter((leg) => leg.mode === "auto")
-    .reduce((sum, leg) => sum + (leg.fare || 0), 0);
   const transitFare =
     plannerResponse.totalFare !== undefined && plannerResponse.totalFare !== null && plannerResponse.totalFare > 0
       ? plannerResponse.totalFare
       : processedLegs
           .filter((leg) => leg.mode !== "auto")
           .reduce((sum, leg) => sum + (leg.fare || 0), 0);
-  const totalFare = (transitFare ?? 0) + autoFareSum;
+  const totalFare = isAllAuto ? null : (transitFare ?? null);
 
   const vehicleLegs = processedLegs.filter((l) => l.mode !== "walk");
   const transfersCount = Math.max(0, vehicleLegs.length - 1);
@@ -718,7 +715,7 @@ if (!("error" in primaryPlannerResponse)) {
         const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
         const directLegMode: TransitMode = isAuto ? "auto" : "walk";
         const directDuration = isAuto ? autoMins : walkMins;
-        const directFare = isAuto ? autoFare : 0;
+        const directFare = isAuto ? null : 0;
         const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
         const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
         const directWalk: RouteOption = {
@@ -751,7 +748,7 @@ if (!("error" in primaryPlannerResponse)) {
               fare: directFare,
               lineName: isAuto ? "Local Auto" : undefined,
               instruction: isAuto
-                ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min, ₹${autoFare})`
+                ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min)`
                 : `Walk from ${originCoord.name} to ${destCoord.name}`,
               coordinates: [
                 [originCoord.lat, originCoord.lng],
@@ -778,10 +775,9 @@ if (!("error" in primaryPlannerResponse)) {
           leg.mode = "auto";
           leg.durationMinutes = autoMins;
           leg.distanceKm = dist;
-          leg.fare = autoFare;
+          leg.fare = null;
           leg.lineName = "Local Auto";
-          leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min, ₹${autoFare})`;
-          routeAutoFare += autoFare;
+          leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min)`;
           replacedWalk = true;
         }
       });
@@ -791,9 +787,9 @@ if (!("error" in primaryPlannerResponse)) {
         route.totalDurationMinutes = Number(
           route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
         );
-        route.totalFare = (route.totalFare ?? 0) + routeAutoFare;
         const isAllAuto = route.legs.every((l) => l.mode === "auto");
         if (isAllAuto) {
+          route.totalFare = null;
           route.title = "Local Auto";
           route.tag = route.tag === "ECO" ? "COMFORT" : route.tag;
           route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
