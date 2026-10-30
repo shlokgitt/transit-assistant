@@ -1008,9 +1008,10 @@ if (!("error" in primaryPlannerResponse)) {
     if (allowedModes.has("walk")) {
       const hasWalk = routes.some((r) => r.legs.every((l) => l.mode === "walk"));
       if (!hasWalk) {
+        const estWalkMin = Math.round(directDistKm * 12);
         unavailableModes.push({
           mode: "walk",
-          reason: `Pedestrian distance (~${directDistKm} km) exceeds practical walking range (>7 km).`,
+          reason: `Walking time (~${estWalkMin} min) exceeds 10 minutes (replaced with Local Auto).`,
           source: "dataset",
         });
       }

@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
 
     const matches = findStops(query);
     const dynamicResults = matches
-      .map((stop) => stopDetails(stop.id))
-      .filter((stop): stop is NonNullable<ReturnType<typeof stopDetails>> => stop !== null)
+      .map((stop: any) => stopDetails(stop.id))
+      .filter((stop: any): stop is NonNullable<ReturnType<typeof stopDetails>> => stop !== null)
       .slice(0, 8)
-      .map((stop) => {
+      .map((stop: any) => {
         const isRailway = /railway|station gate|terminal/i.test(stop.name) && !/metro/i.test(stop.name);
         return {
           id: stop.id,
