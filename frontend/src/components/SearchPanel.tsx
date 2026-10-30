@@ -56,6 +56,12 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     color: "#C47A44",
   },
   {
+    id: "train",
+    label: "Train",
+    icon: <VehicleIllustration mode="train" size="xs" />,
+    color: "#38BDF8",
+  },
+  {
     id: "walk",
     label: "Walk",
     icon: <VehicleIllustration mode="walk" size="xs" />,
@@ -496,7 +502,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             {selectedModes.length} / {MODES.length} Active
           </span>
         </div>
-        <div className="planner-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px", width: "100%", maxWidth: "100%", minWidth: 0 }}>
+<div className="planner-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: "6px" }}>
           {MODES.map((m) => {
             const isSelected = selectedModes.includes(m.id);
             return (

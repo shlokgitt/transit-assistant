@@ -35,17 +35,18 @@ interface ItineraryViewProps {
 
 const MODE_ICON: Record<TransitMode, React.ReactNode> = {
   metro: <Train size={15} />,
+  train: <Train size={15} />,
   bus: <Bus size={15} />,
   auto: <VehicleIllustration mode="auto" size="sm" />,
-  cab: <Car size={15} />,
   walk: <Footprints size={15} />,
 };
 
 const MODE_COLOR: Record<TransitMode, string> = {
   metro: "#B6E65A",
+  train: "#38BDF8",
   bus: "#E5A33D",
   auto: "#E5A33D",
-  cab: "#E5A33D",
+
   walk: "#B6E65A",
 };
 
