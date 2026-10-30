@@ -67,12 +67,39 @@ function getJourneyPreference(journey: SavedJourney): RoutingPriority {
 }
 
 const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
-  { id: "home", label: "Plan A Trip", icon: <Compass size={16} /> },
-  { id: "results", label: "Results", icon: <GitCompareArrows size={16} /> },
-  { id: "chat", label: "Travel Chat", icon: <Bot size={16} /> },
-  { id: "disruptions", label: "Simulator", icon: <TriangleAlert size={16} /> },
-  { id: "saved", label: "Saved Journeys", icon: <Bookmark size={16} /> },
+  { id: "home", label: "Plan a Trip", icon: <TripNavIcon type="plan" /> },
+  { id: "results", label: "Results", icon: <TripNavIcon type="results" /> },
+  { id: "chat", label: "Travel Chat", icon: <TripNavIcon type="chat" /> },
+  { id: "disruptions", label: "Simulator", icon: <TripNavIcon type="simulator" /> },
+  { id: "saved", label: "Saved Journeys", icon: <TripNavIcon type="saved" /> },
 ];
+
+function TripNavIcon({ type }: { type: "plan" | "results" | "chat" | "simulator" | "saved" }) {
+  const paths = {
+    plan: "M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z",
+    results: "M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z",
+    chat: "M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z",
+    simulator: "M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5",
+    saved: "M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z",
+  };
+
+  return (
+    <svg
+      className="hi"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2.25"
+      aria-hidden="true"
+    >
+      <path d={paths[type]} />
+    </svg>
+  );
+}
 
 function SlidingNav({
   activeScreen,
@@ -83,6 +110,7 @@ function SlidingNav({
 }) {
   const barRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabRefs = useRef<Record<Screen, HTMLButtonElement | null>>({
     home: null,
     results: null,
@@ -113,10 +141,24 @@ function SlidingNav({
     };
 
     moveToActiveTab(true);
+    const handleResize = () => moveToActiveTab(false);
     const resizeObserver = new ResizeObserver(() => moveToActiveTab(false));
     resizeObserver.observe(bar);
-    return () => resizeObserver.disconnect();
+    window.addEventListener("resize", handleResize);
+    if (document.fonts?.ready) {
+      void document.fonts.ready.then(() => moveToActiveTab(false));
+    }
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
   }, [activeScreen]);
+
+  const holdPressedState = (tab: HTMLButtonElement) => {
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    tab.classList.add("is-pressed");
+    pressTimerRef.current = setTimeout(() => tab.classList.remove("is-pressed"), 150);
+  };
 
   return (
     <div ref={barRef} className="t-tabs t-nav-tabs" role="tablist" aria-label="Main navigation">
@@ -130,10 +172,16 @@ function SlidingNav({
           className="t-tab"
           role="tab"
           aria-selected={activeScreen === item.id}
+          aria-label={item.label}
+          onPointerDown={(event) => {
+            if (event.pointerType !== "mouse") holdPressedState(event.currentTarget);
+          }}
           onClick={() => onChange(item.id)}
         >
           {item.icon}
-          {item.label}
+          <span className="t-tab-label">
+            <span className="t-tab-text">{item.label}</span>
+          </span>
         </button>
       ))}
     </div>

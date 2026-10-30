@@ -1305,10 +1305,12 @@ main,
 :root {
   --tabs-dur: 250ms;
   --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tabs-text-muted: #68756c;
-  --tabs-text-active: #124a38;
-  --tabs-bar-bg: #eef4ee;
-  --tabs-pill-bg: #ffffff;
+  --tabs-text-muted: var(--ui-muted, #68756c);
+  --tabs-text-active: var(--ui-text, #172033);
+  --tabs-bar-bg: rgba(0, 0, 0, 0.04);
+  --tabs-pill-bg: var(--ui-surface, #ffffff);
+  --press-scale: 0.97;
+  --press-dur: 150ms;
 }
 
 .t-tabs {
@@ -1319,27 +1321,65 @@ main,
   padding: 3px;
   border-radius: 48px;
   background: var(--tabs-bar-bg);
+  max-width: 100%;
 }
 
 .t-tab {
   position: relative;
   z-index: 1;
-  height: 34px;
-  padding: 4px 14px;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px;
   border: 0;
   border-radius: 48px;
   color: var(--tabs-text-muted);
   background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  transition: color var(--tabs-dur) var(--tabs-ease);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    color var(--tabs-dur) var(--tabs-ease),
+    transform var(--press-dur) var(--tabs-ease);
 }
 
 .t-tab:not([aria-selected="true"]):hover,
 .t-tab[aria-selected="true"] {
   color: var(--tabs-text-active);
+}
+
+.t-tab:is(:active, .is-pressed) {
+  transform: scale(var(--press-scale));
+}
+
+.t-tab:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--tabs-pill-bg),
+    0 0 0 4px var(--ui-accent, #2563eb);
+}
+
+.t-tab-label {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns var(--tabs-dur) var(--tabs-ease),
+    opacity var(--tabs-dur) var(--tabs-ease);
+}
+
+.t-tab[aria-selected="true"] .t-tab-label {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.t-tab-text {
+  min-width: 0;
+  overflow: hidden;
+  padding-left: 6px;
 }
 
 .t-tabs-pill {
@@ -1348,7 +1388,7 @@ main,
   left: 0;
   z-index: 0;
   width: 0;
-  height: 34px;
+  height: 30px;
   border-radius: 48px;
   background: var(--tabs-pill-bg);
   pointer-events: none;
@@ -1362,6 +1402,20 @@ main,
 
 .t-nav-tabs {
   background: transparent;
+}
+
+.desktop-nav .t-nav-tabs .t-tab {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 48px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .t-nav-tabs {
+    display: none;
+  }
 }
 
 :root {
@@ -1422,8 +1476,13 @@ main,
 
 @media (prefers-reduced-motion: reduce) {
   .t-tabs-pill,
-  .t-tab {
+  .t-tab,
+  .t-tab-label {
     transition: none !important;
+  }
+
+  .t-tab:is(:active, .is-pressed) {
+    transform: none;
   }
 }
 
