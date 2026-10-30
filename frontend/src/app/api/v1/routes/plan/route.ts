@@ -365,7 +365,7 @@ export async function POST(request: NextRequest) {
       id: scenarioApplied ? "route_simulated_current" : "route_real_planner",
       tag: "RECOMMENDED",
       result: primaryPlannerResponse,
-      isAlternative: scenarioApplied,
+      isAlternative: false,
     });
 
     // Cheapest alternative under current conditions
@@ -527,13 +527,69 @@ export async function POST(request: NextRequest) {
       const simulatedMins = activeRecommended.totalDurationMinutes;
       const delayDiff = Number((simulatedMins - baselineMins).toFixed(1));
 
-      const delayedNames = Object.keys(scenario?.serviceDelays || {}).join(", ");
-      const impactText =
-        delayDiff > 0
-          ? `Simulated conditions on ${delayedNames || "selected services"} add ~${delayDiff} min to your baseline journey (${baselineMins} min ➔ ${simulatedMins} min).`
-          : delayDiff < 0
-          ? `Alternative route is ~${Math.abs(delayDiff)} min faster than the baseline route under current disruptions.`
-          : `Journey duration remains on track (~${simulatedMins} min) by utilizing alternative services.`;
+      // Collect all disrupted services
+      const delayedServices = [
+        ...Object.keys(scenario?.serviceDelays || {}),
+        ...(scenario?.disabledServices || []),
+      ];
+      const crowdedStation = scenario?.stationCrowd ? Object.keys(scenario.stationCrowd)[0] : null;
+
+      // Check if baseline route actually uses any of the disrupted services or stations
+      const baselineUsesDisruptedService = baselineRecommendedRoute.legs.some((leg) => {
+        if (delayedServices.length > 0) {
+          for (const s of delayedServices) {
+            const sLower = s.toLowerCase();
+            const routeLower = (leg.routeNumber || leg.lineName || "").toLowerCase();
+            if (routeLower && (routeLower.includes(sLower) || sLower.includes(routeLower))) return true;
+            if (sLower.includes("blue") && (routeLower.includes("blue") || leg.lineColor === "#0072bb")) return true;
+            if (sLower.includes("yellow") && (routeLower.includes("yellow") || leg.lineColor === "#ffcc00")) return true;
+            if (sLower.includes("red") && routeLower.includes("red")) return true;
+            if (sLower.includes("green") && routeLower.includes("green")) return true;
+            if (sLower.includes("violet") && routeLower.includes("violet")) return true;
+            if (sLower.includes("magenta") && routeLower.includes("magenta")) return true;
+            if (sLower.includes("pink") && routeLower.includes("pink")) return true;
+            if (sLower.includes("airport") && (routeLower.includes("airport") || routeLower.includes("orange"))) return true;
+          }
+        }
+        if (crowdedStation) {
+          const cLower = crowdedStation.toLowerCase();
+          if (leg.from.toLowerCase().includes(cLower) || leg.to.toLowerCase().includes(cLower)) return true;
+          if (leg.intermediateStops?.some((s) => s.toLowerCase().includes(cLower))) return true;
+        }
+        return false;
+      });
+
+      const delayedNames = delayedServices.map(s => s.replace("metro-", "Metro ").replace("-", " ")).join(", ");
+
+      let impactText = "";
+      let alternativeRecommended = false;
+      let altExplanation: string | undefined = undefined;
+
+      if (!baselineUsesDisruptedService && delayDiff === 0) {
+        impactText = `Original journey (${baselineRecommendedRoute.title}) is unaffected because it does not use the disrupted service (${delayedNames || "simulated disruption"}). The scheduled route remains optimal at ${baselineMins} min.`;
+        alternativeRecommended = false;
+      } else if (delayDiff > 0) {
+        const isBypass = activeRecommended.id === "route_simulated_bypass" || activeRecommended.isSimulatedAlternative;
+        if (isBypass) {
+          impactText = `Primary route disrupted by ${delayedNames || "delays"}. Recommended alternative reroutes via ${activeRecommended.title} taking ~${simulatedMins} min (+${delayDiff} min vs baseline).`;
+          alternativeRecommended = true;
+          altExplanation = `Alternative via ${activeRecommended.title} bypasses the disrupted lines to minimize delays.`;
+        } else {
+          impactText = `Simulated conditions on ${delayedNames || "selected services"} add ~${delayDiff} min to your baseline journey (${baselineMins} min ➔ ${simulatedMins} min).`;
+          const bypassOption = routes.find(r => r.id === "route_simulated_bypass");
+          if (bypassOption && bypassOption.totalDurationMinutes < simulatedMins) {
+            alternativeRecommended = true;
+            altExplanation = `Alternative option (${bypassOption.title}) saves ~${Math.round(simulatedMins - bypassOption.totalDurationMinutes)} min by bypassing the disruption.`;
+          }
+        }
+      } else if (delayDiff < 0) {
+        impactText = `Alternative route (${activeRecommended.title}) is ~${Math.abs(delayDiff)} min faster under current disruptions.`;
+        alternativeRecommended = true;
+        altExplanation = activeRecommended.recommendationReason;
+      } else {
+        impactText = `Journey duration remains on track (~${simulatedMins} min). No delay is incurred on this route.`;
+        alternativeRecommended = false;
+      }
 
       comparison = {
         baselineRouteTitle: baselineRecommendedRoute.title,
@@ -541,8 +597,8 @@ export async function POST(request: NextRequest) {
         simulatedDurationMinutes: simulatedMins,
         delayImpactMinutes: Math.max(0, delayDiff),
         impactExplanation: impactText,
-        alternativeRecommended: delayDiff > 0 || routes.some((r) => r.isSimulatedAlternative),
-        alternativeExplanation: activeRecommended.recommendationReason,
+        alternativeRecommended,
+        alternativeExplanation: altExplanation,
       };
     }
 

@@ -753,7 +753,7 @@ export default function Home() {
                   <span>⚠️ Simulated ({simService.replace("-", " ")} +{delayMinutes}m)</span>
                   <strong style={{ color: delayImpact > 0 ? "#fb7185" : "#34d399" }}>
                     {affectedRoute?.totalDurationMinutes ?? "—"} min
-                    {delayImpact > 0 && <span style={{ fontSize: "0.68rem" }}> (+{delayImpact}m)</span>}
+                    {delayImpact > 0 ? <span style={{ fontSize: "0.68rem" }}> (+{delayImpact}m)</span> : <span style={{ fontSize: "0.68rem", color: "#34d399" }}> (unaffected)</span>}
                   </strong>
                 </div>
 
