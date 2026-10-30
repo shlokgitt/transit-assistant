@@ -200,13 +200,18 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         flexDirection: "column",
         gap: "14px",
         padding: "16px",
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        boxSizing: "border-box",
+        overflowX: "hidden",
         background: "rgba(14, 21, 37, 0.85)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--border-glass)",
       }}
     >
       {/* Route Inputs with Swap Button */}
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "100%", minWidth: 0 }}>
         {/* Origin Field */}
         <div ref={originRef} style={{ position: "relative" }}>
           <div
@@ -217,7 +222,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               background: "rgba(23, 34, 58, 0.7)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
               borderRadius: "10px",
-              padding: "10px 14px",
+              padding: "10px 42px 10px 14px",
               transition: "all 0.2s ease",
             }}
           >
@@ -350,7 +355,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               background: "rgba(23, 34, 58, 0.7)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
               borderRadius: "10px",
-              padding: "10px 14px",
+              padding: "10px 42px 10px 14px",
               transition: "all 0.2s ease",
             }}
           >
@@ -453,7 +458,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             Popular City Routes
           </span>
         </div>
-        <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
+        <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", width: "100%", maxWidth: "100%", minWidth: 0, WebkitOverflowScrolling: "touch" }}>
           {city.popularPresets.map((p, idx) => (
             <button
               key={idx}
@@ -497,7 +502,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             {selectedModes.length} / {MODES.length} Active
           </span>
         </div>
-        <div className="planner-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
+        <div className="planner-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px", width: "100%", maxWidth: "100%", minWidth: 0 }}>
           {MODES.map((m) => {
             const isSelected = selectedModes.includes(m.id);
             return (
@@ -546,7 +551,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           </label>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px", width: "100%", maxWidth: "100%", minWidth: 0 }}>
           {PRIORITIES.map((p) => {
             const isSelected = priority.includes(p.id);
             return (
@@ -936,7 +941,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         )}
       </div>
 
-      {/* Plan Route CTA Button */}
+            {/* Plan Route CTA Button */}
       <button
         onClick={onSearch}
         disabled={isLoading || !origin.trim() || !destination.trim()}
@@ -946,12 +951,15 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           justifyContent: "center",
           gap: "8px",
           width: "100%",
-          padding: "12px",
+          maxWidth: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
+          padding: "13px 16px",
           borderRadius: "10px",
           background: "linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)",
           border: "none",
           color: "#ffffff",
-          fontSize: "0.88rem",
+          fontSize: "0.9rem",
           fontWeight: 700,
           letterSpacing: "0.02em",
           cursor: isLoading || !origin.trim() || !destination.trim() ? "not-allowed" : "pointer",
@@ -967,8 +975,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           e.currentTarget.style.transform = "scale(1)";
         }}
       >
-        <Search size={16} />
-        <span>{isLoading ? "Computing Optimal Multimodal Routes..." : "Find Best Routes"}</span>
+        <Search size={16} style={{ flexShrink: 0, color: "#ffffff" }} />
+        <span style={{ color: "#ffffff", fontWeight: 700, fontSize: "0.88rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {isLoading ? "Finding Routes..." : "Find Best Routes"}
+        </span>
       </button>
     </div>
   );
