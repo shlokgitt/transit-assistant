@@ -13,7 +13,7 @@ type VehicleIllustrationProps = {
 const MODE_META: Record<TransitMode, { label: string; accent: string }> = {
   bus: { label: "Bus", accent: "#C47A44" },
   metro: { label: "Metro", accent: "#A7B58A" },
-  cab: { label: "Cab", accent: "#B8ADA0" },
+  train: { label: "Train", accent: "#38BDF8" },
   auto: { label: "Auto", accent: "#D2A85A" },
   walk: { label: "Walk", accent: "#829A86" },
 };
@@ -21,7 +21,7 @@ const MODE_META: Record<TransitMode, { label: string; accent: string }> = {
 const ICONS: Record<TransitMode, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
   bus: BusFront,
   metro: TrainFront,
-  cab: CarFront,
+  train: TrainFront,
   auto: CarFront,
   walk: Footprints,
 };
@@ -29,7 +29,6 @@ const ICONS: Record<TransitMode, React.ComponentType<{ size?: number; strokeWidt
 const ASSETS: Partial<Record<TransitMode, string>> = {
   bus: "/transport/user-bus.png",
   metro: "/transport/user-metro.png",
-  cab: "/transport/user-car.png",
   auto: "/transport/user-car.png",
   walk: "/transport/delhi-walk.webp",
 };
