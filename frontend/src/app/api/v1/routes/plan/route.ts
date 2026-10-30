@@ -156,7 +156,7 @@ function buildPlannerRoute(
   const totalMinutes = Number(
     processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
   );
-  const totalFare = processedLegs.reduce(
+  const totalFare = plannerResponse.totalFare !== undefined ? plannerResponse.totalFare : processedLegs.reduce(
     (sum, leg) => sum + (leg.fare || 0),
     0
   );
@@ -237,7 +237,7 @@ function buildPlannerRoute(
         durationMinutes: leg.minutes,
         distanceKm: leg.distanceKm || 0,
         distanceSource: leg.distanceSource,
-        fare: leg.fare ?? 0,
+        fare: leg.fare !== undefined ? leg.fare : 0,
         instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
         stopsCount: leg.stops,
         intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
     }) as PlannerResponse | { error: string };
 
     const allowedModes = new Set(
-      body.preferences?.allowedModes || ["metro", "bus", "auto", "walk"]
+      body.preferences?.allowedModes || ["metro", "bus", "walk"]
     );
 
     // Build baseline recommended route
@@ -390,7 +390,8 @@ export async function POST(request: NextRequest) {
     if (allowedModes.has("metro")) {
       const metroPlan = planMetroByName(
         body.origin.query,
-        body.destination.query
+        body.destination.query,
+        { scenario: scenarioApplied ? scenario : undefined }
       ) as PlannerResponse | { error: string };
       if (!("error" in metroPlan)) {
         candidateVariants.push({

@@ -31,7 +31,7 @@ export interface RouteLeg {
   durationMinutes: number;
   distanceKm: number;
   distanceSource?: "road" | "straight-line" | "mixed" | null;
-  fare: number;
+  fare: number | null;
   instruction: string;
   stopsCount?: number;
   intermediateStops?: string[];

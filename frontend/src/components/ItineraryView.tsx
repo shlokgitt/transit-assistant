@@ -414,7 +414,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                     </>
                   )}
                   <span>•</span>
-                  <span>Fare: {leg.fare > 0 ? `₹${leg.fare}` : "Free Walk"}</span>
+                  <span>Fare: {leg.fare !== null && leg.fare > 0 ? `₹${leg.fare}` : (leg.fare === null ? "Unavailable" : "Free Walk")}</span>
                   {leg.provider && (
                     <>
                       <span>•</span>

@@ -157,7 +157,7 @@ Plans route alternatives.
   "destination": { "query": "Gandhi Darshan" },
   "preferences": {
     "routingPriority": "fastest",
-    "allowedModes": ["metro", "bus", "auto", "walk"],
+    "allowedModes": ["metro", "bus", "walk"],
     "avoidCrowded": false,
     "period": "auto"
   },
@@ -222,7 +222,7 @@ $body = @{
   destination = @{ query = "Gandhi Darshan" }
   preferences = @{
     routingPriority = "fastest"
-    allowedModes = @("metro", "bus", "auto", "walk")
+    allowedModes = @("metro", "bus", "walk")
   }
 } | ConvertTo-Json -Depth 5
 

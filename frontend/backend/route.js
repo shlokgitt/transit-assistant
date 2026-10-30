@@ -95,6 +95,54 @@ const MAX_FARE_DISTANCE_KM = 12.1;
 // as the distance a person will walk.
 const WALKING_DETOUR_FACTOR = 1.25;
 
+export function matchesService(key, routeName, routeId) {
+  if (!key) return false;
+  const k = String(key).toLowerCase().trim();
+  const rName = String(routeName || "").toLowerCase();
+  const rId = String(routeId || "").toLowerCase();
+
+  if (rName.includes(k) || rId.includes(k)) return true;
+
+  const aliases = {
+    "metro-blue": ["blue line", "delhi3", "delhi4"],
+    "metro-yellow": ["yellow line", "delhi2"],
+    "metro-red": ["red line", "delhi1"],
+    "metro-green": ["green line", "delhi5"],
+    "metro-violet": ["violet line", "delhi6"],
+    "metro-pink": ["pink line", "delhi7"],
+    "metro-magenta": ["magenta line", "delhi8"],
+    "metro-grey": ["grey line", "delhi9"],
+    "metro-airport": ["airport express", "orange line", "delhiairport"],
+    "bus-534": ["534"],
+    "bus-03down": ["03down"],
+    "bus-general": ["bus", "down", "up", "dtc"],
+  };
+
+  const matched = aliases[k];
+  if (matched) {
+    return matched.some((alias) => rName.includes(alias) || rId.includes(alias));
+  }
+  return false;
+}
+
+export function parseGtfsTimeToMinutes(timeStr) {
+  if (typeof timeStr !== "string") return null;
+  const match = /^(\d{1,3}):(\d{2})(?::(\d{2}))?$/.exec(timeStr.trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = match[3] ? Number(match[3]) : 0;
+  if (minutes > 59 || seconds > 59) return null;
+  return hours * 60 + minutes + seconds / 60;
+}
+
+export function formatMinutesToTimeString(totalMinutes) {
+  const norm = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 class Heap {
   constructor() {
     this.a = [];
@@ -623,7 +671,8 @@ export function planWalkingByName(fromName, toName) {
   };
 }
 
-export function planMetroByName(fromName, toName) {
+export function planMetroByName(fromName, toName, opts = {}) {
+  const { scenario = null } = opts;
   const fromMatches = findStops(fromName);
   const toMatches = findStops(toName);
 
@@ -656,6 +705,7 @@ export function planMetroByName(fromName, toName) {
   const transit = plan([origin.metro.id], [destination.metro.id], {
     preference: "fastest",
     period: "offpeak",
+    scenario,
   });
   if (!transit || transit.legs.some((leg) => leg.mode === "bus")) {
     return { error: "No metro-only route found between those stops" };
@@ -704,6 +754,8 @@ export function planMetroByName(fromName, toName) {
       ? "mixed"
       : transit.distanceSource,
     legs,
+    scenarioApplied: Boolean(scenario),
+    scenarioDetails: scenario,
   };
 }
 
@@ -721,6 +773,7 @@ export function plan(fromIds, toIds, opts = {}) {
     period = periodFor(),
     avoidCrowded = false,
     dayType = "weekday",
+    scenario = null,
   } = opts;
 
   if (!["fastest", "cheapest"].includes(preference)) {
@@ -778,6 +831,30 @@ export function plan(fromIds, toIds, opts = {}) {
     for (const edge of G.adj[node] || []) {
       const [nextNode, baseMinutes, type, routeId] = edge;
 
+      if (scenario) {
+        const rName = G.routes[routeId];
+        if (rName && scenario.disabledServices && Array.isArray(scenario.disabledServices)) {
+          const isDisabled = scenario.disabledServices.some((disabled) =>
+            disabled && matchesService(disabled, rName, routeId)
+          );
+          if (isDisabled) continue;
+        }
+
+        if (scenario.disabledConnections && Array.isArray(scenario.disabledConnections)) {
+          const fromStop = stopOf(node);
+          const toStop = stopOf(nextNode);
+          const fromName = nameOf(fromStop).toLowerCase();
+          const toName = nameOf(toStop).toLowerCase();
+          const isConnDisabled = scenario.disabledConnections.some((c) =>
+            c && (
+              (c.from && (c.from === fromStop || fromName.includes(String(c.from).toLowerCase()))) &&
+              (c.to && (c.to === toStop || toName.includes(String(c.to).toLowerCase())))
+            )
+          );
+          if (isConnDisabled) continue;
+        }
+      }
+
       let nextActive = activeBus;
       let minutes = baseMinutes;
       let fare = null;
@@ -795,9 +872,27 @@ export function plan(fromIds, toIds, opts = {}) {
         const delay = routeName ? delays[routeName] : null;
 
         boardDelayMin = delay?.delayMin || 0;
+
+        if (scenario?.serviceDelays && routeName) {
+          for (const [key, extraMin] of Object.entries(scenario.serviceDelays)) {
+            if (key && matchesService(key, routeName, routeId)) {
+              boardDelayMin += Number(extraMin) || 0;
+            }
+          }
+        }
         minutes += boardDelayMin;
 
-        if (avoidCrowded && delay?.crowd === "high") {
+        const stopNodeName = nameOf(stopOf(node)).toLowerCase();
+        let effectiveCrowd = delay?.crowd;
+        if (scenario?.stationCrowd) {
+          for (const [sKey, cLevel] of Object.entries(scenario.stationCrowd)) {
+            if (sKey && stopNodeName.includes(sKey.toLowerCase())) {
+              effectiveCrowd = cLevel;
+            }
+          }
+        }
+
+        if (avoidCrowded && (effectiveCrowd === "high" || delay?.crowd === "high")) {
           penalty = CROWD_PENALTY;
         }
 
@@ -811,6 +906,15 @@ export function plan(fromIds, toIds, opts = {}) {
       } else if (type === "ride") {
         const fromStop = stopOf(node);
         const toStop = stopOf(nextNode);
+        const toStopName = nameOf(toStop).toLowerCase();
+
+        if (scenario?.stationCrowd) {
+          for (const [sKey, cLevel] of Object.entries(scenario.stationCrowd)) {
+            if (sKey && toStopName.includes(sKey.toLowerCase()) && avoidCrowded && cLevel === "high") {
+              penalty += CROWD_PENALTY;
+            }
+          }
+        }
 
         if (isMetroRoute(G.routes[routeId])) {
           legDistanceKm = distanceKm(fromStop, toStop);
@@ -948,7 +1052,15 @@ export function plan(fromIds, toIds, opts = {}) {
         fare: 0,
         distanceKm: 0,
         delayMin: edge.boardDelayMin ?? Math.max(0, edge.minutes - 5),
-        crowd: metro ? "unknown" : delays[routeName]?.crowd || "unknown",
+        crowd: (() => {
+          const fromStationName = nameOf(stopOf(edge.from)).toLowerCase();
+          if (scenario?.stationCrowd) {
+            for (const [sKey, cLevel] of Object.entries(scenario.stationCrowd)) {
+              if (sKey && fromStationName.includes(sKey.toLowerCase())) return cLevel;
+            }
+          }
+          return metro ? "unknown" : delays[routeName]?.crowd || "unknown";
+        })(),
         ...(metro ? {} : { busType: busType(routeName) }),
       };
     } else if (edge.type === "ride" && currentTransit) {
@@ -960,6 +1072,16 @@ export function plan(fromIds, toIds, opts = {}) {
     } else if (edge.type === "alight" && currentTransit) {
       currentTransit.toId = stopOf(edge.to);
       currentTransit.to = nameOf(stopOf(edge.to));
+      if (scenario?.stationCrowd) {
+        const destStationName = currentTransit.to.toLowerCase();
+        for (const [sKey, cLevel] of Object.entries(scenario.stationCrowd)) {
+          if (sKey && destStationName.includes(sKey.toLowerCase())) {
+            if (cLevel === "high" || currentTransit.crowd === "unknown") {
+              currentTransit.crowd = cLevel;
+            }
+          }
+        }
+      }
       currentTransit.fare = edge.fare;
       if (edge.fare === null) fareAvailable = false;
       if (edge.fare !== null && edge.fareEstimated) fareEstimated = true;
@@ -1007,10 +1129,13 @@ export function plan(fromIds, toIds, opts = {}) {
       preference !== "cheapest" ||
       (consolidatedFares.fareAvailable && !consolidatedFares.fareEstimated),
     legs,
+    scenarioApplied: Boolean(scenario),
+    scenarioDetails: scenario,
   };
 }
 
 export function planByName(fromName, toName, opts = {}) {
+  const { scenario = null } = opts;
   const from = findStops(fromName);
   const to = findStops(toName);
 
@@ -1071,6 +1196,8 @@ export function planByName(fromName, toName, opts = {}) {
       legs.map((leg) => leg.distanceSource)
     ),
     legs,
+    scenarioApplied: Boolean(scenario),
+    scenarioDetails: scenario,
   };
 }
 
@@ -1134,21 +1261,23 @@ export function evaluateRouteConstraints(route, constraints = {}, defaultDepartu
   }
 
   if (constraints.requiredArrivalTime && typeof constraints.requiredArrivalTime === "string") {
-    const reqMatch = /^(\d{1,2}):(\d{2})$/.exec(constraints.requiredArrivalTime.trim());
-    if (reqMatch) {
-      const reqMins = Number(reqMatch[1]) * 60 + Number(reqMatch[2]);
+    let reqMins = parseGtfsTimeToMinutes(constraints.requiredArrivalTime);
+    if (reqMins !== null) {
       const depStr = constraints.departureTime || defaultDeparture;
-      const depMatch = /^(\d{1,2}):(\d{2})$/.exec(String(depStr).trim());
-      const depMins = depMatch ? Number(depMatch[1]) * 60 + Number(depMatch[2]) : 8 * 60 + 15;
-      const arrivalMins = depMins + Math.ceil(route.totalMinutes || 0);
+      const depMins = parseGtfsTimeToMinutes(String(depStr)) ?? (8 * 60 + 15);
+      let arrivalMins = depMins + Math.ceil(route.totalMinutes || 0);
 
-      const arrHour = Math.floor(arrivalMins / 60) % 24;
-      const arrMin = arrivalMins % 60;
-      const arrStr = `${String(arrHour).padStart(2, "0")}:${String(arrMin).padStart(2, "0")}`;
+      // If user specified clock deadline (e.g. 00:20) and departure is late night (e.g. 23:50),
+      // the deadline is on the next calendar day (add 24h = 1440 min)
+      if (reqMins < depMins && depMins >= 12 * 60) {
+        reqMins += 1440;
+      }
+
+      const arrStr = formatMinutesToTimeString(arrivalMins);
 
       if (arrivalMins > reqMins) {
         deadlineSatisfied = false;
-        const diff = arrivalMins - reqMins;
+        const diff = Math.round(arrivalMins - reqMins);
         violations.push(`Estimated arrival (${arrStr}) misses deadline (${constraints.requiredArrivalTime}) by ${diff} min`);
       } else {
         deadlineSatisfied = true;
@@ -1182,9 +1311,14 @@ export function calculateRouteReliability(route, scenario = null) {
   const transferCount = Math.max(0, vehicleLegs.length - 1);
 
   let potentialDelayImpactMinutes = 0;
+  const countedServices = new Set();
   for (const leg of legs) {
     if (leg.delayMin && Number(leg.delayMin) > 0) {
-      potentialDelayImpactMinutes += Number(leg.delayMin);
+      const sKey = leg.route || leg.mode;
+      if (!countedServices.has(sKey)) {
+        countedServices.add(sKey);
+        potentialDelayImpactMinutes += Number(leg.delayMin);
+      }
     }
   }
 

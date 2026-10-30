@@ -237,7 +237,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         line.bindPopup(
           `<div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;color:${style.stroke}">${leg.mode.charAt(0).toUpperCase() + leg.mode.slice(1)} ${leg.lineName ? `— ${leg.lineName}` : ""}</div>` +
           `<div style="font-size:0.78rem;margin-bottom:3px">📍 <strong>${leg.from}</strong> → <strong>${leg.to}</strong></div>` +
-          `<div style="font-size:0.75rem;color:#94a3b8">⏱ ${leg.durationMinutes} min &nbsp;•&nbsp; 📏 ${leg.distanceKm} km &nbsp;•&nbsp; ₹${leg.fare}</div>` +
+          `<div style="font-size:0.75rem;color:#94a3b8">⏱ ${leg.durationMinutes} min &nbsp;•&nbsp; 📏 ${leg.distanceKm} km &nbsp;•&nbsp; ${leg.fare != null ? `₹${leg.fare}` : "Fare unavailable"}</div>` +
           `<div style="font-size:0.68rem;color:#34d399;margin-top:6px;padding:3px 6px;background:rgba(16,185,129,0.1);border-radius:4px">✓ Real route data</div>`
         );
 

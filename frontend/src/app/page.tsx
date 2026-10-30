@@ -584,6 +584,7 @@ export default function Home() {
     <GeminiChatView
       initialPrompt={chatPrompt}
       onInitialPromptHandled={() => setChatPrompt(undefined)}
+      scenario={scenario.active ? scenario : undefined}
       onPlanRoute={(from, to) => {
         setOrigin(from);
         setDestination(to);
@@ -715,6 +716,9 @@ export default function Home() {
                 setSimResult(null);
                 setScenario({ active: false });
                 setScenarioApplied(false);
+                if (origin.trim() && destination.trim()) {
+                  void handlePlanRoute({ active: false });
+                }
               }}
             >
               Reset to Normal

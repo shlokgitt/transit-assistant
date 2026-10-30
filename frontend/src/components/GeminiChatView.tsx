@@ -76,6 +76,7 @@ interface GeminiChatViewProps {
   initialPrompt?: string;
   onInitialPromptHandled?: () => void;
   onNavigateScreen?: (screen: "home" | "results" | "chat" | "disruptions" | "saved") => void;
+  scenario?: import("@/types/transit").DisruptionScenario;
 }
 
 /* ------------------------------------------------------------------ */
@@ -169,6 +170,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
   initialPrompt,
   onInitialPromptHandled,
   onNavigateScreen,
+  scenario,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" ? window.innerWidth > 768 : true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -230,6 +232,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
           body: JSON.stringify({
             message: text,
             conversationHistory,
+            scenario: scenario?.active ? scenario : undefined,
           }),
         });
 
