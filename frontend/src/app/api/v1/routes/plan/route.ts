@@ -858,8 +858,16 @@ if (!("error" in primaryPlannerResponse)) {
     }
 
     // 6. Rank routes
-    // Priority: Constraint satisfaction first -> Then requested priority or reliability
+    // Direct local auto must NEVER be on top or recommended if transit is available
     routes.sort((a, b) => {
+      const aIsDirectAuto = a.legs.every((l) => l.mode === "auto");
+      const bIsDirectAuto = b.legs.every((l) => l.mode === "auto");
+
+      // Push direct local auto after public transit routes:
+      if (aIsDirectAuto !== bIsDirectAuto) {
+        return aIsDirectAuto ? 1 : -1;
+      }
+
       const aSat = a.constraintsEvaluation?.satisfied !== false ? 1 : 0;
       const bSat = b.constraintsEvaluation?.satisfied !== false ? 1 : 0;
       if (aSat !== bSat) return bSat - aSat; // Satisfied routes first
@@ -870,8 +878,17 @@ if (!("error" in primaryPlannerResponse)) {
       return a.totalDurationMinutes - b.totalDurationMinutes;
     });
 
-    // Ensure the top route carries the RECOMMENDED tag
-    routes[0].tag = "RECOMMENDED";
+    // Ensure the top route carries the RECOMMENDED tag ONLY if it is not direct local auto
+    if (!routes[0].legs.every((l) => l.mode === "auto")) {
+      routes[0].tag = "RECOMMENDED";
+    }
+
+    // Guarantee: Direct local auto is never tagged RECOMMENDED
+    routes.forEach((r) => {
+      if (r.legs.every((l) => l.mode === "auto")) {
+        r.tag = "COMFORT";
+      }
+    });
 
     // 7. Calculate comparison if scenario was active
     if (scenarioApplied && baselineRecommendedRoute) {
