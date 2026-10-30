@@ -3188,3 +3188,257 @@ pre {
     transition: none !important;
   }
 }
+
+
+/* ============================================================
+   MOBILE & TABLET POLISH
+   Additional responsive fixes layered on top of existing
+   breakpoints already in the file.
+   ============================================================ */
+
+/* Safe-area support for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .sa-header {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .mobile-nav {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  footer {
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Ensure all interactive elements hit 44px touch target minimum */
+.mobile-nav button,
+.header-save,
+.quiet-button,
+.primary-button,
+.save-journey-button,
+.icon-button,
+.recent-item,
+.segmented-control button,
+.prompt-row button {
+  min-height: 44px;
+}
+
+/* Mobile nav: smooth horizontal scroll, no scroll bar */
+.mobile-nav {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
+/* Footer: stack nicely on small screens */
+@media (max-width: 560px) {
+  footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 16px !important;
+  }
+
+  footer > div:last-child {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+}
+
+/* Save modal: edge-to-edge on phones */
+@media (max-width: 520px) {
+  .modal-backdrop {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .save-modal {
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 24px 20px max(24px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Comparison row: allow wrapping on small screens */
+@media (max-width: 480px) {
+  .comparison-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .comparison-row strong {
+    font-size: 1.1rem;
+  }
+}
+
+/* Planner device: protect against overflow on very small screens */
+@media (max-width: 380px) {
+  .home-grid .planner-device {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    border-radius: 32px !important;
+    padding: 6px !important;
+  }
+
+  .home-grid .planner-device-screen {
+    border-radius: 28px !important;
+    padding: 28px 8px 10px !important;
+  }
+
+  .mobile-nav button span {
+    display: none;
+  }
+
+  .mobile-nav button {
+    justify-content: center;
+    min-width: 44px;
+  }
+}
+
+/* Tablet (768px–1099px): two-column layouts should be balanced */
+@media (min-width: 769px) and (max-width: 1099px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+
+  .home-aside {
+    padding-top: 20px;
+  }
+
+  .journey-workspace {
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+    gap: 20px;
+  }
+
+  .simulator-grid {
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 20px;
+  }
+
+  .sa-content {
+    width: min(95vw, 900px);
+    padding: 40px 0 80px;
+  }
+
+  .map-column {
+    height: min(520px, calc(100vh - 140px));
+  }
+}
+
+/* Route card tilt: disable 3D tilt on touch devices (performance + UX) */
+@media (hover: none) and (pointer: coarse) {
+  .t-tilt-card {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .t-tilt-glare {
+    display: none !important;
+  }
+
+  /* Disable hover lift effects on touch */
+  .sa-app .aside-card:hover,
+  .sa-app .saved-card:hover,
+  .sa-app .chat-screen-card:hover,
+  .sa-app .empty-panel:hover,
+  .sa-app .planner-device:hover {
+    transform: none !important;
+    box-shadow: var(--ui-shadow) !important;
+  }
+
+  .sa-app .recent-item:hover,
+  .sa-app .header-save:hover,
+  .sa-app .quiet-button:hover,
+  .sa-app .primary-button:hover,
+  .sa-app .save-journey-button:hover,
+  .sa-app .icon-button:hover {
+    transform: none !important;
+  }
+
+  /* Active press feedback for touch */
+  .sa-app button:active,
+  .sa-app .recent-item:active {
+    transform: scale(0.97) !important;
+    opacity: 0.85 !important;
+    transition: transform 80ms ease, opacity 80ms ease !important;
+  }
+}
+
+/* Improve chat view on mobile */
+@media (max-width: 640px) {
+  .chat-screen-card {
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .chat-screen-intro {
+    gap: 10px;
+  }
+
+  .prompt-row {
+    gap: 6px;
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .prompt-row button {
+    font-size: 0.7rem;
+    padding: 7px 9px;
+  }
+}
+
+/* Route list cards: full-bleed comfortable spacing on phones */
+@media (max-width: 480px) {
+  .route-list .t-tilt-card {
+    padding: 14px !important;
+  }
+
+  .route-list .t-tilt-card h3 {
+    font-size: 1rem !important;
+    margin: 8px 0 6px !important;
+  }
+
+  .route-list .t-tilt-card > div[style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .save-action-bar {
+    gap: 8px;
+  }
+
+  .save-journey-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Empty panel: less vertical space on phone */
+@media (max-width: 480px) {
+  .empty-panel {
+    padding: 32px 16px;
+  }
+
+  .large-empty {
+    min-height: 200px;
+  }
+}
+
+/* Heading sizes: tighter on phone to prevent overflow */
+@media (max-width: 360px) {
+  .page-heading h2,
+  .compact-heading h2,
+  .simple-screen .page-heading h2 {
+    font-size: clamp(1.45rem, 10vw, 2rem) !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .sa-content {
+    width: calc(100vw - 16px);
+  }
+}

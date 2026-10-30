@@ -170,7 +170,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
   onInitialPromptHandled,
   onNavigateScreen,
 }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" ? window.innerWidth > 768 : true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -183,6 +183,16 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Auto-collapse sidebar on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Handle incoming initialPrompt
   useEffect(() => {
@@ -282,6 +292,7 @@ export const GeminiChatView: React.FC<GeminiChatViewProps> = ({
         display: "flex",
         width: "100%",
         height: "calc(100vh - 72px)",
+        maxHeight: "-webkit-fill-available",
         background: "#0e1117",
         color: "#e2e8f0",
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
