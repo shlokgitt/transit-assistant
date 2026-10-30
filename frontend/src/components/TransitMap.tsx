@@ -17,6 +17,7 @@ const MODE_COLOR: Record<TransitMode, { stroke: string; glow: string; width: num
   bus:   { stroke: "#34d399", glow: "rgba(52,211,153,0.65)", width: 4.5, dash: "8 4" },
   auto:  { stroke: "#fbbf24", glow: "rgba(251,191,36,0.65)", width: 4 },
   cab:   { stroke: "#c4b5fd", glow: "rgba(196,181,253,0.55)", width: 4.5 },
+  train: { stroke: "#8b5cf6", glow: "rgba(139,92,246,0.65)", width: 5, dash: "12 4" },
   walk:  { stroke: "#22d3ee", glow: "rgba(34,211,238,0.6)", width: 3, dash: "4 4" },
 };
 

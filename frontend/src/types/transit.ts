@@ -1,8 +1,8 @@
-export type TransitMode = "metro" | "bus" | "cab" | "auto" | "walk";
+export type TransitMode = "metro" | "train" | "bus" | "cab" | "auto" | "walk";
 
 export type RoutingPriority = "fastest" | "cheapest" | "shortest" | "least_transfers" | "eco";
 
-export type CrowdLevel = "low" | "medium" | "high";
+export type CrowdLevel = "low" | "medium" | "high" | "unknown";
 
 export type TimePeriod = "auto" | "peak" | "offpeak";
 
@@ -39,6 +39,8 @@ export interface RouteLeg {
   lineName?: string;
   lineColor?: string;
   platform?: string;
+  departureTime?: string;
+  arrivalTime?: string;
   provider?: string;
   crowdLevel?: CrowdLevel;
   delayMinutes?: number;

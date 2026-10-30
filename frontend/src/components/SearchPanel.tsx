@@ -63,6 +63,12 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     color: "#3b82f6",
   },
   {
+    id: "train",
+    label: "Train",
+    icon: <ModeIconBadge emoji="🚆" color="#8b5cf6" glow="rgba(139,92,246,0.5)" />,
+    color: "#8b5cf6",
+  },
+  {
     id: "bus",
     label: "Bus",
     icon: <ModeIconBadge emoji="🚌" color="#10b981" glow="rgba(16,185,129,0.5)" />,

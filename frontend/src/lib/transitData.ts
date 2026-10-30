@@ -99,24 +99,76 @@ export const SUPPORTED_CITIES: Record<string, CityConfig> = {
   delhi: CITIES.delhi,
 };
 
+
 export const STOPS_DB: Record<string, StopItem[]> = {
   delhi: [
+    // Major Railway Stations (Train)
+    { id: "del_anvt_train", name: "Anand Vihar Railway Terminal", type: "train", line: "Northern Railway", lineColor: "#8b5cf6", lat: 28.6475, lng: 77.3158, city: "delhi", popular: true },
+    { id: "del_anvt_metro", name: "Anand Vihar ISBT / Metro", type: "metro", line: "Blue / Pink Interchange", lineColor: "#0066cc", lat: 28.6468, lng: 77.3155, city: "delhi", popular: true },
+    { id: "del_ndls", name: "New Delhi Railway Station", type: "train", line: "Northern Railway (NDLS)", lineColor: "#8b5cf6", lat: 28.6429, lng: 77.2195, city: "delhi", popular: true },
+    { id: "del_dli", name: "Old Delhi Railway Station", type: "train", line: "Northern Railway (DLI)", lineColor: "#8b5cf6", lat: 28.6609, lng: 77.2282, city: "delhi", popular: true },
+    { id: "del_nzm", name: "Hazrat Nizamuddin Railway Station", type: "train", line: "Northern Railway (NZM)", lineColor: "#8b5cf6", lat: 28.5889, lng: 77.2533, city: "delhi", popular: true },
+    { id: "del_dee", name: "Delhi Sarai Rohilla Railway Station", type: "train", line: "Northern Railway", lineColor: "#8b5cf6", lat: 28.6622, lng: 77.1868, city: "delhi", popular: true },
+    { id: "del_cantt", name: "Delhi Cantt Railway Station", type: "train", line: "Northern Railway", lineColor: "#8b5cf6", lat: 28.5915, lng: 77.1215, city: "delhi", popular: true },
+
+    // Central & New Delhi Hubs
+    { id: "del_rc", name: "Rajiv Chowk (Connaught Place)", type: "metro", line: "Blue / Yellow Interchange", lineColor: "#f59e0b", lat: 28.6328, lng: 77.2197, city: "delhi", popular: true },
+    { id: "del_cp", name: "Connaught Place", type: "landmark", lat: 28.6335, lng: 77.2215, city: "delhi", popular: true },
+    { id: "del_india_gate", name: "India Gate", type: "landmark", lat: 28.6129, lng: 77.2295, city: "delhi", popular: true },
     { id: "del_kb_m", name: "Karol Bagh", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.6525, lng: 77.192, city: "delhi", popular: true },
     { id: "del_kb_t", name: "Karol Bagh Terminal", type: "bus", lat: 28.651, lng: 77.1925, city: "delhi", popular: true },
     { id: "del_gd", name: "Gandhi Darshan", type: "landmark", lat: 28.6415, lng: 77.2485, city: "delhi", popular: true },
-    { id: "del_rc", name: "Rajiv Chowk (Connaught Place)", type: "metro", line: "Blue / Yellow Interchange", lineColor: "#f59e0b", lat: 28.6328, lng: 77.2197, city: "delhi", popular: true },
-    { id: "del_kg", name: "Kashmere Gate", type: "metro", line: "Red / Yellow / Violet", lineColor: "#ef4444", lat: 28.6675, lng: 77.2285, city: "delhi", popular: true },
-    { id: "del_hk", name: "Hauz Khas", type: "metro", line: "Yellow / Magenta Interchange", lineColor: "#ec4899", lat: 28.5432, lng: 77.2065, city: "delhi", popular: true },
-    { id: "del_aiims", name: "AIIMS Delhi", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.5672, lng: 77.21, city: "delhi" },
-    { id: "del_cc", name: "Chandni Chowk", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.6575, lng: 77.2305, city: "delhi" },
-    { id: "del_av", name: "Anand Vihar ISBT", type: "bus", lat: 28.6468, lng: 77.3155, city: "delhi" },
-    { id: "del_n18", name: "Noida Sector 18", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.5708, lng: 77.3261, city: "delhi" },
-    { id: "del_t3", name: "Indira Gandhi Airport T3", type: "metro", line: "Airport Express", lineColor: "#f97316", lat: 28.5562, lng: 77.087, city: "delhi", popular: true },
-    { id: "del_cyber", name: "Cyber City Gurgaon", type: "metro", line: "Rapid Metro", lineColor: "#06b6d4", lat: 28.4986, lng: 77.0878, city: "delhi", popular: true },
-    { id: "del_mh", name: "Mandi House", type: "metro", line: "Blue / Violet Interchange", lineColor: "#8b5cf6", lat: 28.6258, lng: 77.2345, city: "delhi" },
+    { id: "del_mh", name: "Mandi House", type: "metro", line: "Blue / Violet Interchange", lineColor: "#8b5cf6", lat: 28.6258, lng: 77.2345, city: "delhi", popular: true },
     { id: "del_dg", name: "Delhi Gate", type: "metro", line: "Violet Line", lineColor: "#8b5cf6", lat: 28.6415, lng: 77.2435, city: "delhi" },
     { id: "del_ito", name: "ITO", type: "bus", lat: 28.6302, lng: 77.2428, city: "delhi" },
-    { id: "del_cp", name: "Connaught Place Outer Circle", type: "landmark", lat: 28.6335, lng: 77.2215, city: "delhi" },
+    { id: "del_khan", name: "Khan Market", type: "metro", line: "Violet Line", lineColor: "#8b5cf6", lat: 28.6015, lng: 77.2275, city: "delhi", popular: true },
+
+    // North & Heritage Delhi
+    { id: "del_kg", name: "Kashmere Gate ISBT", type: "metro", line: "Red / Yellow / Violet Interchange", lineColor: "#ef4444", lat: 28.6675, lng: 77.2285, city: "delhi", popular: true },
+    { id: "del_cc", name: "Chandni Chowk", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.6575, lng: 77.2305, city: "delhi", popular: true },
+    { id: "del_redfort", name: "Red Fort (Lal Qila)", type: "landmark", lat: 28.6562, lng: 77.2410, city: "delhi", popular: true },
+    { id: "del_nsp", name: "Netaji Subhash Place", type: "metro", line: "Red / Pink Interchange", lineColor: "#dc2626", lat: 28.6945, lng: 77.1515, city: "delhi", popular: true },
+    { id: "del_rohini", name: "Rohini Sector 18", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.7350, lng: 77.1320, city: "delhi" },
+
+    // South Delhi
+    { id: "del_hk", name: "Hauz Khas", type: "metro", line: "Yellow / Magenta Interchange", lineColor: "#ec4899", lat: 28.5432, lng: 77.2065, city: "delhi", popular: true },
+    { id: "del_hkv", name: "Hauz Khas Village", type: "landmark", lat: 28.5535, lng: 77.1945, city: "delhi", popular: true },
+    { id: "del_aiims", name: "AIIMS Delhi", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.5672, lng: 77.21, city: "delhi", popular: true },
+    { id: "del_saket", name: "Saket (Select CITYWALK)", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.5205, lng: 77.2145, city: "delhi", popular: true },
+    { id: "del_qutub", name: "Qutub Minar", type: "landmark", lat: 28.5244, lng: 77.1855, city: "delhi", popular: true },
+    { id: "del_lajpat", name: "Lajpat Nagar (Central Market)", type: "metro", line: "Pink / Violet Interchange", lineColor: "#db2777", lat: 28.5708, lng: 77.2378, city: "delhi", popular: true },
+    { id: "del_ina", name: "Dilli Haat INA", type: "metro", line: "Yellow / Pink Interchange", lineColor: "#eab308", lat: 28.5755, lng: 77.2095, city: "delhi", popular: true },
+    { id: "del_kalkaji", name: "Lotus Temple (Kalkaji Mandir)", type: "landmark", lat: 28.5535, lng: 77.2588, city: "delhi", popular: true },
+
+    // Airport & West Delhi
+    { id: "del_t3", name: "Indira Gandhi Airport T3", type: "metro", line: "Airport Express", lineColor: "#f97316", lat: 28.5562, lng: 77.087, city: "delhi", popular: true },
+    { id: "del_t1", name: "Indira Gandhi Airport T1", type: "metro", line: "Magenta Line", lineColor: "#ec4899", lat: 28.5670, lng: 77.1125, city: "delhi", popular: true },
+    { id: "del_aerocity", name: "Aerocity", type: "metro", line: "Airport Express", lineColor: "#f97316", lat: 28.5495, lng: 77.1210, city: "delhi", popular: true },
+    { id: "del_dwarka", name: "Dwarka Sector 21", type: "metro", line: "Blue / Airport Interchange", lineColor: "#0066cc", lat: 28.5522, lng: 77.0585, city: "delhi", popular: true },
+    { id: "del_janakpuri", name: "Janakpuri West", type: "metro", line: "Blue / Magenta Interchange", lineColor: "#0066cc", lat: 28.6295, lng: 77.0775, city: "delhi", popular: true },
+    { id: "del_rajouri", name: "Rajouri Garden", type: "metro", line: "Blue / Pink Interchange", lineColor: "#0066cc", lat: 28.6495, lng: 77.1220, city: "delhi", popular: true },
+
+    // NCR - Gurugram (Gurgaon)
+    { id: "del_cyber", name: "Cyber City Gurgaon", type: "metro", line: "Rapid Metro", lineColor: "#06b6d4", lat: 28.4986, lng: 77.0878, city: "delhi", popular: true },
+    { id: "del_huda", name: "Millennium City Centre (Huda Gurugram)", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.4595, lng: 77.0725, city: "delhi", popular: true },
+    { id: "del_iffco", name: "IFFCO Chowk Gurugram", type: "metro", line: "Yellow Line", lineColor: "#eab308", lat: 28.4720, lng: 77.0720, city: "delhi", popular: true },
+
+    // NCR - Noida & Greater Noida
+    { id: "del_n18", name: "Noida Sector 18 (Atta Market)", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.5708, lng: 77.3261, city: "delhi", popular: true },
+    { id: "del_n62", name: "Noida Sector 62", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.6275, lng: 77.3625, city: "delhi", popular: true },
+    { id: "del_nec", name: "Noida Electronic City", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.6280, lng: 77.3750, city: "delhi", popular: true },
+    { id: "del_botanical", name: "Botanical Garden Noida", type: "metro", line: "Blue / Magenta Interchange", lineColor: "#0066cc", lat: 28.5645, lng: 77.3340, city: "delhi", popular: true },
+    { id: "del_pari", name: "Pari Chowk Greater Noida", type: "metro", line: "Aqua Line", lineColor: "#06b6d4", lat: 28.4680, lng: 77.5050, city: "delhi", popular: true },
+
+    // NCR - Ghaziabad & East
+    { id: "del_gzb_rail", name: "Ghaziabad Railway Station", type: "train", line: "Northern Railway", lineColor: "#8b5cf6", lat: 28.6515, lng: 77.4285, city: "delhi", popular: true },
+    { id: "del_vaishali", name: "Vaishali Ghaziabad", type: "metro", line: "Blue Line Branch", lineColor: "#0066cc", lat: 28.6440, lng: 77.3395, city: "delhi", popular: true },
+    { id: "del_kaushambi", name: "Kaushambi Metro", type: "metro", line: "Blue Line Branch", lineColor: "#0066cc", lat: 28.6450, lng: 77.3240, city: "delhi" },
+    { id: "del_akshardham", name: "Akshardham Temple", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.6185, lng: 77.2790, city: "delhi", popular: true },
+
+    // NCR - Faridabad
+    { id: "del_faridabad", name: "Old Faridabad", type: "metro", line: "Violet Line", lineColor: "#8b5cf6", lat: 28.4110, lng: 77.3150, city: "delhi", popular: true },
+    { id: "del_badarpur", name: "Badarpur Border", type: "metro", line: "Violet Line", lineColor: "#8b5cf6", lat: 28.4925, lng: 77.3015, city: "delhi" },
   ],
   mumbai: [
     { id: "mum_csmt", name: "Chhatrapati Shivaji Terminus (CSMT)", type: "landmark", lat: 18.9401, lng: 72.8355, city: "mumbai", popular: true },
@@ -182,13 +234,29 @@ export function searchStops(city: string, query: string): StopItem[] {
     return list.slice(0, 8);
   }
   const q = query.toLowerCase().trim();
-  return list
-    .filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.line && s.line.toLowerCase().includes(q))
-    )
-    .slice(0, 8);
+  const tokens = q.split(/[\s,()\-]+/).filter((t) => t.length > 1);
+
+  const scored = list.map((s) => {
+    const sName = s.name.toLowerCase();
+    const sLine = (s.line || "").toLowerCase();
+    let score = 0;
+
+    if (sName === q) score += 100;
+    else if (sName.startsWith(q)) score += 60;
+    else if (sName.includes(q)) score += 40;
+    else if (sLine.includes(q)) score += 20;
+
+    const tokenMatches = tokens.filter((t) => sName.includes(t) || sLine.includes(t)).length;
+    score += tokenMatches * 15;
+
+    return { stop: s, score };
+  });
+
+  return scored
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.stop)
+    .slice(0, 10);
 }
 
 export function resolveCoordinates(city: string, query: string, explicitLat?: number, explicitLng?: number): { name: string; lat: number; lng: number } {

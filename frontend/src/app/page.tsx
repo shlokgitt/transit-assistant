@@ -127,6 +127,7 @@ export default function Home() {
   const [destination, setDestination] = useState("Gandhi Darshan");
   const [selectedModes, setSelectedModes] = useState<TransitMode[]>([
     "metro",
+    "train",
     "bus",
     "auto",
     "walk",

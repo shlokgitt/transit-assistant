@@ -3,8 +3,6 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 // Load environment variables from the project root .env file.
-// Next.js only auto-loads .env from the frontend/ directory; the shared
-// GROQ_API_KEY lives one level up in the repository root.
 (function loadRootEnv() {
   try {
     const envPath = path.resolve(process.cwd(), "..", ".env");
@@ -22,9 +20,6 @@ import type { NextConfig } from "next";
 })();
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     root: path.resolve(process.cwd(), ".."),
   },

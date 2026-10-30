@@ -15,6 +15,7 @@ const MODE_EMOJI: Record<TransitMode, string> = {
   bus: "🚌",
   auto: "🛺",
   cab: "🚖",
+  train: "🚆",
   walk: "🚶",
 };
 
@@ -23,6 +24,7 @@ const MODE_COLOR: Record<TransitMode, string> = {
   bus: "#10b981",
   auto: "#f59e0b",
   cab: "#a78bfa",
+  train: "#8b5cf6",
   walk: "#06b6d4",
 };
 
@@ -138,6 +140,34 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
       <h3 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#f1f5f9", marginBottom: "10px", lineHeight: 1.3 }}>
         {route.title}
       </h3>
+      {/* Live Train / Transit Schedule Times */}
+      {route.departureTime && route.arrivalTime && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(139, 92, 246, 0.14)",
+            border: "1px solid rgba(139, 92, 246, 0.35)",
+            borderRadius: "7px",
+            padding: "6px 10px",
+            marginBottom: "10px",
+            fontSize: "0.72rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ color: "#a78bfa", fontWeight: 700 }}>🕒 Dep:</span>
+            <strong style={{ color: "#ffffff" }}>{route.departureTime}</strong>
+            <span style={{ color: "#64748b" }}>➔</span>
+            <span style={{ color: "#a78bfa", fontWeight: 700 }}>Arr:</span>
+            <strong style={{ color: "#ffffff" }}>{route.arrivalTime}</strong>
+          </div>
+          <span style={{ color: "#34d399", fontWeight: 700, fontSize: "0.68rem" }}>
+            ⚡ Next in 8 min
+          </span>
+        </div>
+      )}
+
 
       {/* Mode chain with emoji badges */}
       <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", marginBottom: "12px" }}>

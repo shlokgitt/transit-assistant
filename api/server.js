@@ -1,6 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const {
+    getNcrTrains,
+    getTrainsBetween,
+    getTrainLiveStatus,
+    getNcrStations,
+    getRailwayStatus
+} = require('./railway');
 
 const app = express();
 app.use(cors()); // Allows your frontend to talk to this backend
@@ -88,6 +95,69 @@ app.get('/api/compare', async (req, res) => {
     };
 
     res.json(comparisons);
+});
+
+// Train API Endpoints (RailRadar Integration)
+
+// 1. Get all trains information running in NCR
+app.get('/api/trains/ncr', async (req, res) => {
+    try {
+        const { station, type, q, limit } = req.query;
+        const result = await getNcrTrains({ station, type, query: q, limit });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch NCR trains', message: err.message });
+    }
+});
+
+// 2. Get trains between two NCR stations
+app.get('/api/trains/between', async (req, res) => {
+    try {
+        const { from, to } = req.query;
+        if (!from || !to) {
+            return res.status(400).json({ error: 'Missing required query parameters: from, to' });
+        }
+        const trains = await getTrainsBetween(from, to);
+        res.json({
+            from,
+            to,
+            count: trains.length,
+            trains
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to find trains between stations', message: err.message });
+    }
+});
+
+// 3. Get live status for any train
+app.get('/api/trains/live/:trainNo', async (req, res) => {
+    try {
+        const status = await getTrainLiveStatus(req.params.trainNo);
+        if (!status) {
+            return res.status(404).json({ error: 'Train not found' });
+        }
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch train live status', message: err.message });
+    }
+});
+
+// 4. Get all major NCR railway stations
+app.get('/api/trains/stations', (_req, res) => {
+    res.json({
+        count: getNcrStations().length,
+        stations: getNcrStations()
+    });
+});
+
+// 5. RailRadar API connectivity & health status
+app.get('/api/trains/status', async (_req, res) => {
+    try {
+        const status = await getRailwayStatus();
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to check railway status', message: err.message });
+    }
 });
 
 const PORT = process.env.PORT || 3000;

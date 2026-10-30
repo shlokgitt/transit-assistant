@@ -37,6 +37,7 @@ const MODE_ICON: Record<TransitMode, React.ReactNode> = {
   bus: <Bus size={15} />,
   auto: <span style={{ fontSize: "13px" }}>🛺</span>,
   cab: <Car size={15} />,
+  train: <Train size={15} />,
   walk: <Footprints size={15} />,
 };
 
@@ -45,6 +46,7 @@ const MODE_COLOR: Record<TransitMode, string> = {
   bus: "#10b981",
   auto: "#f59e0b",
   cab: "#cbd5e1",
+  train: "#8b5cf6",
   walk: "#06b6d4",
 };
 
@@ -313,6 +315,34 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 </div>
 
                 {/* Instruction */}
+                
+                {leg.departureTime && leg.arrivalTime && (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      background: "rgba(139, 92, 246, 0.16)",
+                      border: "1px solid rgba(139, 92, 246, 0.35)",
+                      borderRadius: "6px",
+                      padding: "4px 8px",
+                      fontSize: "0.72rem",
+                      marginBottom: "6px",
+                      color: "#c4b5fd",
+                    }}
+                  >
+                    <span>🕒 <strong>Dep:</strong> {leg.departureTime}</span>
+                    <span>•</span>
+                    <span>🏁 <strong>Arr:</strong> {leg.arrivalTime}</span>
+                    {leg.platform && (
+                      <>
+                        <span>•</span>
+                        <span>🚉 <strong>{leg.platform}</strong></span>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <p style={{ fontSize: "0.82rem", color: "#f8fafc", fontWeight: 500, marginBottom: "6px" }}>
                   {leg.instruction}
                 </p>
