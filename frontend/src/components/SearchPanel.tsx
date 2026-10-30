@@ -46,25 +46,25 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
   {
     id: "metro",
     label: "Metro",
-    icon: <VehicleIllustration mode="metro" size="sm" />,
+    icon: <VehicleIllustration mode="metro" size="xs" />,
     color: "#A7B58A",
   },
   {
     id: "bus",
     label: "Bus",
-    icon: <VehicleIllustration mode="bus" size="sm" />,
+    icon: <VehicleIllustration mode="bus" size="xs" />,
     color: "#C47A44",
   },
   {
     id: "cab",
     label: "Cab",
-    icon: <VehicleIllustration mode="cab" size="sm" />,
+    icon: <VehicleIllustration mode="cab" size="xs" />,
     color: "#B8ADA0",
   },
   {
     id: "walk",
     label: "Walk",
-    icon: <VehicleIllustration mode="walk" size="sm" />,
+    icon: <VehicleIllustration mode="walk" size="xs" />,
     color: "#829A86",
   },
 ];
@@ -114,6 +114,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   const [showOriginDropdown, setShowOriginDropdown] = useState(false);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
   const [showConstraints, setShowConstraints] = useState(false);
+  const [blinkingMode, setBlinkingMode] = useState<TransitMode | null>(null);
+  const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const originRef = useRef<HTMLDivElement>(null);
   const destRef = useRef<HTMLDivElement>(null);
@@ -175,6 +177,20 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => () => {
+    if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+  }, []);
+
+  const selectMode = (mode: TransitMode) => {
+    const isSelected = selectedModes.includes(mode);
+    onToggleMode(mode);
+    if (!isSelected) {
+      if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+      setBlinkingMode(mode);
+      blinkTimerRef.current = setTimeout(() => setBlinkingMode(null), 420);
+    }
+  };
 
   return (
     <div
@@ -487,7 +503,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             return (
               <button
                 key={m.id}
-                onClick={() => onToggleMode(m.id)}
+                onClick={() => selectMode(m.id)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -503,7 +519,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ color: isSelected ? m.color : "var(--text-muted)" }}>{m.icon}</span>
+                <span className={blinkingMode === m.id ? "mode-icon-blink" : ""} style={{ color: isSelected ? m.color : "var(--text-muted)" }}>{m.icon}</span>
                 <span>{m.label}</span>
               </button>
             );
