@@ -283,13 +283,14 @@ Delay and crowd values are simulated sample data, not guaranteed live informatio
 
 ## Known limitations
 
-- Delhi NCR is the only fully supported city.
+- walking route shows only straight line distance
 - Static fares, delays, and travel times can become stale.
 - Saved journeys are lost when the current backend restarts.
 - Live status depends on an external API and key.
 - AI answers can be incomplete; structured route results should be trusted over free-form prose.
 - Production observability, authentication, rate limiting, and automated deployment checks are incomplete.
 - Some legacy components may have baseline lint maintenance issues.
+- train is into intrgation and testing and will be deployed shortly
 
 ## Disruption Simulator Implementation
 
