@@ -1,7 +1,74 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse } from "csv-parse/sync";
+// Zero-dependency RFC 4180 CSV parser for standalone and serverless deployments
+function parseCsv(text, options = {}) {
+  let str = text;
+  if (str.charCodeAt(0) === 0xFEFF) {
+    str = str.slice(1);
+  }
+
+  const lines = str.split(/\r?\n/);
+  const rows = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    if (options.skip_empty_lines && !rawLine.trim()) {
+      continue;
+    }
+    if (rawLine === "" && i === lines.length - 1) {
+      continue;
+    }
+
+    const cells = [];
+    let current = "";
+    let inQuotes = false;
+    for (let c = 0; c < rawLine.length; c++) {
+      const char = rawLine[c];
+      if (char === '"') {
+        if (inQuotes && rawLine[c + 1] === '"') {
+          current += '"';
+          c++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    cells.push(current);
+    rows.push(cells);
+
+    if (options.to_line && rows.length >= options.to_line) {
+      break;
+    }
+  }
+
+  if (options.columns) {
+    if (rows.length === 0) return [];
+    const headers = rows[0];
+    const result = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!options.relax_column_count && row.length !== headers.length) {
+        throw new Error(`Invalid Record Length: expected ${headers.length}, got ${row.length}`);
+      }
+      const obj = {};
+      for (let j = 0; j < headers.length; j++) {
+        obj[headers[j]] = row[j] ?? "";
+      }
+      result.push(obj);
+    }
+    return result;
+  }
+
+  return rows;
+}
+const parse = parseCsv;
+
 
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const METRO_FARES_DIR = path.join(ROOT_DIR, "data", "metro-fares");
