@@ -222,7 +222,7 @@ export default function Home() {
   const [scenarioApplied, setScenarioApplied] = useState(false);
   const [chatPrompt, setChatPrompt] = useState<string | undefined>();
   const [constraints, setConstraints] = useState<JourneyConstraints>({});
-  const [constraintsEnabled, setConstraintsEnabled] = useState(true);
+  const [constraintsEnabled, setConstraintsEnabled] = useState(false);
   const [scenario, setScenario] = useState<DisruptionScenario>({ active: false });
   const [simService, setSimService] = useState("metro-blue");
   const [simStation, setSimStation] = useState("Rajiv Chowk");
