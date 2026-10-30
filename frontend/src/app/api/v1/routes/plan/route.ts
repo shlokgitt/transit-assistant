@@ -147,6 +147,11 @@ function formatRouteTitle(legs: PlannerLeg[]): string {
     return busPart;
   }
 
+  const hasAuto = legs.some((l) => l.mode === "auto" || l.lineName === "Local Auto");
+  if (hasAuto) {
+    return "Local Auto";
+  }
+
   return "Walking route";
 }
 
@@ -164,49 +169,44 @@ function buildPlannerRoute(
 
   const isDirectWalkingResult = id === "route_real_walking" || id === "route_direct_walk";
 
-  const processedLegs = plannerResponse.legs.map((leg) => {
-    // If walking time is more than 10 mins, merge with local auto:
+  const processedLegs: PlannerLeg[] = plannerResponse.legs.map((leg) => {
+    // If walking time is more than 10 mins, replace with local auto:
     if (leg.mode === "walk" && leg.minutes > 10) {
       const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.minutes / 12) * 10) / 10);
       const autoMinutes = Math.max(3, Math.round(dist * 2.5));
       const autoFare = Math.max(25, Math.round(dist * 12 + 10));
 
-      if (isDirectWalkingResult) {
-        // Do not create a separate Auto result card; keep as Walking route with auto info merged
-        return {
-          ...leg,
-          mode: "walk" as const,
-          minutes: leg.minutes,
-          distanceKm: dist,
-          fare: 0,
-          instruction: `Walk from ${leg.from} to ${leg.to} (or local auto, ~${autoMinutes} min, ₹${autoFare})`,
-        };
-      }
-
-      // In transit routes (Metro/Bus access legs), merge auto with walk to avoid 15-30 min walks:
       return {
         ...leg,
-        mode: "walk" as const,
+        mode: "auto" as const,
         minutes: autoMinutes,
         distanceKm: dist,
         distanceSource: "road" as const,
         fare: autoFare,
-        lineName: "Walk / Local Auto",
-        instruction: `Walk or take local auto to ${leg.to} (~${autoMinutes} min)`,
+        lineName: "Local Auto",
+        instruction: `Take local auto to ${leg.to} (~${autoMinutes} min, ₹${autoFare})`,
         route: undefined,
       };
     }
     return leg;
   });
   const routeModes = [...new Set(processedLegs.map((leg) => leg.mode))];
+  const isAllAuto = processedLegs.every((leg) => leg.mode === "auto");
+  const isAllWalk = processedLegs.every((leg) => leg.mode === "walk");
 
   const totalMinutes = Number(
     processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
   );
-  const totalFare = plannerResponse.totalFare !== undefined ? plannerResponse.totalFare : processedLegs.reduce(
-    (sum, leg) => sum + (leg.fare || 0),
-    0
-  );
+  const autoFareSum = processedLegs
+    .filter((leg) => leg.mode === "auto")
+    .reduce((sum, leg) => sum + (leg.fare || 0), 0);
+  const transitFare =
+    plannerResponse.totalFare !== undefined && plannerResponse.totalFare !== null && plannerResponse.totalFare > 0
+      ? plannerResponse.totalFare
+      : processedLegs
+          .filter((leg) => leg.mode !== "auto")
+          .reduce((sum, leg) => sum + (leg.fare || 0), 0);
+  const totalFare = (transitFare ?? 0) + autoFareSum;
 
   const vehicleLegs = processedLegs.filter((l) => l.mode !== "walk");
   const transfersCount = Math.max(0, vehicleLegs.length - 1);

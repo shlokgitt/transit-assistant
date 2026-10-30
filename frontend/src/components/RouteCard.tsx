@@ -254,7 +254,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", lineHeight: 1.35 }}>
                   <span style={{ color: MODE_COLOR[leg.mode], fontWeight: 700 }}>
-                    {formatMode(leg.mode)}
+                    {leg.mode === "auto" ? (leg.lineName || "Auto") : formatMode(leg.mode)}
                   </span>
                   <span style={{ color: "#cbd5e1" }}>{leg.from}</span>
                   <ChevronRight size={10} color="#64748b" />
