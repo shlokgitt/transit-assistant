@@ -322,16 +322,35 @@ export async function POST(request: NextRequest) {
       body.preferences?.allowedModes || ["metro", "bus", "walk"]
     );
 
-    // Build baseline recommended route
-    const baselineRecommendedRoute = buildPlannerRoute(
-      baselineFastest,
-      "route_baseline",
-      "RECOMMENDED",
-      constraints,
-      null,
-      false,
-      null
-    );
+    // Build all baseline options to identify the true optimal baseline route
+    const baselineCandidates: RouteOption[] = [];
+    const baseOpt = buildPlannerRoute(baselineFastest, "base_fastest", "FASTEST", constraints, null, false, null);
+    if (baseOpt) baselineCandidates.push(baseOpt);
+
+    if (!("error" in baselineCheapest)) {
+      const cheapOpt = buildPlannerRoute(baselineCheapest, "base_cheapest", "CHEAPEST", constraints, null, false, null);
+      if (cheapOpt) baselineCandidates.push(cheapOpt);
+    }
+
+    if (allowedModes.has("metro")) {
+      const baseMetro = planMetroByName(body.origin.query, body.destination.query, { scenario: undefined }) as PlannerResponse | { error: string };
+      if (!("error" in baseMetro)) {
+        const metroOpt = buildPlannerRoute(baseMetro, "base_metro", "RECOMMENDED", constraints, null, false, null);
+        if (metroOpt) baselineCandidates.push(metroOpt);
+      }
+    }
+
+    baselineCandidates.sort((a, b) => {
+      const aSat = a.constraintsEvaluation?.satisfied !== false ? 1 : 0;
+      const bSat = b.constraintsEvaluation?.satisfied !== false ? 1 : 0;
+      if (aSat !== bSat) return bSat - aSat;
+      if (requestedPriority === "cheapest") {
+        return (a.totalFare ?? 999) - (b.totalFare ?? 999);
+      }
+      return a.totalDurationMinutes - b.totalDurationMinutes;
+    });
+
+    const baselineRecommendedRoute = baselineCandidates[0] || baseOpt;
 
     // 2. Scenario-affected routing if scenario is active
     let primaryPlannerResponse = baselineFastest;
