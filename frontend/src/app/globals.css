@@ -3447,56 +3447,124 @@ pre {
    PERFECT MOBILE & TABLET REDESIGN
    ============================================================ */
 
-/* 1. NATIVE CARD FOR PLANNER (Eliminates fake iPhone mockup on mobile/tablet) */
+/* 1. RESPONSIVE SMARTPHONE DEVICE MOCKUP (Visible and scaled perfectly on mobile) */
 @media (max-width: 900px) {
   .home-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
 
+  /* The Smartphone Device Bezel on Mobile */
   .home-grid .planner-device {
+    display: block !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 420px !important;
     min-height: auto !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     transform: none !important;
-    padding: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    padding: 8px !important;
+    border: 2px solid #5A554B !important;
+    border-radius: 36px !important;
+    background: linear-gradient(145deg, #444749 0%, #222425 40%, #151617 100%) !important;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #6E7274 !important;
+    box-sizing: border-box !important;
   }
 
   .home-grid .planner-device::before,
-  .home-grid .planner-device::after,
-  .home-grid .planner-device-top,
-  .home-grid .planner-device-camera,
-  .home-grid .planner-device-home,
-  .home-grid .planner-device-heading {
+  .home-grid .planner-device::after {
     display: none !important;
   }
 
+  /* Top bar with signal and branding */
+  .home-grid .planner-device-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 26px !important;
+    padding: 0 12px !important;
+    color: #AAA69E !important;
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+  }
+
+  .home-grid .planner-device-signal {
+    display: inline-block !important;
+    color: #A7B58A !important;
+    font-size: 0.5rem !important;
+    letter-spacing: 2px !important;
+  }
+
+  /* Smartphone inner screen */
   .home-grid .planner-device-screen {
+    display: block !important;
     min-height: auto !important;
     max-height: none !important;
     overflow: visible !important;
-    padding: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
+    padding: 10px 10px 14px !important;
+    border: 1px solid #0C0D0C !important;
+    border-radius: 28px !important;
+    background: #191A1A !important;
     box-shadow: none !important;
+    position: relative !important;
   }
 
+  /* Dynamic Island camera notch pill */
+  .home-grid .planner-device-camera {
+    display: block !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 auto 10px auto !important;
+    width: 84px !important;
+    height: 18px !important;
+    border-radius: 999px !important;
+    background: #050505 !important;
+    box-shadow: inset 0 0 0 1px #222, 0 1px 3px rgba(0, 0, 0, 0.7) !important;
+  }
+
+  /* Smartphone inner heading */
+  .home-grid .planner-device-heading {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    margin: 2px 6px 12px !important;
+    color: #EAE7DF !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+  }
+
+  .home-grid .planner-device-heading small {
+    color: #D98A43 !important;
+    font-size: 0.62rem !important;
+    font-weight: 500 !important;
+  }
+
+  /* Inside the smartphone: SearchPanel seamlessly fits */
   .home-grid .planner-device .search-panel {
-    border-radius: 16px !important;
-    padding: 16px !important;
-    background: #302E2A !important;
-    border: 1px solid #5A554B !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 18px !important;
+    padding: 14px 12px !important;
+    background: #252522 !important;
+    border: 1px solid #48443B !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Smartphone bottom home indicator pill */
+  .home-grid .planner-device-home {
+    display: block !important;
+    width: 74px !important;
+    height: 4px !important;
+    margin: 10px auto 4px auto !important;
+    border-radius: 999px !important;
+    background: #D1CEC5 !important;
   }
 
   .home-aside {
-    padding-top: 8px !important;
+    padding-top: 16px !important;
   }
 }
 
