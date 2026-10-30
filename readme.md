@@ -291,6 +291,29 @@ Delay and crowd values are simulated sample data, not guaranteed live informatio
 - Production observability, authentication, rate limiting, and automated deployment checks are incomplete.
 - Some legacy components may have baseline lint maintenance issues.
 
+## Disruption Simulator Implementation
+
+The simulator now fully integrates with the routing engine, providing realistic impact of delays, crowd conditions, and service disruptions on journey calculations.
+
+### Features Implemented
+- **Delay Awareness:** Service‑specific delay simulation applied at runtime without mutating original GTFS data.
+- **Crowd Awareness:** Station‑level crowd conditions (Low, Medium, High) affecting routing decisions and UI warnings.
+- **Service Disruption:** Ability to temporarily disable a service, causing the planner to find alternative routes.
+- **Before/After Comparison:** Functional comparison panel showing original vs. simulated routes, durations, fares, transfers, added delay, crowd warnings, and percentage changes.
+- **Routing Engine Integration:** Simulation overlay applied immutably to the existing Dijkstra‑based planner, preserving all existing preferences, fare calculations, and interchange logic.
+- **Journey Time Bug Fixes:** Correct GTFS time parsing (including “24:xx” times), proper midnight handling, and removal of duplicate delay calculations.
+- **State Management:** Temporary simulation state is scoped to the current scenario and resettable via “Reset to Normal” without affecting the base graph.
+- **Frontend & Chat Integration:** UI controls propagate a `DisruptionScenario` object to the route‑plan API and chat backend, enabling simulation through the planner and AI chat.
+
+### API Changes
+- `POST /api/v1/routes/plan` now accepts an optional `scenario` field describing delays, disabled services, and crowd levels.
+- Chat endpoint (`/api/v1/chat`) forwards the same `scenario` when planning routes via AI tools.
+
+### Usage
+- Open the **Simulator** pane, configure delay, crowd, or disable a service, and click **Apply & Simulate**.
+- The **Before/After** panel updates with actual recalculated results.
+- Click **Reset to Normal** to clear the scenario.
+
 ## Future roadmap
 
 1. Add authenticated users and durable saved-journey storage.
