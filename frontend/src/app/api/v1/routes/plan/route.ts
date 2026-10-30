@@ -513,7 +513,7 @@ if (!("error" in primaryPlannerResponse)) {
     }
 
     // 4. Build RouteOption objects
-    const routes: RouteOption[] = [];
+    let routes: RouteOption[] = [];
     const candidateByTitle = new Map<string, RouteOption>();
 
     for (const variant of candidateVariants) {
@@ -706,38 +706,53 @@ if (!("error" in primaryPlannerResponse)) {
 
     // 4. Bus routes come strictly from GTFS dataset (no synthetic fallback)
 
-    if (allowedModes.has("walk")) {
-      const hasWalkOnly = routes.some((r) => r.legs.every((l) => l.mode === "walk"));
-      if (!hasWalkOnly && directDistKm <= 7.0) {
+    if (allowedModes.has("walk") || allowedModes.has("auto")) {
+      const hasDirectRoute = routes.some((r) =>
+        r.legs.every((l) => l.mode === "walk" || l.mode === "auto")
+      );
+      if (!hasDirectRoute && directDistKm <= 7.0) {
         const walkDist = Math.round(directDistKm * 1.2 * 10) / 10;
         const walkMins = Math.round(walkDist * 12);
+        const isAuto = walkMins > 10;
+        const autoMins = Math.max(3, Math.round(walkDist * 2.5));
+        const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
+        const directLegMode: TransitMode = isAuto ? "auto" : "walk";
+        const directDuration = isAuto ? autoMins : walkMins;
+        const directFare = isAuto ? autoFare : 0;
+        const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
+        const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
         const directWalk: RouteOption = {
-          id: "route_direct_walk",
-          title: `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`,
-          summary: `Pedestrian walk route (${walkDist} km)`,
-          totalDurationMinutes: walkMins,
+          id: isAuto ? "route_direct_auto" : "route_direct_walk",
+          title: directTitle,
+          summary: directSummary,
+          totalDurationMinutes: directDuration,
           totalDistanceKm: walkDist,
           distanceSource: "straight-line",
-          totalFare: 0,
-          summaryModes: ["walk"],
-          tag: "ECO",
-          carbonEmissionsKg: 0,
-          caloriesBurned: Math.round(walkDist * 55),
+          totalFare: directFare,
+          summaryModes: [directLegMode],
+          tag: isAuto ? "COMFORT" : "ECO",
+          carbonEmissionsKg: isAuto ? Math.round(walkDist * 0.08 * 10) / 10 : 0,
+          caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
           transfersCount: 0,
           crowdLevel: "low",
           delayMinutes: 0,
           onTimeReliability: 99,
-          recommendationReason: `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
+          recommendationReason: isAuto
+            ? `Direct local auto (~${autoMins} min) with point-to-point travel and no transit transfers.`
+            : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
           legs: [
             {
               legIndex: 0,
-              mode: "walk",
+              mode: directLegMode,
               from: originCoord.name,
               to: destCoord.name,
-              durationMinutes: walkMins,
+              durationMinutes: directDuration,
               distanceKm: walkDist,
-              fare: 0,
-              instruction: `Walk from ${originCoord.name} to ${destCoord.name}`,
+              fare: directFare,
+              lineName: isAuto ? "Local Auto" : undefined,
+              instruction: isAuto
+                ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min, ₹${autoFare})`
+                : `Walk from ${originCoord.name} to ${destCoord.name}`,
               coordinates: [
                 [originCoord.lat, originCoord.lng],
                 [destCoord.lat, destCoord.lng],
@@ -748,6 +763,54 @@ if (!("error" in primaryPlannerResponse)) {
         routes.push(directWalk);
       }
     }
+
+    // Universal Rule: If walking time is more than 10 mins on ANY route, replace with local auto:
+    routes.forEach((route) => {
+      let routeAutoFare = 0;
+      let replacedWalk = false;
+
+      route.legs.forEach((leg) => {
+        if (leg.mode === "walk" && leg.durationMinutes > 10) {
+          const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
+          const autoMins = Math.max(3, Math.round(dist * 2.5));
+          const autoFare = Math.max(25, Math.round(dist * 12 + 10));
+
+          leg.mode = "auto";
+          leg.durationMinutes = autoMins;
+          leg.distanceKm = dist;
+          leg.fare = autoFare;
+          leg.lineName = "Local Auto";
+          leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min, ₹${autoFare})`;
+          routeAutoFare += autoFare;
+          replacedWalk = true;
+        }
+      });
+
+      if (replacedWalk) {
+        route.summaryModes = [...new Set(route.legs.map((l) => l.mode))];
+        route.totalDurationMinutes = Number(
+          route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
+        );
+        route.totalFare = (route.totalFare ?? 0) + routeAutoFare;
+        const isAllAuto = route.legs.every((l) => l.mode === "auto");
+        if (isAllAuto) {
+          route.title = "Local Auto";
+          route.tag = route.tag === "ECO" ? "COMFORT" : route.tag;
+          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
+        }
+      }
+    });
+
+    // Deduplicate: Keep at most one direct auto route and one direct walk route
+    const seenDirectTitles = new Set<string>();
+    routes = routes.filter((r) => {
+      const isDirectOnly = r.legs.every((l) => l.mode === "auto" || l.mode === "walk");
+      if (isDirectOnly) {
+        if (seenDirectTitles.has(r.title)) return false;
+        seenDirectTitles.add(r.title);
+      }
+      return true;
+    });
 
     if (routes.length === 0) {
       const isOnlyMetro = allowedModes.has("metro") && allowedModes.size === 1;
