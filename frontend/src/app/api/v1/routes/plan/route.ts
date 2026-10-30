@@ -232,14 +232,20 @@ function buildPlannerRoute(
         constraints?.departureTime
       ) as ConstraintEvaluation | undefined)
     : undefined;
+  const routeTag = isAllAuto && tag === "ECO" ? "COMFORT" : tag;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recommendationReason = generateRouteExplanation(
-    { ...rawRoute, tag, reliabilityDetails, constraintsEvaluation, totalMinutes },
+  let recommendationReason = generateRouteExplanation(
+    { ...rawRoute, tag: routeTag, reliabilityDetails, constraintsEvaluation, totalMinutes },
     hasUserConstraints ? constraints : undefined,
     scenario as any,
     isAlternative,
     baselineRoute as any
   ) as string;
+
+  if (isAllAuto) {
+    recommendationReason = `Direct local auto (~${totalMinutes} min) with point-to-point travel and no transit transfers.`;
+  }
 
   const hasHighCrowd = processedLegs.some((leg) => leg.crowd === "high");
   const hasMedCrowd = processedLegs.some((leg) => leg.crowd === "medium");
@@ -249,7 +255,7 @@ function buildPlannerRoute(
 
   return {
     id,
-    tag,
+    tag: routeTag,
     title: formatRouteTitle(processedLegs),
     summary: processedLegs.map((leg) => leg.mode).join(" ➔ "),
     summaryModes: routeModes,
@@ -787,13 +793,16 @@ if (!("error" in primaryPlannerResponse)) {
         route.totalDurationMinutes = Number(
           route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
         );
-        const isAllAuto = route.legs.every((l) => l.mode === "auto");
-        if (isAllAuto) {
-          route.totalFare = null;
-          route.title = "Local Auto";
-          route.tag = route.tag === "ECO" ? "COMFORT" : route.tag;
-          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
+      }
+
+      const isAllAuto = route.legs.every((l) => l.mode === "auto");
+      if (isAllAuto) {
+        route.totalFare = null;
+        route.title = "Local Auto";
+        if (route.tag === "ECO") {
+          route.tag = "COMFORT";
         }
+        route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
       }
     });
 
