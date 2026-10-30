@@ -181,51 +181,6 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           </div>
         )}
 
-        {route.reliabilityDetails && (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "6px",
-              marginBottom: "8px",
-              padding: "6px 8px",
-              borderRadius: "6px",
-              background: "rgba(255, 255, 255, 0.025)",
-              border: "1px solid rgba(255, 255, 255, 0.06)",
-              fontSize: "0.66rem",
-            }}
-          >
-            <span style={{
-              fontWeight: 700,
-              color: route.reliabilityDetails.reliabilityBand === "High" ? "#34d399" : route.reliabilityDetails.reliabilityBand === "Moderate" ? "#38bdf8" : "#fb7185"
-            }}>
-              ● {route.reliabilityDetails.reliabilityBand} ({route.reliabilityDetails.reliabilityPercentage}%)
-            </span>
-            {route.reliabilityDetails.potentialDelayImpactMinutes > 0 && (
-              <>
-                <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>•</span>
-                <span style={{ color: "#fb7185", fontWeight: 600 }}>
-                  +{route.reliabilityDetails.potentialDelayImpactMinutes} min delay risk
-                </span>
-              </>
-            )}
-            {route.reliabilityDetails.isSimulated && (
-              <span style={{
-                marginLeft: "auto",
-                fontSize: "0.58rem",
-                padding: "1px 5px",
-                borderRadius: "4px",
-                background: "rgba(245, 158, 11, 0.15)",
-                color: "#fbbf24",
-                border: "1px solid rgba(245, 158, 11, 0.3)"
-              }}>
-                Simulated
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Route Title */}
       <h3 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#f1f5f9", marginBottom: "10px", lineHeight: 1.3 }}>
         {route.title}
@@ -298,7 +253,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                   🔁 Interchange at {previousLeg.to}
                 </span>
               )}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", lineHeight: 1.35 }}>
                 <span style={{ color: MODE_COLOR[leg.mode], fontWeight: 700 }}>
                   {formatMode(leg.mode)}
                 </span>
@@ -315,13 +270,17 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                     background: "rgba(16, 185, 129, 0.08)",
                     border: "1px solid rgba(16, 185, 129, 0.25)",
                     color: "#a7f3d0",
-                    fontSize: "0.66rem",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.4,
                   }}
                 >
-                  <strong>Scheduled bus:</strong> Departs {leg.scheduledTiming.departureTime}
+                  <strong style={{ color: "#d1fae5" }}>Scheduled bus</strong>
+                  <span style={{ display: "block", marginTop: "3px", fontSize: "0.8rem" }}>
+                    Departs {leg.scheduledTiming.departureTime}
                   {" → "}arrives {leg.scheduledTiming.arrivalTime}
+                  </span>
                   <span style={{ display: "block", color: "#718078", marginTop: "2px" }}>
-                    {leg.scheduledTiming.note}
+                  {leg.scheduledTiming.note}
                   </span>
                 </div>
               )}
@@ -346,7 +305,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                         color: MODE_COLOR[leg.mode],
                         background: "transparent",
                         cursor: "pointer",
-                        fontSize: "0.66rem",
+                        fontSize: "0.74rem",
                         fontWeight: 700,
                       }}
                     >
@@ -380,7 +339,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                                 justifyContent: "space-between",
                                 gap: "10px",
                                 color: stopIndex === 0 || stopIndex === stops.length - 1 ? "#f1f5f9" : "#aebbb2",
-                                fontSize: "0.68rem",
+                                fontSize: "0.74rem",
                               }}
                             >
                               <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
@@ -402,7 +361,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                           );
                         })}
                         <span style={{ marginTop: "2px", color: "#718078", fontSize: "0.58rem" }}>
-                          Stop times are estimated from the route duration.
+                          Stop times are estimated from route duration.
                         </span>
                       </div>
                     )}
@@ -416,10 +375,9 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
       {/* Crowd level bar */}
       <div style={{ marginBottom: "12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontSize: "0.6rem", color: "#4b5a6e", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontSize: "0.68rem", color: "#72808f", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
             <Users size={10} /> Crowd Level
           </span>
-          <span style={{ fontSize: "0.6rem", color: crowd.color, fontWeight: 700 }}>{crowd.fill}%</span>
         </div>
         <div className="crowd-bar">
           <div className="crowd-fill" style={{ width: `${crowd.fill}%`, background: `linear-gradient(90deg, ${crowd.color}88, ${crowd.color})` }} />
@@ -435,11 +393,11 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <span className="stat-label" style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             <Clock size={9} /> Duration
           </span>
-          <span className="stat-value" style={{ color: "#60a5fa" }}>{route.totalDurationMinutes} min</span>
+          <span className="stat-value" style={{ color: "#60a5fa", fontSize: "1.05rem" }}>{route.totalDurationMinutes} min</span>
         </div>
         <div className="stat-box">
           <span className="stat-label">💰 Fare</span>
-          <span className="stat-value" style={{ color: "#34d399" }}>
+          <span className="stat-value" style={{ color: "#34d399", fontSize: "1.05rem" }}>
             {route.totalFare === null ? "Unavailable" : `₹${route.totalFare}`}
           </span>
         </div>
@@ -447,7 +405,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <span className="stat-label" style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             <Navigation size={9} /> Distance
           </span>
-          <span className="stat-value">
+          <span className="stat-value" style={{ fontSize: "1.05rem" }}>
             {route.totalDistanceKm}km
             {route.distanceSource && (
               <small style={{ display: "block", fontSize: "0.55rem", color: "#64748b" }}>
@@ -460,22 +418,13 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <span className="stat-label" style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             <Leaf size={9} /> CO₂
           </span>
-          <span className="stat-value" style={{ color: "#4ade80" }}>
+          <span className="stat-value" style={{ color: "#4ade80", fontSize: "1.05rem" }}>
             {route.carbonEmissionsKg}kg
             <small style={{ display: "block", fontSize: "0.55rem", color: "#64748b" }}>approx.</small>
           </span>
         </div>
       </div>
 
-      {/* Reliability score */}
-      <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-        <div style={{ flex: 1, height: "2px", borderRadius: "1px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${route.onTimeReliability}%`, background: "linear-gradient(90deg, #3b82f6, #06b6d4)", borderRadius: "1px" }} />
-        </div>
-        <span style={{ fontSize: "0.6rem", color: "#4b5a6e", fontWeight: 600, whiteSpace: "nowrap" }}>
-          {route.onTimeReliability}% reliable
-        </span>
-      </div>
         <div className="t-tilt-glare" aria-hidden="true" />
       </div>
     </div>

@@ -28,7 +28,7 @@ interface SearchPanelProps {
   onSwap: () => void;
   selectedModes: TransitMode[];
   onToggleMode: (mode: TransitMode) => void;
-  priority: RoutingPriority;
+  priority: RoutingPriority[];
   onChangePriority: (p: RoutingPriority) => void;
   avoidCrowded: boolean;
   onToggleAvoidCrowded: () => void;
@@ -62,12 +62,6 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     color: "#B8ADA0",
   },
   {
-    id: "auto",
-    label: "Auto",
-    icon: <VehicleIllustration mode="auto" size="sm" />,
-    color: "#D2A85A",
-  },
-  {
     id: "walk",
     label: "Walk",
     icon: <VehicleIllustration mode="walk" size="sm" />,
@@ -81,6 +75,18 @@ const PRIORITIES: { id: RoutingPriority; label: string; icon: React.ReactNode; b
   { id: "least_transfers", label: "Direct", icon: <ArrowUpDown size={14} />, badge: "Fewer transfers" },
   { id: "eco", label: "Eco", icon: <ShieldAlert size={14} />, badge: "Lower emissions" },
 ];
+
+const constraintNumberInputStyle: React.CSSProperties = {
+  flex: "1 1 0",
+  minWidth: 0,
+  padding: "4px 6px",
+  borderRadius: "6px",
+  background: "rgba(255, 255, 255, 0.04)",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  color: "#cbd5e1",
+  fontSize: "0.68rem",
+  outline: "none",
+};
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({
   city,
@@ -475,7 +481,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             {selectedModes.length} / {MODES.length} Active
           </span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
+        <div className="planner-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
           {MODES.map((m) => {
             const isSelected = selectedModes.includes(m.id);
             return (
@@ -526,11 +532,17 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
           {PRIORITIES.map((p) => {
-            const isSelected = priority === p.id;
+            const isSelected = priority.includes(p.id);
             return (
               <button
                 key={p.id}
-                onClick={() => onChangePriority(p.id)}
+                onClick={() => {
+                  if (isSelected) {
+                    if (priority.length > 1) onChangePriority(p.id);
+                    return;
+                  }
+                  if (priority.length < 2) onChangePriority(p.id);
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -599,7 +611,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleConstraintsEnabled?.(!constraintsEnabled);
+                const nextEnabled = !constraintsEnabled;
+                onToggleConstraintsEnabled?.(nextEnabled);
+                if (nextEnabled) setShowConstraints(true);
               }}
               style={{
                 display: "inline-flex",
@@ -731,8 +745,24 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               </div>
               <input
                 type="time"
+                min="00:00"
+                max="23:59"
+                step={60}
                 value={constraints?.requiredArrivalTime || ""}
-                onChange={(e) => onChangeConstraints?.({ ...constraints, requiredArrivalTime: e.target.value || undefined })}
+                onChange={(e) => {
+                  const parts = e.target.value.split(":");
+                  if (parts.length < 2) {
+                    onChangeConstraints?.({ ...constraints, requiredArrivalTime: undefined });
+                    return;
+                  }
+                  const hours = Math.min(23, Math.max(0, Number(parts[0]) || 0));
+                  const minutes = Math.min(59, Math.max(0, Number(parts[1]) || 0));
+                  const seconds = parts[2] === undefined
+                    ? undefined
+                    : Math.min(59, Math.max(0, Number(parts[2]) || 0));
+                  const formatted = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}${seconds === undefined ? "" : `:${String(seconds).padStart(2, "0")}`}`;
+                  onChangeConstraints?.({ ...constraints, requiredArrivalTime: formatted });
+                }}
                 style={{
                   width: "100%",
                   padding: "6px 10px",
@@ -757,9 +787,22 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 </span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                {[undefined, 20, 30, 40, 50].map((b) => (
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Custom"
+                  value={constraints?.maxBudget ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onChangeConstraints?.({ ...constraints, maxBudget: value === "" ? undefined : Math.max(0, Number(value)) });
+                  }}
+                  aria-label="Custom maximum fare budget"
+                  style={{ ...constraintNumberInputStyle, borderColor: constraints?.maxBudget !== undefined ? "#34d399" : "rgba(255, 255, 255, 0.08)" }}
+                />
+                {[20, 30, 40, 50].map((b) => (
                   <button
-                    key={b === undefined ? "none" : b}
+                    key={b}
                     type="button"
                     onClick={() => onChangeConstraints?.({ ...constraints, maxBudget: b })}
                     style={{
@@ -774,7 +817,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                       fontWeight: constraints?.maxBudget === b ? 700 : 400,
                     }}
                   >
-                    {b === undefined ? "Any" : `₹${b}`}
+                    ₹{b}
                   </button>
                 ))}
               </div>
@@ -791,9 +834,22 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 </span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                {[undefined, 300, 500, 800, 1500].map((w) => (
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Custom"
+                  value={constraints?.maxWalkingDistanceMeters ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onChangeConstraints?.({ ...constraints, maxWalkingDistanceMeters: value === "" ? undefined : Math.max(0, Number(value)) });
+                  }}
+                  aria-label="Custom walking distance limit"
+                  style={{ ...constraintNumberInputStyle, borderColor: constraints?.maxWalkingDistanceMeters !== undefined ? "#38bdf8" : "rgba(255, 255, 255, 0.08)" }}
+                />
+                {[300, 500, 800, 1500].map((w) => (
                   <button
-                    key={w === undefined ? "none" : w}
+                    key={w}
                     type="button"
                     onClick={() => onChangeConstraints?.({ ...constraints, maxWalkingDistanceMeters: w })}
                     style={{
@@ -808,7 +864,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                       fontWeight: constraints?.maxWalkingDistanceMeters === w ? 700 : 400,
                     }}
                   >
-                    {w === undefined ? "Any" : `${w}m`}
+                    {w}m
                   </button>
                 ))}
               </div>
@@ -825,9 +881,22 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 </span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                {[undefined, 0, 1, 2].map((t) => (
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Custom"
+                  value={constraints?.maxTransfers ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onChangeConstraints?.({ ...constraints, maxTransfers: value === "" ? undefined : Math.max(0, Number(value)) });
+                  }}
+                  aria-label="Custom maximum transfers"
+                  style={{ ...constraintNumberInputStyle, borderColor: constraints?.maxTransfers !== undefined ? "#fbbf24" : "rgba(255, 255, 255, 0.08)" }}
+                />
+                {[0, 1, 2].map((t) => (
                   <button
-                    key={t === undefined ? "none" : t}
+                    key={t}
                     type="button"
                     onClick={() => onChangeConstraints?.({ ...constraints, maxTransfers: t })}
                     style={{
@@ -842,7 +911,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                       fontWeight: constraints?.maxTransfers === t ? 700 : 400,
                     }}
                   >
-                    {t === undefined ? "Any" : t === 0 ? "Direct" : `≤ ${t}`}
+                    {t === 0 ? "Direct" : `≤ ${t}`}
                   </button>
                 ))}
               </div>

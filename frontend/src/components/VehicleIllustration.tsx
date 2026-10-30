@@ -27,10 +27,11 @@ const ICONS: Record<TransitMode, React.ComponentType<{ size?: number; strokeWidt
 };
 
 const ASSETS: Partial<Record<TransitMode, string>> = {
-  bus: "/transport/bus.png",
-  metro: "/transport/metro.png",
-  cab: "/transport/cab.png",
-  walk: "/transport/walk.png",
+  bus: "/transport/delhi-bus.webp",
+  metro: "/transport/delhi-metro.webp",
+  cab: "/transport/delhi-cab.webp",
+  auto: "/transport/delhi-cab.webp",
+  walk: "/transport/delhi-walk.webp",
 };
 
 export function VehicleIllustration({ mode, size = "md", className }: VehicleIllustrationProps) {

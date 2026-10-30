@@ -1795,7 +1795,7 @@ main,
 
 .route-list .t-tilt-card h3 {
   margin: 12px 0 8px !important;
-  font-size: 1.08rem !important;
+  font-size: 1.18rem !important;
 }
 
 .route-list .t-tilt-card .mode-badge {
@@ -1835,7 +1835,22 @@ main,
 
 .route-list .t-tilt-card .stat-value {
   font-family: var(--font-mono);
-  font-size: 0.88rem;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.route-list .t-tilt-card .stat-label {
+  font-size: 0.7rem !important;
+  color: #8d999f !important;
+}
+
+.route-list .t-tilt-card .crowd-bar {
+  height: 5px;
+  margin-top: 6px;
+}
+
+.route-list .t-tilt-card .mode-badge {
+  font-size: 0.78rem !important;
 }
 
 .route-list .t-tilt-card .stat-box {
@@ -2395,7 +2410,7 @@ footer a {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .vehicle-illustration-highlight {
@@ -2476,5 +2491,167 @@ pre {
 
   .sa-content {
     width: min(92vw, 520px);
+  }
+}
+
+/* Approved Plan A Trip smartphone presentation. Scoped to the home screen only. */
+.home-grid .planner-device {
+  position: relative;
+  width: min(100%, 402px);
+  max-width: 402px;
+  min-height: 874px;
+  margin: 0 auto;
+  transform: translateX(-24px);
+  padding: 8px;
+  border: 1px solid #777B7D;
+  border-radius: 48px;
+  background: linear-gradient(145deg, #777B7D 0%, #3B3E40 18%, #17191A 55%, #5E6264 100%);
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.48), inset 0 0 0 3px #8C9091;
+}
+
+.home-grid .planner-device::before,
+.home-grid .planner-device::after {
+  position: absolute;
+  left: -4px;
+  width: 3px;
+  border-radius: 4px 0 0 4px;
+  background: #777B7D;
+  content: "";
+}
+
+.home-grid .planner-device::before {
+  top: 170px;
+  height: 72px;
+}
+
+.home-grid .planner-device::after {
+  top: 260px;
+  height: 42px;
+}
+
+.home-grid .planner-device-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 12px;
+  color: #AAA69E;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.home-grid .planner-device-camera {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 3;
+  width: 96px;
+  height: 25px;
+  border-radius: 999px;
+  background: #050505;
+  box-shadow: inset 0 0 0 1px #1D1D1B, 0 1px 3px rgba(0, 0, 0, 0.7);
+  transform: translateX(-50%);
+}
+
+.home-grid .planner-device-signal {
+  color: #A7B58A;
+  font-size: 0.45rem;
+  letter-spacing: 2px;
+}
+
+.home-grid .planner-device-screen {
+  min-width: 0;
+  min-height: 842px;
+  max-height: 842px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 46px 16px 24px;
+  border: 1px solid #0C0D0C;
+  border-radius: 43px;
+  background: #191A1A;
+  scrollbar-width: thin;
+  scrollbar-color: #5A554B transparent;
+}
+
+.home-grid .planner-device-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 2px 6px 12px;
+  color: #EAE7DF;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.home-grid .planner-device-heading small {
+  color: #D98A43;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.home-grid .planner-device-home {
+  width: 82px;
+  height: 5px;
+  margin: 13px auto 0;
+  border-radius: 999px;
+  background: #D1CEC5;
+}
+
+.home-grid .planner-device .search-panel {
+  min-width: 0;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 18px !important;
+  border-radius: 20px !important;
+  background: #252522 !important;
+  border-color: #5A554B !important;
+  box-shadow: none !important;
+}
+
+.home-grid .planner-device .planner-mode-grid {
+  min-width: 0;
+}
+
+.home-grid .planner-device .planner-mode-grid button {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.home-grid .planner-device .planner-mode-grid .vehicle-illustration-sm {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.home-grid .planner-device .planner-mode-grid .vehicle-illustration-body {
+  overflow: hidden;
+}
+
+.home-grid .planner-device .search-panel input {
+  color: #EAE7DF !important;
+}
+
+.home-grid .planner-device .search-panel > div:first-child > div > div,
+.home-grid .planner-device .search-panel [style*="rgba(23, 34, 58"] {
+  background: #2D2B27 !important;
+  border-color: #5A554B !important;
+}
+
+.home-grid .planner-device .search-panel button[title="Swap origin and destination"] {
+  background: #191A1A !important;
+  border-color: #D98A43 !important;
+  color: #D98A43 !important;
+}
+
+@media (max-width: 700px) {
+  .home-grid .planner-device {
+    width: calc(100vw - 32px);
+    min-height: 820px;
+    transform: none;
+  }
+
+  .home-grid .planner-device-screen {
+    min-height: 788px;
+    max-height: 788px;
   }
 }

@@ -148,10 +148,9 @@ export default function Home() {
   const [selectedModes, setSelectedModes] = useState<TransitMode[]>([
     "metro",
     "bus",
-    "auto",
     "walk",
   ]);
-  const [priority, setPriority] = useState<RoutingPriority>("fastest");
+  const [priority, setPriority] = useState<RoutingPriority[]>(["fastest"]);
   const [avoidCrowded, setAvoidCrowded] = useState(false);
   const [period, setPeriod] = useState<"peak" | "offpeak">("peak");
   const [isLoading, setIsLoading] = useState(false);
@@ -228,7 +227,7 @@ export default function Home() {
   ) => {
     const requestOrigin = routeOverrides?.origin ?? origin;
     const requestDestination = routeOverrides?.destination ?? destination;
-    const requestPriority = routeOverrides?.priority ?? priority;
+    const requestPriority = routeOverrides?.priority ?? priority[0];
 
     if (!requestOrigin.trim() || !requestDestination.trim() || requestOrigin.trim() === requestDestination.trim()) {
       setRouteError("Enter two different places to plan a journey.");
@@ -308,7 +307,7 @@ export default function Home() {
         city: selectedCity,
         origin: { query: origin.trim() },
         destination: { query: destination.trim() },
-        preferences: { routingPriority: priority, allowedModes: selectedModes, avoidCrowded, period },
+        preferences: { routingPriority: priority[0], allowedModes: selectedModes, avoidCrowded, period },
       };
 
       const [baseRes, affectedRes] = await Promise.all([
@@ -336,7 +335,7 @@ export default function Home() {
 
     setOrigin(savedOrigin);
     setDestination(savedDestination);
-    setPriority(savedPriority);
+    setPriority([savedPriority]);
     setRouteError(null);
     void handlePlanRoute(undefined, {
       origin: savedOrigin,
@@ -354,7 +353,7 @@ export default function Home() {
         name: `${origin} to ${destination}`,
         from: origin,
         to: destination,
-        preference: priority,
+        preference: priority[0],
         ...(emailAlertsEnabled && alertEmail.trim() ? { email: alertEmail.trim() } : {}),
       };
 
@@ -475,11 +474,25 @@ export default function Home() {
     <div className="home-grid">
       <section className="hero-panel">
         <div className="page-heading">
-          <p className="eyebrow">Delhi NCR transit planner</p>
+          <p className="eyebrow">Delhi NCR Route Transit Planner</p>
           <h2>Make The Next Journey Feel Simple.</h2>
           <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
         </div>
-        <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={setPriority} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
+        <div className="planner-device" aria-label="Trip planner">
+          <div className="planner-device-top">
+            <span>Transit Route</span>
+            <span className="planner-device-signal">● ● ●</span>
+          </div>
+          <div className="planner-device-screen">
+            <span className="planner-device-camera" aria-hidden="true" />
+            <div className="planner-device-heading">
+              <span>Plan Your Journey</span>
+              <small>Delhi NCR</small>
+            </div>
+            <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={(next) => setPriority((current) => current.includes(next) ? (current.length > 1 ? current.filter((item) => item !== next) : current) : (current.length < 2 ? [...current, next] : [current[1], next]))} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
+          </div>
+          <div className="planner-device-home" />
+        </div>
       </section>
       <section className="home-aside">
         <div className="aside-card route-note">
