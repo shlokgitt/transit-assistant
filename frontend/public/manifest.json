@@ -4,13 +4,13 @@
   "description": "Smart Multimodal Route Planner for Delhi NCR",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#04060f",
-  "theme_color": "#04060f",
+  "background_color": "#242321",
+  "theme_color": "#242321",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/transit-route-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }

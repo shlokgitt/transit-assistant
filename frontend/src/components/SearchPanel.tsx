@@ -17,6 +17,7 @@ import {
   CityConfig,
   JourneyConstraints,
 } from "@/types/transit";
+import { VehicleIllustration } from "@/components/VehicleIllustration";
 
 interface SearchPanelProps {
   city: CityConfig;
@@ -41,58 +42,44 @@ interface SearchPanelProps {
 }
 
 // Rich mode icon badges with colors
-const ModeIconBadge = ({ emoji, color, glow }: { emoji: string; color: string; glow: string }) => (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "24px",
-      height: "24px",
-      borderRadius: "8px",
-      background: `linear-gradient(135deg, ${color}33, ${color}22)`,
-      border: `1px solid ${color}55`,
-      boxShadow: `0 0 8px ${glow}`,
-      fontSize: "13px",
-      flexShrink: 0,
-    }}
-  >
-    {emoji}
-  </span>
-);
-
 const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: string }[] = [
   {
     id: "metro",
     label: "Metro",
-    icon: <ModeIconBadge emoji="🚇" color="#3b82f6" glow="rgba(59,130,246,0.5)" />,
-    color: "#3b82f6",
+    icon: <VehicleIllustration mode="metro" size="sm" />,
+    color: "#A7B58A",
   },
   {
     id: "bus",
     label: "Bus",
-    icon: <ModeIconBadge emoji="🚌" color="#10b981" glow="rgba(16,185,129,0.5)" />,
-    color: "#10b981",
+    icon: <VehicleIllustration mode="bus" size="sm" />,
+    color: "#C47A44",
+  },
+  {
+    id: "cab",
+    label: "Cab",
+    icon: <VehicleIllustration mode="cab" size="sm" />,
+    color: "#B8ADA0",
   },
   {
     id: "auto",
     label: "Auto",
-    icon: <ModeIconBadge emoji="🛺" color="#f59e0b" glow="rgba(245,158,11,0.5)" />,
-    color: "#f59e0b",
+    icon: <VehicleIllustration mode="auto" size="sm" />,
+    color: "#D2A85A",
   },
   {
     id: "walk",
     label: "Walk",
-    icon: <ModeIconBadge emoji="🚶" color="#06b6d4" glow="rgba(6,182,212,0.5)" />,
-    color: "#06b6d4",
+    icon: <VehicleIllustration mode="walk" size="sm" />,
+    color: "#829A86",
   },
 ];
 
 const PRIORITIES: { id: RoutingPriority; label: string; icon: React.ReactNode; badge: string }[] = [
-  { id: "fastest", label: "Fastest", icon: <span style={{ fontSize: "14px" }}>⚡</span>, badge: "⚡ Quickest Arrival" },
-  { id: "cheapest", label: "Cheapest", icon: <span style={{ fontSize: "14px" }}>💰</span>, badge: "💰 Lowest Fare" },
-  { id: "least_transfers", label: "Direct", icon: <span style={{ fontSize: "14px" }}>🔄</span>, badge: "🔄 Direct First" },
-  { id: "eco", label: "Eco", icon: <span style={{ fontSize: "14px" }}>🌿</span>, badge: "🌿 Low CO₂" },
+  { id: "fastest", label: "Fastest", icon: <Clock size={14} />, badge: "Quickest arrival" },
+  { id: "cheapest", label: "Cheapest", icon: <span className="mono-symbol">₹</span>, badge: "Lowest fare" },
+  { id: "least_transfers", label: "Direct", icon: <ArrowUpDown size={14} />, badge: "Fewer transfers" },
+  { id: "eco", label: "Eco", icon: <ShieldAlert size={14} />, badge: "Lower emissions" },
 ];
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({
@@ -185,6 +172,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
 
   return (
     <div
+      className="search-panel"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -594,7 +582,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             fontWeight: 600,
           }}
         >
-          {/* Left: icon + title + ON/OFF toggle */}
+          {/* Left: icon + title + toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <div
               onClick={() => setShowConstraints(!showConstraints)}
@@ -606,7 +594,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               </span>
             </div>
 
-            {/* ON / OFF Switch */}
+            {/* Constraint switch */}
             <button
               type="button"
               onClick={(e) => {
@@ -628,7 +616,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
-              title={constraintsEnabled ? "Constraints are ON — click to turn OFF" : "Constraints are OFF — click to turn ON"}
+              title={constraintsEnabled ? "Constraints are on — click to turn off" : "Constraints are off — click to turn on"}
               aria-label="Toggle hard constraints on or off"
             >
               <span
@@ -649,7 +637,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   color: constraintsEnabled ? "#34d399" : "#94a3b8",
                 }}
               >
-                {constraintsEnabled ? "ON" : "OFF"}
+                {constraintsEnabled ? "On" : "Off"}
               </span>
             </button>
 
@@ -688,7 +676,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               background: "rgba(10, 16, 30, 0.6)",
             }}
           >
-            {/* Notice if constraints are OFF */}
+            {/* Notice if constraints are off */}
             {!constraintsEnabled && (
               <div
                 style={{
@@ -704,7 +692,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   gap: "8px",
                 }}
               >
-                <span>Constraints are currently <strong>OFF</strong>. Turn ON to enforce them in route planning.</span>
+                <span>Constraints are currently <strong>off</strong>. Turn on to enforce them in route planning.</span>
                 <button
                   type="button"
                   onClick={() => onToggleConstraintsEnabled?.(true)}
@@ -720,7 +708,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Turn ON
+                  Turn on
                 </button>
               </div>
             )}
@@ -796,7 +784,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                 <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
-                  🚶 Walking Limit:
+                  Walking limit:
                 </span>
                 <span style={{ fontSize: "0.68rem", color: "#38bdf8", fontWeight: 700 }}>
                   {constraints?.maxWalkingDistanceMeters ? `${constraints.maxWalkingDistanceMeters}m` : "No limit"}

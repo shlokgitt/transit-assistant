@@ -43,6 +43,19 @@ export interface RouteLeg {
   crowdLevel?: CrowdLevel;
   delayMinutes?: number;
   statusMessage?: string;
+  fromStopId?: string;
+  toStopId?: string;
+  scheduledTiming?: {
+    source: "static_gtfs";
+    routeId: string;
+    routeName: string;
+    fromStop: string;
+    toStop: string;
+    departureTime: string;
+    arrivalTime: string;
+    durationMinutes: number;
+    note: string;
+  };
   coordinates: [number, number][]; // [lat, lng][]
 }
 
@@ -204,6 +217,20 @@ export interface TransitStatusResponse {
     bus: "Low" | "Medium" | "High";
     roads: "Smooth" | "Moderate" | "Heavy Congestion";
   };
+  liveData?: {
+    source: "otd";
+    vehicleCount: number;
+    updatedAt: string;
+    vehicles?: {
+      id: string;
+      routeId?: string;
+      lat: number;
+      lng: number;
+      nearestStop?: string;
+      estimatedArrivalMinutes?: number;
+    }[];
+  };
+  error?: string;
 }
 
 export interface CityConfig {

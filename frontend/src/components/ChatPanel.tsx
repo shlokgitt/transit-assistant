@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Loader2, RotateCcw, MapPin, Clock, Wallet, Footprints, ChevronRight } from "lucide-react";
+import { VehicleIllustration } from "@/components/VehicleIllustration";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -53,16 +54,16 @@ interface ChatPanelProps {
 /*  Mode helpers                                                       */
 /* ------------------------------------------------------------------ */
 
-const MODE_CONFIG: Record<string, { emoji: string; color: string; label: string }> = {
-  metro: { emoji: "🚇", color: "#3b82f6", label: "Metro" },
-  bus: { emoji: "🚌", color: "#10b981", label: "Bus" },
-  walk: { emoji: "🚶", color: "#06b6d4", label: "Walk" },
-  auto: { emoji: "🛺", color: "#f59e0b", label: "Auto" },
-  cab: { emoji: "🚖", color: "#a78bfa", label: "Cab" },
+const MODE_CONFIG: Record<string, { color: string; label: string }> = {
+  metro: { color: "#B6E65A", label: "Metro" },
+  bus: { color: "#E5A33D", label: "Bus" },
+  walk: { color: "#B6E65A", label: "Walk" },
+  auto: { color: "#E5A33D", label: "Auto" },
+  cab: { color: "#E5A33D", label: "Cab" },
 };
 
 function getModeConfig(mode: string) {
-  return MODE_CONFIG[mode] || { emoji: "🔹", color: "#94a3b8", label: mode };
+  return MODE_CONFIG[mode] || { color: "#929DA3", label: mode };
 }
 
 /* ------------------------------------------------------------------ */
@@ -167,7 +168,7 @@ function RouteResultCard({ route, onViewRoute }: { route: RouteResult; onViewRou
                   fontWeight: 600,
                   color: cfg.color,
                 }}>
-                  <span>{cfg.emoji}</span>
+                  <VehicleIllustration mode={leg.mode as "metro" | "bus" | "walk" | "auto" | "cab"} size="sm" />
                   {leg.route?.replace(/^metro:/, "") || cfg.label}
                 </span>
               </React.Fragment>
@@ -201,7 +202,7 @@ function RouteResultCard({ route, onViewRoute }: { route: RouteResult; onViewRou
                   flexShrink: 0,
                   marginTop: "1px",
                 }}>
-                  {cfg.emoji}
+                  <VehicleIllustration mode={leg.mode as "metro" | "bus" | "walk" | "auto" | "cab"} size="sm" />
                 </span>
                 <div style={{ flex: 1, lineHeight: 1.45 }}>
                   <span style={{ fontWeight: 600, color: "#f1f5f9" }}>{leg.from}</span>

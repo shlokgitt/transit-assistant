@@ -22,6 +22,7 @@ import {
   calculateRouteReliability,
   generateRouteExplanation,
 } from "../../../../../../backend/route.js";
+import { getScheduledBusTiming } from "@/lib/staticSchedule";
 
 type PlannerLeg = {
   mode: "walk" | "bus" | "metro" | "auto";
@@ -241,6 +242,12 @@ function buildPlannerRoute(
         stopsCount: leg.stops,
         intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
+        fromStopId: leg.mode === "bus" ? leg.fromId : undefined,
+        toStopId: leg.mode === "bus" ? leg.toId : undefined,
+        scheduledTiming:
+          leg.mode === "bus" && leg.route
+            ? getScheduledBusTiming(leg.route, leg.fromId, leg.toId) || undefined
+            : undefined,
         lineName:
           leg.mode === "metro"
             ? leg.route?.replace(/^metro:/, "")

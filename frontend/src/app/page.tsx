@@ -67,11 +67,11 @@ function getJourneyPreference(journey: SavedJourney): RoutingPriority {
 }
 
 const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
-  { id: "home", label: "Plan a trip", icon: <Compass size={16} /> },
+  { id: "home", label: "Plan A Trip", icon: <Compass size={16} /> },
   { id: "results", label: "Results", icon: <GitCompareArrows size={16} /> },
-  { id: "chat", label: "Travel chat", icon: <Bot size={16} /> },
+  { id: "chat", label: "Travel Chat", icon: <Bot size={16} /> },
   { id: "disruptions", label: "Simulator", icon: <TriangleAlert size={16} /> },
-  { id: "saved", label: "Saved journeys", icon: <Bookmark size={16} /> },
+  { id: "saved", label: "Saved Journeys", icon: <Bookmark size={16} /> },
 ];
 
 function SlidingNav({
@@ -222,8 +222,15 @@ export default function Home() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
-  const handlePlanRoute = useCallback(async (overrideScenario?: DisruptionScenario) => {
-    if (!origin.trim() || !destination.trim() || origin.trim() === destination.trim()) {
+  const handlePlanRoute = useCallback(async (
+    overrideScenario?: DisruptionScenario,
+    routeOverrides?: { origin: string; destination: string; priority?: RoutingPriority },
+  ) => {
+    const requestOrigin = routeOverrides?.origin ?? origin;
+    const requestDestination = routeOverrides?.destination ?? destination;
+    const requestPriority = routeOverrides?.priority ?? priority;
+
+    if (!requestOrigin.trim() || !requestDestination.trim() || requestOrigin.trim() === requestDestination.trim()) {
       setRouteError("Enter two different places to plan a journey.");
       setScreen("results");
       return;
@@ -245,10 +252,10 @@ export default function Home() {
 
     const requestPayload: RoutePlanRequest = {
       city: selectedCity,
-      origin: { query: origin.trim() },
-      destination: { query: destination.trim() },
+      origin: { query: requestOrigin.trim() },
+      destination: { query: requestDestination.trim() },
       preferences: {
-        routingPriority: priority,
+        routingPriority: requestPriority,
         allowedModes: selectedModes,
         avoidCrowded,
         period,
@@ -323,10 +330,19 @@ export default function Home() {
   };
 
   const openSavedJourney = (journey: SavedJourney) => {
-    setOrigin(getJourneyFrom(journey));
-    setDestination(getJourneyTo(journey));
-    setPriority(getJourneyPreference(journey));
-    setScreen("home");
+    const savedOrigin = getJourneyFrom(journey);
+    const savedDestination = getJourneyTo(journey);
+    const savedPriority = getJourneyPreference(journey);
+
+    setOrigin(savedOrigin);
+    setDestination(savedDestination);
+    setPriority(savedPriority);
+    setRouteError(null);
+    void handlePlanRoute(undefined, {
+      origin: savedOrigin,
+      destination: savedDestination,
+      priority: savedPriority,
+    });
   };
 
   const saveCurrentJourney = async () => {
@@ -398,7 +414,7 @@ export default function Home() {
       <section className="results-column">
         <div className="page-heading compact-heading">
           <div>
-            <p className="eyebrow">Route results</p>
+            <p className="eyebrow">Route Results</p>
             <h2>{origin} <span>to</span> {destination}</h2>
             <p className="muted-copy">Compare available journeys from the live route planner.</p>
           </div>
@@ -460,7 +476,7 @@ export default function Home() {
       <section className="hero-panel">
         <div className="page-heading">
           <p className="eyebrow">Delhi NCR transit planner</p>
-          <h2>Make the next journey feel simple.</h2>
+          <h2>Make The Next Journey Feel Simple.</h2>
           <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
         </div>
         <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={setPriority} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
@@ -468,12 +484,12 @@ export default function Home() {
       <section className="home-aside">
         <div className="aside-card route-note">
           <div className="aside-icon"><TrainFront size={18} /></div>
-          <p className="eyebrow">Built for real trips</p>
-          <h3>Start with a place, not a station code.</h3>
+          <p className="eyebrow">Built For Real Trips</p>
+          <h3>Start With A Place, Not A Station Code.</h3>
           <p className="muted-copy">Search by landmark, metro station, or bus stop. The planner will explain the journey in plain language.</p>
         </div>
         <div className="aside-card">
-          <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent journeys</strong></div>
+          <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent Journeys</strong></div>
           {savedJourneys.slice(0, 3).map((journey) => (
             <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}>
               <span>{getJourneyFrom(journey)} → {getJourneyTo(journey)}</span>
@@ -509,8 +525,8 @@ export default function Home() {
     return (
       <div className="simple-screen">
         <div className="page-heading">
-          <p className="eyebrow">Scenario lab</p>
-          <h2>What-if disruption simulator</h2>
+          <p className="eyebrow">Scenario Lab</p>
+          <h2>What-If Disruption Simulator</h2>
           <p className="hero-copy">
             ⚠️ All events are <strong>simulated</strong>. They do not represent live disruptions.
           </p>
@@ -719,8 +735,8 @@ export default function Home() {
   const renderSaved = () => (
     <div className="simple-screen">
       <div className="page-heading">
-        <p className="eyebrow">Saved journeys</p>
-        <h2>Your everyday routes, close at hand.</h2>
+        <p className="eyebrow">Saved Journeys</p>
+        <h2>Your Everyday Routes, Close At Hand.</h2>
         <p className="hero-copy">Your saved routes sync with Transit Route so optional morning alerts can reach you.</p>
       </div>
       {alertsError && <p className="inline-error">{alertsError}</p>}
@@ -764,10 +780,13 @@ export default function Home() {
   return (
     <main className="sa-app">
       <header className="sa-header">
-        <button className="brand" onClick={() => setScreen("home")}><span className="brand-mark"><RouteIcon size={18} /></span><span><strong>Transit Route</strong><small>Delhi NCR journeys</small></span></button>
+        <button className="brand" onClick={() => setScreen("home")}><img className="brand-logo-image" src="/transit-route-icon.png" alt="Transit Route" /><span><strong>Transit Route</strong><small>Delhi NCR journeys</small></span></button>
         <nav className="desktop-nav"><SlidingNav activeScreen={screen} onChange={setScreen} /></nav>
         <div className="header-actions">
           <button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button>
+          <button className="header-save" onClick={() => setIsAlertsOpen(true)} title="View live bus positions and estimates">
+            <RefreshCw size={15} /> Live buses
+          </button>
           <button className="header-save" onClick={() => setScreen("saved")}><Bookmark size={15} /> {savedJourneys.length}</button>
         </div>
       </header>

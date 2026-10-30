@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { VehicleIllustration } from "@/components/VehicleIllustration";
 
 interface ItineraryViewProps {
   route: RouteOption;
@@ -35,17 +36,17 @@ interface ItineraryViewProps {
 const MODE_ICON: Record<TransitMode, React.ReactNode> = {
   metro: <Train size={15} />,
   bus: <Bus size={15} />,
-  auto: <span style={{ fontSize: "13px" }}>🛺</span>,
+  auto: <VehicleIllustration mode="auto" size="sm" />,
   cab: <Car size={15} />,
   walk: <Footprints size={15} />,
 };
 
 const MODE_COLOR: Record<TransitMode, string> = {
-  metro: "#3b82f6",
-  bus: "#10b981",
-  auto: "#f59e0b",
-  cab: "#cbd5e1",
-  walk: "#06b6d4",
+  metro: "#B6E65A",
+  bus: "#E5A33D",
+  auto: "#E5A33D",
+  cab: "#E5A33D",
+  walk: "#B6E65A",
 };
 
 export const ItineraryView: React.FC<ItineraryViewProps> = ({
@@ -155,7 +156,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       >
         <div style={{ textAlign: "center" }}>
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block" }}>
-            RELIABILITY
+            Reliability
           </span>
           <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#34d399" }}>
             {route.onTimeReliability}%
@@ -163,7 +164,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         </div>
         <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block" }}>
-            CO₂ EMISSIONS
+            CO₂ emissions
           </span>
           <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4ade80" }}>
             {route.carbonEmissionsKg} kg approx.
@@ -171,7 +172,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         </div>
         <div style={{ textAlign: "center" }}>
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block" }}>
-            CALORIES
+            Calories
           </span>
           <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fb923c" }}>
             {route.caloriesBurned} kcal

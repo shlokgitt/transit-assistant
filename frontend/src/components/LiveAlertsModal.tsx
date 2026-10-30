@@ -28,9 +28,24 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
   const [status, setStatus] = useState<TransitStatusResponse | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setStatus(getCityTransitStatus(cityId));
-    }
+    if (!isOpen) return;
+
+    let cancelled = false;
+    void fetch(`/api/v1/transit/status?city=${encodeURIComponent(cityId)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Live transit status unavailable.");
+        return (await response.json()) as TransitStatusResponse;
+      })
+      .then((nextStatus) => {
+        if (!cancelled) setStatus(nextStatus);
+      })
+      .catch(() => {
+        if (!cancelled) setStatus(getCityTransitStatus(cityId));
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, cityId]);
 
   if (!isOpen || !status) return null;
@@ -92,7 +107,11 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
                 {city.name} Transit Radar & Live Status
               </h2>
               <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                Updated 1 minute ago • DMRC, DTC & Urban Traffic Feeds
+                {status.liveData
+                  ? `Live OTD feed • ${status.liveData.vehicleCount} buses • Updated ${new Date(status.liveData.updatedAt).toLocaleTimeString()}`
+                  : status.error
+                    ? "Live bus feed unavailable • Showing latest available status"
+                    : "DMRC, DTC & Urban Traffic Feeds"}
               </span>
             </div>
           </div>
@@ -117,7 +136,7 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
           </span>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
             <div style={{ padding: "10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>METRO LINES</span>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Metro lines</span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: status.crowdIndex.metro === "High" ? "#f43f5e" : "#f59e0b" }} />
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff" }}>{status.crowdIndex.metro} Crowd</span>
@@ -125,7 +144,7 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
             </div>
 
             <div style={{ padding: "10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>CITY BUS CORRIDORS</span>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>City bus corridors</span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f43f5e" }} />
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff" }}>{status.crowdIndex.bus} Load</span>
@@ -133,7 +152,7 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
             </div>
 
             <div style={{ padding: "10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>SURFACE ROADS</span>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Surface roads</span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f59e0b" }} />
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff" }}>{status.crowdIndex.roads}</span>
@@ -144,6 +163,41 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
 
         {/* Active Line Advisories */}
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: "10px", maxHeight: "320px", overflowY: "auto" }}>
+          {status.liveData?.vehicles && status.liveData.vehicles.length > 0 && (
+            <div
+              style={{
+                padding: "12px",
+                borderRadius: "8px",
+                background: "rgba(16, 185, 129, 0.08)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+              }}
+            >
+              <div style={{ fontSize: "0.78rem", color: "#34d399", fontWeight: 700, marginBottom: "8px" }}>
+                Live bus estimates
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {status.liveData.vehicles.slice(0, 5).map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.72rem", color: "var(--text-secondary)" }}
+                  >
+                    <span>
+                      Bus {vehicle.routeId || vehicle.id}
+                      {vehicle.nearestStop ? ` near ${vehicle.nearestStop}` : ""}
+                    </span>
+                    <strong style={{ color: "#ffffff", whiteSpace: "nowrap" }}>
+                      {vehicle.estimatedArrivalMinutes
+                        ? `~${vehicle.estimatedArrivalMinutes} min`
+                        : "Location only"}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginTop: "8px" }}>
+                Estimated from live vehicle position; not an official OTD arrival prediction.
+              </div>
+            </div>
+          )}
           {status.alerts.map((alert) => (
             <div
               key={alert.id}

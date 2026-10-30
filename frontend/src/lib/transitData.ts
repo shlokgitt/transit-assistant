@@ -252,6 +252,7 @@ export function getCityTransitStatus(city: string): TransitStatusResponse {  con
     };
   }
 
+
   if (cityKey === "mumbai") {
     return {
       city: "mumbai",

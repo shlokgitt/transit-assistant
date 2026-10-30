@@ -13,11 +13,11 @@ interface TransitMapProps {
 }
 
 const MODE_COLOR: Record<TransitMode, { stroke: string; glow: string; width: number; dash?: string }> = {
-  metro: { stroke: "#38bdf8", glow: "rgba(56,189,248,0.65)", width: 5 },
-  bus:   { stroke: "#34d399", glow: "rgba(52,211,153,0.65)", width: 4.5, dash: "8 4" },
-  auto:  { stroke: "#fbbf24", glow: "rgba(251,191,36,0.65)", width: 4 },
-  cab:   { stroke: "#c4b5fd", glow: "rgba(196,181,253,0.55)", width: 4.5 },
-  walk:  { stroke: "#22d3ee", glow: "rgba(34,211,238,0.6)", width: 3, dash: "4 4" },
+  metro: { stroke: "#A7B58A", glow: "rgba(167,181,138,0.55)", width: 5 },
+  bus:   { stroke: "#C47A44", glow: "rgba(196,122,68,0.55)", width: 4.5, dash: "8 4" },
+  auto:  { stroke: "#D2A85A", glow: "rgba(210,168,90,0.55)", width: 4 },
+  cab:   { stroke: "#B8ADA0", glow: "rgba(184,173,160,0.45)", width: 4.5 },
+  walk:  { stroke: "#829A86", glow: "rgba(130,154,134,0.5)", width: 3, dash: "4 4" },
 };
 
 const CITY_METRO_LINES: Record<string, Array<{ name: string; color: string; coords: [number, number][] }>> = {
@@ -127,7 +127,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
           lineCap: "round",
           lineJoin: "round",
         }).addTo(map).bindPopup(
-          `<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px">🚇 ${line.name}</div><div style="font-size:0.75rem;color:#94a3b8">Metro Rail Network — Route overlay</div>`
+          `<div style="font-weight:700;font-size:0.85rem;margin-bottom:4px">${line.name}</div><div style="font-size:0.75rem;color:#94a3b8">Metro Rail Network — Route overlay</div>`
         );
       });
 
@@ -235,7 +235,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         }).addTo(routeLayerRef.current!);
 
         line.bindPopup(
-          `<div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;color:${style.stroke}">${leg.mode.toUpperCase()} ${leg.lineName ? `— ${leg.lineName}` : ""}</div>` +
+          `<div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;color:${style.stroke}">${leg.mode.charAt(0).toUpperCase() + leg.mode.slice(1)} ${leg.lineName ? `— ${leg.lineName}` : ""}</div>` +
           `<div style="font-size:0.78rem;margin-bottom:3px">📍 <strong>${leg.from}</strong> → <strong>${leg.to}</strong></div>` +
           `<div style="font-size:0.75rem;color:#94a3b8">⏱ ${leg.durationMinutes} min &nbsp;•&nbsp; 📏 ${leg.distanceKm} km &nbsp;•&nbsp; ₹${leg.fare}</div>` +
           `<div style="font-size:0.68rem;color:#34d399;margin-top:6px;padding:3px 6px;background:rgba(16,185,129,0.1);border-radius:4px">✓ Real route data</div>`
@@ -366,12 +366,12 @@ export const TransitMap: React.FC<TransitMapProps> = ({
   }, [mapReady, isSimulating, simulationStep, route]);
 
   const LEGEND = [
-    { label: "Metro", color: "#38bdf8" },
-    { label: "Bus", color: "#34d399" },
-    { label: "Auto", color: "#fbbf24" },
-    { label: "Bike", color: "#fb923c" },
-    { label: "Cab", color: "#c4b5fd" },
-    { label: "Walk", color: "#22d3ee" },
+    { label: "Metro", color: "#A7B58A" },
+    { label: "Bus", color: "#C47A44" },
+    { label: "Auto", color: "#D2A85A" },
+    { label: "Bike", color: "#B47758" },
+    { label: "Cab", color: "#B8ADA0" },
+    { label: "Walk", color: "#829A86" },
   ];
 
   return (
@@ -428,11 +428,11 @@ export const TransitMap: React.FC<TransitMapProps> = ({
           </div>
           <div style={{ display: "flex", gap: "12px", flexShrink: 0 }}>
             <div className="stat-box" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "12px" }}>
-              <span className="stat-label">TIME</span>
-              <span className="stat-value" style={{ color: "#38bdf8" }}>{route.totalDurationMinutes}m</span>
+              <span className="stat-label">Time</span>
+              <span className="stat-value" style={{ color: "#38bdf8" }}>{route.totalDurationMinutes} min</span>
             </div>
             <div className="stat-box" style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "12px" }}>
-              <span className="stat-label">FARE</span>
+              <span className="stat-label">Fare</span>
               <span className="stat-value" style={{ color: "#34d399" }}>₹{route.totalFare}</span>
             </div>
           </div>

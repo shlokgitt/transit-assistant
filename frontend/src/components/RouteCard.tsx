@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { Clock, Navigation, Users, Leaf, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { RouteOption, TransitMode } from "@/types/transit";
+import { VehicleIllustration } from "@/components/VehicleIllustration";
 
 interface RouteCardProps {
   route: RouteOption;
@@ -10,29 +11,21 @@ interface RouteCardProps {
   onSelect: () => void;
 }
 
-const MODE_EMOJI: Record<TransitMode, string> = {
-  metro: "🚇",
-  bus: "🚌",
-  auto: "🛺",
-  cab: "🚖",
-  walk: "🚶",
-};
-
 const MODE_COLOR: Record<TransitMode, string> = {
-  metro: "#3b82f6",
-  bus: "#10b981",
-  auto: "#f59e0b",
-  cab: "#a78bfa",
-  walk: "#06b6d4",
+  metro: "#A7B58A",
+  bus: "#C47A44",
+  auto: "#D2A85A",
+  cab: "#B8ADA0",
+  walk: "#829A86",
 };
 
-const TAG_CONFIG: Record<string, { emoji: string; label: string }> = {
-  FASTEST:       { emoji: "⚡", label: "Fastest" },
-  CHEAPEST:      { emoji: "💰", label: "Cheapest" },
-  RECOMMENDED:   { emoji: "⭐", label: "Recommended" },
-  COMFORT:       { emoji: "🛋️", label: "Comfort" },
-  TRAFFIC_BUSTER:{ emoji: "🚀", label: "Traffic Buster" },
-  ECO:           { emoji: "🌿", label: "Eco-Friendly" },
+const TAG_CONFIG: Record<string, { label: string }> = {
+  FASTEST: { label: "Fastest" },
+  CHEAPEST: { label: "Cheapest" },
+  RECOMMENDED: { label: "Recommended" },
+  COMFORT: { label: "Comfort" },
+  TRAFFIC_BUSTER: { label: "Traffic Buster" },
+  ECO: { label: "Eco-Friendly" },
 };
 
 const getCrowdConfig = (level: string) => {
@@ -41,11 +34,13 @@ const getCrowdConfig = (level: string) => {
   return { color: "#10b981", bg: "rgba(16,185,129,0.12)", fill: 25, label: "Comfortable" };
 };
 
+const formatMode = (mode: TransitMode) => mode.charAt(0).toUpperCase() + mode.slice(1);
+
 export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelect }) => {
   const [expandedLegs, setExpandedLegs] = useState<Record<number, boolean>>({});
   const tiltRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const tagCfg = TAG_CONFIG[route.tag] || { emoji: "🔵", label: route.tag };
+  const tagCfg = TAG_CONFIG[route.tag] || { label: route.tag };
   const crowd = getCrowdConfig(route.crowdLevel);
   const tagClass = `tag-${route.tag.toLowerCase().replace("_", "-")}`;
 
@@ -112,12 +107,12 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
       {/* Top Row: Tag + Status Chips */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
         <span className={`badge-tag ${tagClass}`}>
-          {tagCfg.emoji} {tagCfg.label}
+          {tagCfg.label}
         </span>
         <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
           {route.delayMinutes > 0 ? (
             <span style={{ fontSize: "0.65rem", padding: "2px 7px", borderRadius: "999px", background: "rgba(244,63,94,0.15)", color: "#fb7185", fontWeight: 700, border: "1px solid rgba(244,63,94,0.3)" }}>
-              +{route.delayMinutes}m delay
+              +{route.delayMinutes} min delay
             </span>
           ) : (
             <span style={{ fontSize: "0.65rem", padding: "2px 7px", borderRadius: "999px", background: "rgba(16,185,129,0.15)", color: "#34d399", fontWeight: 700, border: "1px solid rgba(16,185,129,0.3)" }}>
@@ -207,15 +202,11 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
             }}>
               ● {route.reliabilityDetails.reliabilityBand} ({route.reliabilityDetails.reliabilityPercentage}%)
             </span>
-            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>•</span>
-            <span style={{ color: "#94a3b8" }}>
-              Buffer: <strong style={{ color: "#e2e8f0" }}>~{route.reliabilityDetails.transferBufferMinutes}m</strong>
-            </span>
             {route.reliabilityDetails.potentialDelayImpactMinutes > 0 && (
               <>
                 <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>•</span>
                 <span style={{ color: "#fb7185", fontWeight: 600 }}>
-                  +{route.reliabilityDetails.potentialDelayImpactMinutes}m delay risk
+                  +{route.reliabilityDetails.potentialDelayImpactMinutes} min delay risk
                 </span>
               </>
             )}
@@ -265,10 +256,10 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "10px",
                 }}>
-                  {MODE_EMOJI[leg.mode]}
+                  <VehicleIllustration mode={leg.mode} size="xs" />
                 </span>
                 <span style={{ fontSize: "0.7rem" }}>
-                  {leg.lineName || (leg.routeNumber ? `B${leg.routeNumber}` : leg.mode.toUpperCase())} • {leg.durationMinutes}m
+                  {leg.lineName || (leg.routeNumber ? `B${leg.routeNumber}` : formatMode(leg.mode))} · {leg.durationMinutes} min
                 </span>
               </span>
               {i < badgeLegs.length - 1 && (
@@ -308,13 +299,32 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                 </span>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem" }}>
-                <span style={{ color: MODE_COLOR[leg.mode], fontWeight: 700, textTransform: "uppercase" }}>
-                  {leg.mode}
+                <span style={{ color: MODE_COLOR[leg.mode], fontWeight: 700 }}>
+                  {formatMode(leg.mode)}
                 </span>
                 <span style={{ color: "#cbd5e1" }}>{leg.from}</span>
                 <ChevronRight size={10} color="#64748b" />
                 <span style={{ color: "#cbd5e1" }}>{leg.to}</span>
               </div>
+              {leg.mode === "bus" && leg.scheduledTiming && (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    padding: "6px 8px",
+                    borderRadius: "6px",
+                    background: "rgba(16, 185, 129, 0.08)",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    color: "#a7f3d0",
+                    fontSize: "0.66rem",
+                  }}
+                >
+                  <strong>Scheduled bus:</strong> Departs {leg.scheduledTiming.departureTime}
+                  {" → "}arrives {leg.scheduledTiming.arrivalTime}
+                  <span style={{ display: "block", color: "#718078", marginTop: "2px" }}>
+                    {leg.scheduledTiming.note}
+                  </span>
+                </div>
+              )}
               {(leg.mode === "bus" || leg.mode === "metro") &&
                 leg.intermediateStops &&
                 leg.intermediateStops.length > 0 && (
@@ -406,7 +416,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
       {/* Crowd level bar */}
       <div style={{ marginBottom: "12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontSize: "0.6rem", color: "#4b5a6e", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontSize: "0.6rem", color: "#4b5a6e", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
             <Users size={10} /> Crowd Level
           </span>
           <span style={{ fontSize: "0.6rem", color: crowd.color, fontWeight: 700 }}>{crowd.fill}%</span>
@@ -425,7 +435,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           <span className="stat-label" style={{ display: "flex", alignItems: "center", gap: "3px" }}>
             <Clock size={9} /> Duration
           </span>
-          <span className="stat-value" style={{ color: "#60a5fa" }}>{route.totalDurationMinutes}m</span>
+          <span className="stat-value" style={{ color: "#60a5fa" }}>{route.totalDurationMinutes} min</span>
         </div>
         <div className="stat-box">
           <span className="stat-label">💰 Fare</span>

@@ -49,6 +49,7 @@ const nextConfig: NextConfig = {
       "./backend/*",
       "./backend/data/**/*",
       "./backend/data/metro-fares/*",
+      "../gtfs/**/*",
     ],
   },
 

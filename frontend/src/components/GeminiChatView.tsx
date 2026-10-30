@@ -29,6 +29,7 @@ import {
   Search,
   ExternalLink,
 } from "lucide-react";
+import { VehicleIllustration } from "@/components/VehicleIllustration";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -152,11 +153,11 @@ const GeminiSparkleIcon = ({ size = 20 }: { size?: number }) => (
 /* ------------------------------------------------------------------ */
 
 const MODE_ICON: Record<string, React.ReactNode> = {
-  metro: <Train size={13} color="#3b82f6" />,
-  bus: <Bus size={13} color="#10b981" />,
-  walk: <Footprints size={13} color="#06b6d4" />,
-  auto: <span style={{ fontSize: "11px" }}>🛺</span>,
-  cab: <Car size={13} color="#a78bfa" />,
+  metro: <VehicleIllustration mode="metro" size="sm" />,
+  bus: <VehicleIllustration mode="bus" size="sm" />,
+  walk: <VehicleIllustration mode="walk" size="sm" />,
+  auto: <VehicleIllustration mode="auto" size="sm" />,
+  cab: <VehicleIllustration mode="cab" size="sm" />,
 };
 
 /* ------------------------------------------------------------------ */
