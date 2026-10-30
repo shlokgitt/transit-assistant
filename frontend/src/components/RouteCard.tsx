@@ -259,6 +259,11 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                   <span style={{ color: "#cbd5e1" }}>{leg.from}</span>
                   <ChevronRight size={10} color="#64748b" />
                   <span style={{ color: "#cbd5e1" }}>{leg.to}</span>
+                  {leg.fare !== undefined && leg.fare !== null && leg.fare > 0 && (
+                    <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#34d399", fontWeight: 600 }}>
+                      ₹{leg.fare}
+                    </span>
+                  )}
                 </div>
 
                 {leg.mode === "bus" && leg.scheduledTiming && (
@@ -427,6 +432,17 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
             <span className="stat-label">💰 Fare</span>
             <span className="stat-value" style={{ color: "#34d399", fontSize: "1.05rem" }}>
               {route.totalFare === null || route.summaryModes.every((m) => m === "auto") ? "Unavailable" : `₹${route.totalFare}`}
+              {(() => {
+                const fareLegs = route.legs.filter((l) => l.fare && l.fare > 0);
+                if (fareLegs.length > 1) {
+                  return (
+                    <small style={{ display: "block", fontSize: "0.55rem", color: "#94a3b8", fontWeight: 500 }}>
+                      {fareLegs.map((l) => `₹${l.fare} ${l.lineName?.includes("Aqua") ? "NMRC" : l.mode === "bus" ? "DTC" : "DMRC"}`).join(" + ")}
+                    </small>
+                  );
+                }
+                return null;
+              })()}
             </span>
           </div>
           <div className="stat-box">
