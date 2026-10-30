@@ -3442,3 +3442,282 @@ pre {
     width: calc(100vw - 16px);
   }
 }
+
+/* ============================================================
+   PERFECT MOBILE & TABLET REDESIGN
+   ============================================================ */
+
+/* 1. NATIVE CARD FOR PLANNER (Eliminates fake iPhone mockup on mobile/tablet) */
+@media (max-width: 900px) {
+  .home-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .home-grid .planner-device {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .home-grid .planner-device::before,
+  .home-grid .planner-device::after,
+  .home-grid .planner-device-top,
+  .home-grid .planner-device-camera,
+  .home-grid .planner-device-home,
+  .home-grid .planner-device-heading {
+    display: none !important;
+  }
+
+  .home-grid .planner-device-screen {
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .home-grid .planner-device .search-panel {
+    border-radius: 16px !important;
+    padding: 16px !important;
+    background: #302E2A !important;
+    border: 1px solid #5A554B !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .home-aside {
+    padding-top: 8px !important;
+  }
+}
+
+/* 2. MODERN BOTTOM NAVIGATION BAR (Mobile <= 768px) */
+@media (max-width: 768px) {
+  .sa-header {
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 14px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 90 !important;
+  }
+
+  .brand {
+    gap: 8px !important;
+  }
+
+  .brand-logo-image {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .brand strong {
+    font-size: 0.88rem !important;
+  }
+
+  .brand small {
+    display: none !important;
+  }
+
+  .header-actions {
+    gap: 8px !important;
+  }
+
+  .header-actions .header-save {
+    padding: 6px 10px !important;
+    font-size: 0.72rem !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Fixed bottom app bar */
+  .mobile-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    z-index: 999 !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    background: rgba(28, 27, 25, 0.97) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-top: 1px solid #5A554B !important;
+    border-bottom: none !important;
+    padding: 6px 8px max(10px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45) !important;
+    overflow-x: hidden !important;
+  }
+
+  .mobile-nav button {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 5px 6px !important;
+    border-radius: 10px !important;
+    color: #B2ADA3 !important;
+    font-size: 0.62rem !important;
+    font-weight: 600 !important;
+    min-width: 52px !important;
+    min-height: 48px !important;
+    border: none !important;
+    background: transparent !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-nav button span {
+    display: block !important;
+    font-size: 0.62rem !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.01em !important;
+    text-transform: capitalize !important;
+  }
+
+  .mobile-nav button svg {
+    width: 18px !important;
+    height: 18px !important;
+    stroke-width: 2.2 !important;
+  }
+
+  .mobile-nav button.active {
+    color: #C47A44 !important;
+    background: rgba(196, 122, 68, 0.16) !important;
+  }
+
+  /* Ensure content and footer don't get obscured by bottom bar */
+  .sa-content {
+    width: calc(100vw - 20px) !important;
+    padding-top: 16px !important;
+    padding-bottom: calc(76px + max(12px, env(safe-area-inset-bottom))) !important;
+  }
+
+  footer {
+    padding-bottom: calc(84px + max(14px, env(safe-area-inset-bottom))) !important;
+  }
+}
+
+/* 3. RESULTS SCREEN MOBILE VIEW SWITCHER */
+.mobile-view-tabs {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-view-tabs {
+    display: flex;
+    align-items: center;
+    background: #3A3731;
+    border: 1px solid #5A554B;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .mobile-view-tabs button {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #B2ADA3;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-view-tabs button.active {
+    color: #F3EFE6;
+    background: #C47A44;
+    box-shadow: 0 2px 8px rgba(196, 122, 68, 0.35);
+  }
+
+  /* Show only active tab on mobile */
+  .journey-workspace.show-routes .map-column {
+    display: none !important;
+  }
+
+  .journey-workspace.show-routes .results-column {
+    display: block !important;
+    order: 0 !important;
+  }
+
+  .journey-workspace.show-map .results-column {
+    display: none !important;
+  }
+
+  .journey-workspace.show-map .map-column {
+    display: block !important;
+    height: calc(100vh - 180px) !important;
+    min-height: 420px !important;
+    order: 0 !important;
+    position: relative !important;
+    top: auto !important;
+  }
+}
+
+/* 4. ROUTE CARDS MOBILE OPTIMIZATION */
+@media (max-width: 540px) {
+  .route-list .t-tilt-card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .route-list .t-tilt-card h3 {
+    font-size: 0.98rem !important;
+    margin: 8px 0 !important;
+  }
+
+  .route-list .t-tilt-card > div[style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .route-list .t-tilt-card .stat-box {
+    padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+  }
+
+  .route-list .t-tilt-card .stat-value {
+    font-size: 0.95rem !important;
+  }
+
+  .route-list .t-tilt-card .stat-label {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* 5. SEARCH PANEL AUTOCOMPLETE MOBILE OVERLAY */
+@media (max-width: 600px) {
+  .search-panel [style*="zIndex: 50"] {
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 200 !important;
+    max-height: 260px !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8) !important;
+    border-color: #C47A44 !important;
+  }
+}
+
+/* 6. CHAT SCREEN MOBILE FULLSCREEN ADAPTATION */
+@media (max-width: 768px) {
+  .chat-panel-container {
+    height: calc(100vh - 130px) !important;
+  }
+}

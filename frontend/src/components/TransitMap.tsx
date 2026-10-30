@@ -375,7 +375,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
   ];
 
   return (
-    <div className="map-canvas-container" style={{ position: "relative", width: "100%", height: "100%", minHeight: "480px" }}>
+    <div className="map-canvas-container" style={{ position: "relative", width: "100%", height: "100%", minHeight: "280px" }}>
       <div className="map-grid-overlay" style={{ zIndex: 2, pointerEvents: "none" }} />
 
       {/* Real Leaflet Map */}
@@ -411,7 +411,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
           padding: "10px 14px",
           boxShadow: "0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(59,130,246,0.1)",
           display: "flex", alignItems: "center", gap: "14px",
-          maxWidth: "380px",
+          maxWidth: "calc(100% - 24px)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>

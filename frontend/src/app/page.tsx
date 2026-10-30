@@ -208,6 +208,7 @@ export default function Home() {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [selectedLegIndex, setSelectedLegIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"routes" | "itinerary">("routes");
+  const [mobileResultTab, setMobileResultTab] = useState<"routes" | "map">("routes");
   const [isApiInspectorOpen, setIsApiInspectorOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
@@ -457,7 +458,7 @@ export default function Home() {
   };
 
   const renderResults = () => (
-    <div className="journey-workspace">
+    <div className={`journey-workspace show-${mobileResultTab}`}>
       <section className="results-column">
         <div className="page-heading compact-heading">
           <div>
@@ -471,6 +472,22 @@ export default function Home() {
         </div>
         <div className="result-toolbar">
           <span>{routeResponse?.routes.length || 0} option{routeResponse?.routes.length === 1 ? "" : "s"}</span>
+          <div className="mobile-view-tabs" role="tablist">
+            <button
+              type="button"
+              className={mobileResultTab === "routes" ? "active" : ""}
+              onClick={() => setMobileResultTab("routes")}
+            >
+              Routes ({routeResponse?.routes.length || 0})
+            </button>
+            <button
+              type="button"
+              className={mobileResultTab === "map" ? "active" : ""}
+              onClick={() => setMobileResultTab("map")}
+            >
+              Map
+            </button>
+          </div>
         </div>
         {isLoading ? (
           <div className="empty-panel"><RefreshCw className="spin" size={22} /><p>Finding practical routes…</p></div>
@@ -844,7 +861,7 @@ export default function Home() {
         <button className="brand" onClick={() => setScreen("home")}><img className="brand-logo-image" src="/transit-route-icon.png" alt="Transit Route" /><span><strong>Transit Route</strong><small>Delhi NCR journeys</small></span></button>
         <nav className="desktop-nav"><SlidingNav activeScreen={screen} onChange={setScreen} /></nav>
         <div className="header-actions">
-          <button className="icon-button mobile-menu" aria-label="Open menu"><Menu size={18} /></button>
+          
           <button className="header-save" onClick={() => setIsAlertsOpen(true)} title="View live bus positions and estimates">
             <RefreshCw size={15} /> Live buses
           </button>
