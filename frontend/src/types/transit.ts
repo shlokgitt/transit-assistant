@@ -1,4 +1,4 @@
-export type TransitMode = "metro" | "bus" | "auto" | "walk" | "train";
+export type TransitMode = "metro" | "bus" | "cab" | "auto" | "walk";
 
 export type RoutingPriority = "fastest" | "cheapest" | "shortest" | "least_transfers" | "eco";
 
@@ -125,17 +125,6 @@ export interface RouteOption {
   isSimulatedAlternative?: boolean;
   scheduledDurationMinutes?: number;
   transferBufferMinutes?: number;
-  trainLiveBoard?: {
-    stationCode: string;
-    stationName: string;
-    trains: {
-      number: string;
-      name: string;
-      type: string;
-      departure: string | null;
-      destination: string;
-    }[];
-  };
 }
 
 export interface RoutePlanRequest {
@@ -189,11 +178,6 @@ export interface RoutePlanResponse {
     cheapestRouteId: string;
   };
   routes: RouteOption[];
-  unavailableModes?: {
-    mode: TransitMode;
-    reason: string;
-    source: "dataset" | "api";
-  }[];
   scenarioApplied?: boolean;
   scenarioDetails?: DisruptionScenario | null;
   comparison?: {

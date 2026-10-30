@@ -26,23 +26,6 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
   cityId,
 }) => {
   const [status, setStatus] = useState<TransitStatusResponse | null>(null);
-  const [selectedStation, setSelectedStation] = useState<string>("NDLS");
-  const [stationTrains, setStationTrains] = useState<any[]>([]);
-  const [isLoadingTrains, setIsLoadingTrains] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setIsLoadingTrains(true);
-    fetch(`/api/v1/trains/${selectedStation}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.data?.trains) {
-          setStationTrains(data.data.trains.slice(0, 5));
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch trains:", err))
-      .finally(() => setIsLoadingTrains(false));
-  }, [isOpen, selectedStation]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,96 +158,6 @@ export const LiveAlertsModal: React.FC<LiveAlertsModalProps> = ({
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff" }}>{status.crowdIndex.roads}</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Indian Railways Live Departures (RailRadar) */}
-        <div style={{ padding: "0 20px 10px 20px" }}>
-          <div
-            style={{
-              padding: "12px",
-              borderRadius: "8px",
-              background: "rgba(56, 189, 248, 0.06)",
-              border: "1px solid rgba(56, 189, 248, 0.25)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <div style={{ fontSize: "0.78rem", color: "#38bdf8", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
-                <span>🚆 RailRadar Live Station Board</span>
-              </div>
-              <span style={{ fontSize: "0.64rem", color: "#7dd3fc", background: "rgba(56, 189, 248, 0.15)", padding: "2px 6px", borderRadius: "4px" }}>
-                Live API
-              </span>
-            </div>
-
-            {/* Station selector pills */}
-            <div style={{ display: "flex", gap: "6px", marginBottom: "10px", overflowX: "auto", paddingBottom: "4px" }}>
-              {[
-                { code: "NDLS", name: "New Delhi" },
-                { code: "ANVT", name: "Anand Vihar" },
-                { code: "GZB", name: "Ghaziabad" },
-                { code: "NZM", name: "Nizamuddin" },
-                { code: "DLI", name: "Old Delhi" },
-                { code: "GGN", name: "Gurgaon" },
-                { code: "FDB", name: "Faridabad" },
-                { code: "DEC", name: "Delhi Cantt" },
-                { code: "DEE", name: "Sarai Rohilla" },
-              ].map((stn) => (
-                <button
-                  key={stn.code}
-                  onClick={() => setSelectedStation(stn.code)}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: "5px",
-                    fontSize: "0.68rem",
-                    fontWeight: selectedStation === stn.code ? 700 : 500,
-                    border: selectedStation === stn.code ? "1px solid #38bdf8" : "1px solid rgba(255,255,255,0.08)",
-                    background: selectedStation === stn.code ? "rgba(56, 189, 248, 0.25)" : "rgba(255,255,255,0.03)",
-                    color: selectedStation === stn.code ? "#ffffff" : "#94a3b8",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {stn.name} ({stn.code})
-                </button>
-              ))}
-            </div>
-
-            {/* Train departures */}
-            {isLoadingTrains ? (
-              <div style={{ fontSize: "0.72rem", color: "#94a3b8", padding: "6px 0" }}>Loading live trains from RailRadar...</div>
-            ) : stationTrains.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                {stationTrains.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      fontSize: "0.74rem",
-                      padding: "5px 8px",
-                      background: "rgba(0,0,0,0.3)",
-                      borderRadius: "5px",
-                      border: "1px solid rgba(255,255,255,0.03)",
-                    }}
-                  >
-                    <span>
-                      <strong style={{ color: "#38bdf8" }}>#{item.train.number}</strong>{" "}
-                      <span style={{ color: "#f1f5f9" }}>{item.train.name}</span>
-                      <span style={{ color: "#94a3b8", fontSize: "0.68rem", marginLeft: "6px" }}>
-                        ➔ {item.train.destination?.name || "Terminus"}
-                      </span>
-                    </span>
-                    <strong style={{ color: "#fbbf24", whiteSpace: "nowrap" }}>
-                      {item.stop?.departure || "Scheduled"}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>No active trains scheduled at this time.</div>
-            )}
           </div>
         </div>
 

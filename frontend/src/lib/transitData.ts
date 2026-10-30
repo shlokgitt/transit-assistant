@@ -14,7 +14,7 @@ export const CITIES: Record<string, CityConfig> = {
     id: "delhi",
     name: "Delhi NCR",
     state: "Delhi",
-    tagline: "Metro, DTC Bus, Indian Railways & Auto",
+    tagline: "Metro, DTC Bus, Auto & Cabs",
     center: { lat: 28.6139, lng: 77.209 },
     metroBrand: "Delhi Metro (DMRC)",
     busBrand: "Delhi Transport Corp (DTC)",
@@ -39,18 +39,13 @@ export const CITIES: Record<string, CityConfig> = {
         to: "Indira Gandhi Airport T3",
         description: "Suburban hub to International Airport Express",
       },
-      {
-        from: "New Delhi Railway Station",
-        to: "Anand Vihar Terminal",
-        description: "Inter-city railway transit corridor (RailRadar & Metro)",
-      },
     ],
   },
   mumbai: {
     id: "mumbai",
     name: "Mumbai MMR",
     state: "Maharashtra",
-    tagline: "Metro, Local Suburban, BEST & Auto",
+    tagline: "Metro, Local Suburban, BEST, Kaali-Peeli & Cabs",
     center: { lat: 19.076, lng: 72.8777 },
     metroBrand: "Mumbai Metro (MMRDA)",
     busBrand: "BEST Undertaking",
@@ -122,20 +117,6 @@ export const STOPS_DB: Record<string, StopItem[]> = {
     { id: "del_dg", name: "Delhi Gate", type: "metro", line: "Violet Line", lineColor: "#8b5cf6", lat: 28.6415, lng: 77.2435, city: "delhi" },
     { id: "del_ito", name: "ITO", type: "bus", lat: 28.6302, lng: 77.2428, city: "delhi" },
     { id: "del_cp", name: "Connaught Place Outer Circle", type: "landmark", lat: 28.6335, lng: 77.2215, city: "delhi" },
-    { id: "del_ndls_rly", name: "New Delhi Railway Station", type: "train", line: "Indian Railways (NDLS)", lineColor: "#38bdf8", lat: 28.6418, lng: 77.2203, city: "delhi", popular: true },
-    { id: "del_anvt_rly", name: "Anand Vihar Terminal", type: "train", line: "Indian Railways (ANVT)", lineColor: "#38bdf8", lat: 28.6493, lng: 77.3150, city: "delhi", popular: true },
-    { id: "del_nzm_rly", name: "Hazrat Nizamuddin Railway Station", type: "train", line: "Indian Railways (NZM)", lineColor: "#38bdf8", lat: 28.5888, lng: 77.2533, city: "delhi", popular: true },
-    { id: "del_dli_rly", name: "Old Delhi Railway Station", type: "train", line: "Indian Railways (DLI)", lineColor: "#38bdf8", lat: 28.6606, lng: 77.2290, city: "delhi", popular: true },
-    { id: "del_dee_rly", name: "Delhi Sarai Rohilla", type: "train", line: "Indian Railways (DEE)", lineColor: "#38bdf8", lat: 28.6657, lng: 77.1878, city: "delhi" },
-    { id: "del_gzb_rly", name: "Ghaziabad Junction Railway Station", type: "train", line: "Indian Railways (GZB)", lineColor: "#38bdf8", lat: 28.6644, lng: 77.4328, city: "delhi", popular: true },
-    { id: "del_ggn_rly", name: "Gurgaon Railway Station", type: "train", line: "Indian Railways (GGN)", lineColor: "#38bdf8", lat: 28.4722, lng: 77.0177, city: "delhi", popular: true },
-    { id: "del_fdb_rly", name: "Faridabad Railway Station", type: "train", line: "Indian Railways (FDB)", lineColor: "#38bdf8", lat: 28.4089, lng: 77.3178, city: "delhi", popular: true },
-    { id: "del_dec_rly", name: "Delhi Cantt Railway Station", type: "train", line: "Indian Railways (DEC)", lineColor: "#38bdf8", lat: 28.5898, lng: 77.1322, city: "delhi" },
-    { id: "del_szm_rly", name: "Subzi Mandi Railway Station", type: "train", line: "Indian Railways (SZM)", lineColor: "#38bdf8", lat: 28.6756, lng: 77.2001, city: "delhi" },
-    { id: "del_ssb_rly", name: "Shakurbasti Railway Station", type: "train", line: "Indian Railways (SSB)", lineColor: "#38bdf8", lat: 28.6833, lng: 77.1264, city: "delhi" },
-    { id: "del_oka_rly", name: "Okhla Railway Station", type: "train", line: "Indian Railways (OKA)", lineColor: "#38bdf8", lat: 28.5447, lng: 77.2714, city: "delhi" },
-    { id: "del_bvh_rly", name: "Ballabgarh Railway Station", type: "train", line: "Indian Railways (BVH)", lineColor: "#38bdf8", lat: 28.3364, lng: 77.3298, city: "delhi" },
-    { id: "del_cross_rep", name: "Crossings Republik", type: "bus", line: "NCR City Transit", lineColor: "#C47A44", lat: 28.6301, lng: 77.4354, city: "delhi", popular: true },
   ],
   mumbai: [
     { id: "mum_csmt", name: "Chhatrapati Shivaji Terminus (CSMT)", type: "landmark", lat: 18.9401, lng: 72.8355, city: "mumbai", popular: true },
@@ -215,13 +196,7 @@ export function resolveCoordinates(city: string, query: string, explicitLat?: nu
     return { name: query, lat: explicitLat, lng: explicitLng };
   }
   const stops = STOPS_DB[city.toLowerCase()] || STOPS_DB["delhi"];
-  const nQ = (query || "").toLowerCase().replace(/ghazibad/g, "ghaziabad").trim();
-  const match = stops.find((s) => {
-    const sN = s.name.toLowerCase();
-    return sN.includes(nQ) || nQ.includes(sN) ||
-      (nQ.includes("crossing") && sN.includes("crossing")) ||
-      (nQ.includes("ghaziabad") && sN.includes("ghaziabad"));
-  });
+  const match = stops.find((s) => s.name.toLowerCase().includes(query.toLowerCase()));
   if (match) {
     return { name: match.name, lat: match.lat, lng: match.lng };
   }
@@ -287,7 +262,7 @@ export function getCityTransitStatus(city: string): TransitStatusResponse {  con
         {
           id: "mum_alt_1",
           severity: "warning",
-          mode: "auto",
+          mode: "cab",
           title: "Western Express Highway Slow Moving",
           message: "Vehicular movement slow between Andheri flyover and Bandra Kurla Complex.",
         },

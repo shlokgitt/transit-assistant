@@ -14,9 +14,9 @@ interface TransitMapProps {
 
 const MODE_COLOR: Record<TransitMode, { stroke: string; glow: string; width: number; dash?: string }> = {
   metro: { stroke: "#A7B58A", glow: "rgba(167,181,138,0.55)", width: 5 },
-  train: { stroke: "#38BDF8", glow: "rgba(56,189,248,0.6)", width: 5.5, dash: "12 4" },
   bus:   { stroke: "#C47A44", glow: "rgba(196,122,68,0.55)", width: 4.5, dash: "8 4" },
   auto:  { stroke: "#D2A85A", glow: "rgba(210,168,90,0.55)", width: 4 },
+  cab:   { stroke: "#B8ADA0", glow: "rgba(184,173,160,0.45)", width: 4.5 },
   walk:  { stroke: "#829A86", glow: "rgba(130,154,134,0.5)", width: 3, dash: "4 4" },
 };
 
@@ -199,7 +199,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
       }
 
       const allCoords: [number, number][] = route.legs.flatMap((l) =>
-        (l.coordinates || []).filter((c) => Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number").map((c): [number, number] => [c[0], c[1]])
+        l.coordinates.map((c): [number, number] => [c[0], c[1]])
       );
 
       if (allCoords.length < 2) return;
@@ -212,7 +212,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
       route.legs.forEach((leg, lIdx) => {
         const isActive = selectedLegIndex === null || selectedLegIndex === lIdx;
         const style = MODE_COLOR[leg.mode];
-        const coords: [number, number][] = (leg.coordinates || []).filter((c) => Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number").map((c): [number, number] => [c[0], c[1]]);
+        const coords: [number, number][] = leg.coordinates.map((c): [number, number] => [c[0], c[1]]);
         if (coords.length < 2) return;
 
         // Glow backdrop
