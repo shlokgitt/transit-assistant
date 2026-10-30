@@ -198,6 +198,8 @@ export default function Home() {
     "metro",
     "bus",
 "train",
+    "auto",
+
 
     "walk",
   ]);

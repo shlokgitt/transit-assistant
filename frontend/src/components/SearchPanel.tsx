@@ -62,6 +62,12 @@ const MODES: { id: TransitMode; label: string; icon: React.ReactNode; color: str
     color: "#38BDF8",
   },
   {
+    id: "auto",
+    label: "Auto",
+    icon: <VehicleIllustration mode="auto" size="xs" />,
+    color: "#D2A85A",
+  },
+  {
     id: "walk",
     label: "Walk",
     icon: <VehicleIllustration mode="walk" size="xs" />,
