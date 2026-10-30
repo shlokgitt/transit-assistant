@@ -54,6 +54,8 @@ type PlannerLeg = {
   stopIds?: string[];
   crowd?: string;
   delayMin?: number;
+  lineName?: string;
+  instruction?: string;
   distanceSource?: "road" | "straight-line" | "mixed" | null;
 };
 
@@ -119,7 +121,6 @@ function estimatedCarbonKg(legs: PlannerLeg[]) {
 function formatRouteTitle(legs: PlannerLeg[]): string {
   const metroLegs = legs.filter((l) => l.mode === "metro" && l.route);
   const busLegs = legs.filter((l) => l.mode === "bus" && l.route);
-  const autoLegs = legs.filter((l) => l.mode === "auto");
 
   const metroLines = [
     ...new Set(metroLegs.map((l) => l.route!.replace(/^metro:/, ""))),
@@ -134,20 +135,16 @@ function formatRouteTitle(legs: PlannerLeg[]): string {
 
   if (metroLines.length > 0 && busRoutes.length > 0) {
     const metroPart = metroLines.join(" ➔ ");
-    return `${metroPart} + ${busRoutes[0]}${autoLegs.length > 0 ? " + Auto" : ""}`;
+    return `${metroPart} + ${busRoutes[0]}`;
   }
 
   if (metroLines.length > 0) {
-    return `${metroLines.join(" ➔ ")} Metro${autoLegs.length > 0 ? " + Auto" : ""}`;
+    return `${metroLines.join(" ➔ ")} Metro`;
   }
 
   if (busRoutes.length > 0) {
     const busPart = busRoutes.length === 1 ? `Bus ${busRoutes[0]}` : `Bus ${busRoutes.join(" ➔ ")}`;
-    return `${busPart}${autoLegs.length > 0 ? " + Auto" : ""}`;
-  }
-
-  if (autoLegs.length > 0) {
-    return "Local Auto";
+    return busPart;
   }
 
   return "Walking route";
@@ -165,20 +162,37 @@ function buildPlannerRoute(
   const firstLeg = plannerResponse.legs[0];
   if (!firstLeg) return null;
 
+  const isDirectWalkingResult = id === "route_real_walking" || id === "route_direct_walk";
+
   const processedLegs = plannerResponse.legs.map((leg) => {
-    // If walking time is more than 10 mins, replace with local auto without adding much info
+    // If walking time is more than 10 mins, merge with local auto:
     if (leg.mode === "walk" && leg.minutes > 10) {
       const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.minutes / 12) * 10) / 10);
       const autoMinutes = Math.max(3, Math.round(dist * 2.5));
       const autoFare = Math.max(25, Math.round(dist * 12 + 10));
 
+      if (isDirectWalkingResult) {
+        // Do not create a separate Auto result card; keep as Walking route with auto info merged
+        return {
+          ...leg,
+          mode: "walk" as const,
+          minutes: leg.minutes,
+          distanceKm: dist,
+          fare: 0,
+          instruction: `Walk from ${leg.from} to ${leg.to} (or local auto, ~${autoMinutes} min, ₹${autoFare})`,
+        };
+      }
+
+      // In transit routes (Metro/Bus access legs), merge auto with walk to avoid 15-30 min walks:
       return {
         ...leg,
-        mode: "auto" as const,
+        mode: "walk" as const,
         minutes: autoMinutes,
         distanceKm: dist,
         distanceSource: "road" as const,
         fare: autoFare,
+        lineName: "Walk / Local Auto",
+        instruction: `Walk or take local auto to ${leg.to} (~${autoMinutes} min)`,
         route: undefined,
       };
     }
@@ -271,11 +285,9 @@ function buildPlannerRoute(
         distanceKm: leg.distanceKm || 0,
         distanceSource: leg.distanceSource,
         fare: leg.fare !== undefined ? leg.fare : 0,
-        instruction: leg.mode === "auto"
-          ? `Take local auto to ${leg.to}`
-          : `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
-        stopsCount: leg.mode === "auto" ? 0 : leg.stops,
-        intermediateStops: leg.mode === "auto" ? [] : ids.slice(1, -1).map((id) => stopName(id)),
+        instruction: leg.instruction || `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
+        stopsCount: leg.stops,
+        intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
         fromStopId: leg.mode === "bus" ? leg.fromId : undefined,
         toStopId: leg.mode === "bus" ? leg.toId : undefined,
@@ -284,12 +296,15 @@ function buildPlannerRoute(
             ? getScheduledBusTiming(leg.route, leg.fromId, leg.toId) || undefined
             : undefined,
         lineName:
-          leg.mode === "auto"
-            ? "Local Auto"
-            : leg.mode === "metro"
+          leg.lineName ||
+          (leg.mode === "metro"
             ? leg.route?.replace(/^metro:/, "")
-            : undefined,
-        provider: leg.mode === "auto" ? "Local Auto" : leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
+            : undefined),
+        provider: leg.lineName?.includes("Auto")
+          ? "Local Auto / Walk"
+          : leg.mode === "bus"
+          ? "GTFS bus data"
+          : "GTFS transit data",
         crowdLevel: leg.crowd === "high" ? "high" : leg.crowd === "low" ? "low" : "medium",
         delayMinutes: leg.delayMin,
         coordinates:
@@ -693,7 +708,7 @@ if (!("error" in primaryPlannerResponse)) {
 
     if (allowedModes.has("walk")) {
       const hasWalkOnly = routes.some((r) => r.legs.every((l) => l.mode === "walk"));
-      if (!hasWalkOnly && directDistKm <= 7.0 && (directDistKm * 1.2 * 12) <= 10) {
+      if (!hasWalkOnly && directDistKm <= 7.0) {
         const walkDist = Math.round(directDistKm * 1.2 * 10) / 10;
         const walkMins = Math.round(walkDist * 12);
         const directWalk: RouteOption = {
