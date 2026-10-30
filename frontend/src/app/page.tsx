@@ -521,11 +521,6 @@ export default function Home() {
   const renderHome = () => (
     <div className="home-grid">
       <section className="hero-panel">
-        <div className="page-heading">
-          <p className="eyebrow">Delhi NCR Route Transit Planner</p>
-          <h2>Make The Next Journey Feel Simple.</h2>
-          <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
-        </div>
         <div className="planner-device" aria-label="Trip planner">
           <div className="planner-device-top">
             <span>Transit Route</span>
@@ -558,6 +553,11 @@ export default function Home() {
             </button>
           ))}
           {!savedJourneys.length && <p className="muted-copy">Saved journeys will appear here after your first trip.</p>}
+        </div>
+        <div className="page-heading home-heading-below">
+          <p className="eyebrow">Delhi NCR Route Transit Planner</p>
+          <h2>Make The Next Journey Feel Simple.</h2>
+          <p className="hero-copy">One calm place to compare metro, bus, and walking routes—without the guesswork.</p>
         </div>
       </section>
     </div>
