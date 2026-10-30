@@ -1,0 +1,10 @@
+[
+  {
+    "id": "r1",
+    "name": "Home to Office",
+    "from": "Karol Bagh",
+    "to": "Gandhi Darshan",
+    "preference": "fastest",
+    "email": null
+  }
+]
