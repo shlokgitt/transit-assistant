@@ -1,3 +1,16 @@
+
+function addMinutesToTime(timeStr: string | null | undefined, minutesToAdd: number): string {
+  if (!timeStr || !timeStr.includes(":")) return "Scheduled";
+  const [hStr, mStr] = timeStr.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return "Scheduled";
+  const total = h * 60 + m + Math.round(minutesToAdd);
+  const nextH = Math.floor((total % 1440) / 60);
+  const nextM = total % 60;
+  return `${String(nextH).padStart(2, "0")}:${String(nextM).padStart(2, "0")}`;
+}
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   RoutePlanRequest,
@@ -10,6 +23,7 @@ import {
   ConstraintEvaluation,
   ReliabilityDetails,
   CrowdLevel,
+  TransitMode,
 } from "@/types/transit";
 import {
   periodFor,
@@ -23,6 +37,8 @@ import {
   generateRouteExplanation,
 } from "../../../../../../backend/route.js";
 import { getScheduledBusTiming } from "@/lib/staticSchedule";
+import { resolveCoordinates } from "@/lib/transitData";
+import { fetchStationTrains, detectStationCode } from "@/lib/trainApi";
 
 type PlannerLeg = {
   mode: "walk" | "bus" | "metro" | "auto";
@@ -38,6 +54,8 @@ type PlannerLeg = {
   stopIds?: string[];
   crowd?: string;
   delayMin?: number;
+  lineName?: string;
+  instruction?: string;
   distanceSource?: "road" | "straight-line" | "mixed" | null;
 };
 
@@ -103,7 +121,6 @@ function estimatedCarbonKg(legs: PlannerLeg[]) {
 function formatRouteTitle(legs: PlannerLeg[]): string {
   const metroLegs = legs.filter((l) => l.mode === "metro" && l.route);
   const busLegs = legs.filter((l) => l.mode === "bus" && l.route);
-  const autoLegs = legs.filter((l) => l.mode === "auto");
 
   const metroLines = [
     ...new Set(metroLegs.map((l) => l.route!.replace(/^metro:/, ""))),
@@ -126,13 +143,13 @@ function formatRouteTitle(legs: PlannerLeg[]): string {
   }
 
   if (busRoutes.length > 0) {
-    return busRoutes.length === 1
-      ? `Bus ${busRoutes[0]}`
-      : `Bus ${busRoutes.join(" ➔ ")}`;
+    const busPart = busRoutes.length === 1 ? `Bus ${busRoutes[0]}` : `Bus ${busRoutes.join(" ➔ ")}`;
+    return busPart;
   }
 
-  if (autoLegs.length > 0) {
-    return "Auto-rickshaw route";
+  const hasAuto = legs.some((l) => l.mode === "auto" || l.lineName === "Local Auto");
+  if (hasAuto) {
+    return "Local Auto";
   }
 
   return "Walking route";
@@ -150,16 +167,43 @@ function buildPlannerRoute(
   const firstLeg = plannerResponse.legs[0];
   if (!firstLeg) return null;
 
-  const processedLegs = plannerResponse.legs;
+  const isDirectWalkingResult = id === "route_real_walking" || id === "route_direct_walk";
+
+  const processedLegs: PlannerLeg[] = plannerResponse.legs.map((leg) => {
+    // If walking time is more than 10 mins, replace with local auto:
+    if (leg.mode === "walk" && leg.minutes > 10) {
+      const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.minutes / 12) * 10) / 10);
+      const autoMinutes = Math.max(3, Math.round(dist * 2.5));
+      const autoFare = Math.max(25, Math.round(dist * 12 + 10));
+
+      return {
+        ...leg,
+        mode: "auto" as const,
+        minutes: autoMinutes,
+        distanceKm: dist,
+        distanceSource: "road" as const,
+        fare: null,
+        lineName: "Local Auto",
+        instruction: `Take local auto to ${leg.to} (~${autoMinutes} min)`,
+        route: undefined,
+      };
+    }
+    return leg;
+  });
   const routeModes = [...new Set(processedLegs.map((leg) => leg.mode))];
+  const isAllAuto = processedLegs.every((leg) => leg.mode === "auto");
+  const isAllWalk = processedLegs.every((leg) => leg.mode === "walk");
 
   const totalMinutes = Number(
     processedLegs.reduce((sum, leg) => sum + leg.minutes, 0).toFixed(1)
   );
-  const totalFare = plannerResponse.totalFare !== undefined ? plannerResponse.totalFare : processedLegs.reduce(
-    (sum, leg) => sum + (leg.fare || 0),
-    0
-  );
+  const transitFare =
+    plannerResponse.totalFare !== undefined && plannerResponse.totalFare !== null && plannerResponse.totalFare > 0
+      ? plannerResponse.totalFare
+      : processedLegs
+          .filter((leg) => leg.mode !== "auto")
+          .reduce((sum, leg) => sum + (leg.fare || 0), 0);
+  const totalFare = isAllAuto ? null : (transitFare ?? null);
 
   const vehicleLegs = processedLegs.filter((l) => l.mode !== "walk");
   const transfersCount = Math.max(0, vehicleLegs.length - 1);
@@ -188,14 +232,20 @@ function buildPlannerRoute(
         constraints?.departureTime
       ) as ConstraintEvaluation | undefined)
     : undefined;
+  const routeTag = isAllAuto && tag === "ECO" ? "COMFORT" : tag;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recommendationReason = generateRouteExplanation(
-    { ...rawRoute, tag, reliabilityDetails, constraintsEvaluation, totalMinutes },
+  let recommendationReason = generateRouteExplanation(
+    { ...rawRoute, tag: routeTag, reliabilityDetails, constraintsEvaluation, totalMinutes },
     hasUserConstraints ? constraints : undefined,
     scenario as any,
     isAlternative,
     baselineRoute as any
   ) as string;
+
+  if (isAllAuto) {
+    recommendationReason = `Direct local auto (~${totalMinutes} min) with point-to-point travel and no transit transfers.`;
+  }
 
   const hasHighCrowd = processedLegs.some((leg) => leg.crowd === "high");
   const hasMedCrowd = processedLegs.some((leg) => leg.crowd === "medium");
@@ -205,7 +255,7 @@ function buildPlannerRoute(
 
   return {
     id,
-    tag,
+    tag: routeTag,
     title: formatRouteTitle(processedLegs),
     summary: processedLegs.map((leg) => leg.mode).join(" ➔ "),
     summaryModes: routeModes,
@@ -238,7 +288,7 @@ function buildPlannerRoute(
         distanceKm: leg.distanceKm || 0,
         distanceSource: leg.distanceSource,
         fare: leg.fare !== undefined ? leg.fare : 0,
-        instruction: `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
+        instruction: leg.instruction || `Follow the ${leg.route || leg.mode} leg from ${leg.from} to ${leg.to}`,
         stopsCount: leg.stops,
         intermediateStops: ids.slice(1, -1).map((id) => stopName(id)),
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
@@ -249,10 +299,15 @@ function buildPlannerRoute(
             ? getScheduledBusTiming(leg.route, leg.fromId, leg.toId) || undefined
             : undefined,
         lineName:
-          leg.mode === "metro"
+          leg.lineName ||
+          (leg.mode === "metro"
             ? leg.route?.replace(/^metro:/, "")
-            : undefined,
-        provider: leg.mode === "bus" ? "GTFS bus data" : "GTFS transit data",
+            : undefined),
+        provider: leg.lineName?.includes("Auto")
+          ? "Local Auto / Walk"
+          : leg.mode === "bus"
+          ? "GTFS bus data"
+          : "GTFS transit data",
         crowdLevel: leg.crowd === "high" ? "high" : leg.crowd === "low" ? "low" : "medium",
         delayMinutes: leg.delayMin,
         coordinates:
@@ -267,6 +322,7 @@ function buildPlannerRoute(
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RoutePlanRequest;
+    console.log("PLAN_REQUEST:", body.origin?.query, "->", body.destination?.query, "modes:", body.preferences?.allowedModes);
 
     if (!body || !body.origin?.query || !body.destination?.query) {
       return NextResponse.json(
@@ -304,13 +360,7 @@ export async function POST(request: NextRequest) {
       scenario: undefined,
     }) as PlannerResponse | { error: string };
 
-    if ("error" in baselineFastest) {
-      return NextResponse.json(
-        { success: false, error: baselineFastest.error },
-        { status: 404 }
-      );
-    }
-
+    const hasBaseline = !("error" in baselineFastest);
     const baselineCheapest = planByName(body.origin.query, body.destination.query, {
       preference: "cheapest",
       period,
@@ -318,13 +368,14 @@ export async function POST(request: NextRequest) {
       scenario: undefined,
     }) as PlannerResponse | { error: string };
 
+
     const allowedModes = new Set(
-      body.preferences?.allowedModes || ["metro", "bus", "walk"]
+      body.preferences?.allowedModes || (body as any).selectedModes || ["metro", "bus", "train", "auto", "walk"]
     );
 
     // Build all baseline options to identify the true optimal baseline route
     const baselineCandidates: RouteOption[] = [];
-    const baseOpt = buildPlannerRoute(baselineFastest, "base_fastest", "FASTEST", constraints, null, false, null);
+    const baseOpt = hasBaseline ? buildPlannerRoute(baselineFastest, "base_fastest", "FASTEST", constraints, null, false, null) : null;
     if (baseOpt) baselineCandidates.push(baseOpt);
 
     if (!("error" in baselineCheapest)) {
@@ -380,12 +431,14 @@ export async function POST(request: NextRequest) {
     }[] = [];
 
     // Main route under current conditions
-    candidateVariants.push({
-      id: scenarioApplied ? "route_simulated_current" : "route_real_planner",
-      tag: "RECOMMENDED",
-      result: primaryPlannerResponse,
-      isAlternative: false,
-    });
+if (!("error" in primaryPlannerResponse)) {
+      candidateVariants.push({
+        id: scenarioApplied ? "route_simulated_current" : "route_real_planner",
+        tag: "RECOMMENDED",
+        result: primaryPlannerResponse,
+        isAlternative: scenarioApplied,
+      });
+    }
 
     // Cheapest alternative under current conditions
     const currentCheapest = scenarioApplied
@@ -463,8 +516,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Build RouteOption objects
-    const routes: RouteOption[] = [];
-    const seenTitlesAndModes = new Set<string>();
+    let routes: RouteOption[] = [];
+    const candidateByTitle = new Map<string, RouteOption>();
 
     for (const variant of candidateVariants) {
       const candidate = buildPlannerRoute(
@@ -478,18 +531,308 @@ export async function POST(request: NextRequest) {
       );
 
       if (!candidate) continue;
-      if (candidate.legs.some((leg) => !allowedModes.has(leg.mode))) continue;
+      // Access walking (to/from stations) is allowed on any transit route.
+      // Pure walking routes are only allowed if the user selected "walk".
+      // Auto routes are only allowed if the user selected "auto".
+      const hasDisallowedTransit = candidate.legs.some(
+        (leg) => leg.mode !== "walk" && leg.mode !== "auto" && !allowedModes.has(leg.mode)
+      );
+      if (hasDisallowedTransit) continue;
 
-      const signature = `${candidate.title}_${candidate.totalDurationMinutes}_${candidate.totalFare}`;
-      if (!seenTitlesAndModes.has(signature)) {
-        seenTitlesAndModes.add(signature);
-        routes.push(candidate);
+      const isWalkOnly = candidate.legs.every((leg) => leg.mode === "walk");
+      if (isWalkOnly && !allowedModes.has("walk")) continue;
+
+      const isAutoOnly = candidate.legs.every((leg) => leg.mode === "auto");
+      if (isAutoOnly && !allowedModes.has("auto")) continue;
+
+      const existing = candidateByTitle.get(candidate.title);
+      if (!existing) {
+        candidateByTitle.set(candidate.title, candidate);
+      } else if (candidate.totalDurationMinutes < existing.totalDurationMinutes) {
+        candidateByTitle.set(candidate.title, candidate);
       }
     }
 
+    routes.push(...candidateByTitle.values());
+
+    const originCoord = resolveCoordinates(body.city, body.origin.query, body.origin.lat, body.origin.lng);
+    const destCoord = resolveCoordinates(body.city, body.destination.query, body.destination.lat, body.destination.lng);
+
+    // 1. Check for Railway Stations in Origin or Destination
+    const originStation = detectStationCode(body.origin.query);
+    const destStation = detectStationCode(body.destination.query);
+    let liveTrainBoardData: RouteOption["trainLiveBoard"] = undefined;
+
+    if (originStation || destStation) {
+      try {
+        const queryStation = originStation || destStation;
+        if (queryStation) {
+          const stnData = await fetchStationTrains(queryStation);
+        if (stnData && stnData.data?.trains?.length > 0) {
+          liveTrainBoardData = {
+            stationCode: stnData.data.station.code,
+            stationName: stnData.data.station.name,
+            trains: stnData.data.trains.slice(0, 5).map((t) => ({
+              number: t.train.number,
+              name: t.train.name,
+              type: t.train.type,
+              departure: t.stop.departure,
+              destination: t.train.destination.name,
+            })),
+          };
+          }
+        }
+      } catch (err) {
+        console.warn("Live train board fetch skipped:", err);
+      }
+    }
+
+    // Attach live train board to routes if available
+    if (liveTrainBoardData) {
+      for (const r of routes) {
+        r.trainLiveBoard = liveTrainBoardData;
+      }
+    }
+
+    // 3. Dynamic Indian Railways Train Route (RailRadar)
+    // Only generate an actual train option if BOTH endpoints are recognized railway hubs
+    if (allowedModes.has("train") && originStation && destStation && originStation !== destStation) {
+      try {
+        const trainData = await fetchStationTrains(originStation);
+        if (trainData && trainData.data?.trains?.length > 0) {
+          const matchingTrain =
+            trainData.data.trains.find(
+              (t) =>
+                t.train.destination.code === destStation ||
+                t.train.name.toLowerCase().includes(destStation.toLowerCase())
+            ) || trainData.data.trains[0];
+
+          const origStn = trainData.data.station;
+          const destStnCoord = resolveCoordinates(body.city, body.destination.query);
+          const railDistKm = Math.round(
+            Math.sqrt(
+              Math.pow((destStnCoord.lat - origStn.lat) * 111, 2) +
+                Math.pow((destStnCoord.lng - origStn.lng) * 111 * Math.cos((origStn.lat * Math.PI) / 180), 2)
+            ) * 10
+          ) / 10;
+          const railMinutes = Math.max(20, Math.round(railDistKm * 2.2));
+
+          const depTime = matchingTrain.stop.departure || "Scheduled";
+          const arrTime = matchingTrain.stop.arrival || addMinutesToTime(matchingTrain.stop.departure, railMinutes);
+
+          const trainOption: RouteOption = {
+            id: "route_railradar_train",
+            title: `Indian Railways (${origStn.code} ➔ ${destStation})`,
+            summary: `${depTime !== "Scheduled" ? `Dep: ${depTime} ➔ Arr: ${arrTime} • ` : ""}Train #${matchingTrain.train.number} ${matchingTrain.train.name}`,
+            totalDurationMinutes: railMinutes + 10,
+            totalDistanceKm: railDistKm,
+            distanceSource: "road",
+            totalFare: 40,
+            summaryModes: ["train"],
+            tag: "RECOMMENDED",
+            carbonEmissionsKg: Math.round(railDistKm * 0.04 * 10) / 10,
+            caloriesBurned: 35,
+            transfersCount: 0,
+            crowdLevel: "medium",
+            delayMinutes: 0,
+            onTimeReliability: 92,
+            recommendationReason: `Live RailRadar API: Departs ${depTime} (${origStn.name}) ➔ Arrives ${arrTime} (${destStation}). ${matchingTrain.train.name} (#${matchingTrain.train.number})`,
+            trainLiveBoard: liveTrainBoardData,
+            legs: [
+              {
+                legIndex: 0,
+                mode: "walk",
+                from: origStn.name,
+                to: `${origStn.name} Platform`,
+                durationMinutes: 5,
+                distanceKm: 0.2,
+                fare: 0,
+                instruction: `Enter ${origStn.name} (${origStn.code}) and proceed to platform by ${depTime}`,
+                coordinates: [
+                  [origStn.lat, origStn.lng],
+                  [origStn.lat, origStn.lng],
+                ],
+              },
+              {
+                legIndex: 1,
+                mode: "train",
+                from: origStn.name,
+                to: destStnCoord.name,
+                durationMinutes: railMinutes,
+                distanceKm: railDistKm,
+                fare: 40,
+                lineName: `${matchingTrain.train.name} (${matchingTrain.train.number})${depTime !== "Scheduled" ? ` · Dep ${depTime}` : ""}`,
+                scheduledTiming: {
+                  source: "static_gtfs",
+                  routeId: matchingTrain.train.number,
+                  routeName: matchingTrain.train.name,
+                  fromStop: origStn.name,
+                  toStop: destStation,
+                  departureTime: depTime,
+                  arrivalTime: arrTime,
+                  durationMinutes: railMinutes,
+                  note: `Train #${matchingTrain.train.number} • Type: ${matchingTrain.train.type || "Express"} • Days: ${(matchingTrain.train.runDays || []).join(", ").toUpperCase() || "Daily"}`,
+                },
+                instruction: `Board ${matchingTrain.train.name} (#${matchingTrain.train.number}). Scheduled Departure: ${depTime} ➔ Scheduled Arrival: ${arrTime}`,
+                provider: "RailRadar Train API",
+                statusMessage: `Scheduled Dep: ${depTime} • Arr: ${arrTime} • Type: ${matchingTrain.train.type || "Express"}`,
+                coordinates: [
+                  [origStn.lat, origStn.lng],
+                  [destStnCoord.lat, destStnCoord.lng],
+                ],
+              },
+              {
+                legIndex: 2,
+                mode: "walk",
+                from: `${destStnCoord.name} Platform`,
+                to: destStnCoord.name,
+                durationMinutes: 5,
+                distanceKm: 0.2,
+                fare: 0,
+                instruction: `Exit ${destStnCoord.name}`,
+                coordinates: [
+                  [destStnCoord.lat, destStnCoord.lng],
+                  [destStnCoord.lat, destStnCoord.lng],
+                ],
+              },
+            ],
+          };
+          routes.push(trainOption);
+        }
+      } catch (err) {
+        console.warn("Train integration skipped:", err);
+      }
+    }
+
+    const directDistKm = Math.round(
+      Math.sqrt(
+        Math.pow((destCoord.lat - originCoord.lat) * 111, 2) +
+          Math.pow((destCoord.lng - originCoord.lng) * 111 * Math.cos((originCoord.lat * Math.PI) / 180), 2)
+      ) * 10
+    ) / 10;
+
+    // 4. Bus routes come strictly from GTFS dataset (no synthetic fallback)
+
+    if (allowedModes.has("walk") || allowedModes.has("auto")) {
+      const hasDirectRoute = routes.some((r) =>
+        r.legs.every((l) => l.mode === "walk" || l.mode === "auto")
+      );
+      if (!hasDirectRoute && directDistKm <= 7.0) {
+        const walkDist = Math.round(directDistKm * 1.2 * 10) / 10;
+        const walkMins = Math.round(walkDist * 12);
+        const isAuto = walkMins > 10;
+        if ((isAuto && allowedModes.has("auto")) || (!isAuto && allowedModes.has("walk"))) {
+          const autoMins = Math.max(3, Math.round(walkDist * 2.5));
+          const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
+          const directLegMode: TransitMode = isAuto ? "auto" : "walk";
+          const directDuration = isAuto ? autoMins : walkMins;
+          const directFare = isAuto ? null : 0;
+          const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
+          const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
+          const directWalk: RouteOption = {
+            id: isAuto ? "route_direct_auto" : "route_direct_walk",
+            title: directTitle,
+            summary: directSummary,
+            totalDurationMinutes: directDuration,
+            totalDistanceKm: walkDist,
+            distanceSource: "straight-line",
+            totalFare: directFare,
+            summaryModes: [directLegMode],
+            tag: isAuto ? "COMFORT" : "ECO",
+            carbonEmissionsKg: isAuto ? Math.round(walkDist * 0.08 * 10) / 10 : 0,
+            caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
+            transfersCount: 0,
+            crowdLevel: "low",
+            delayMinutes: 0,
+            onTimeReliability: 99,
+            recommendationReason: isAuto
+              ? `Direct local auto (~${autoMins} min) with point-to-point travel and no transit transfers.`
+              : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
+            legs: [
+              {
+                legIndex: 0,
+                mode: directLegMode,
+                from: originCoord.name,
+                to: destCoord.name,
+                durationMinutes: directDuration,
+                distanceKm: walkDist,
+                fare: directFare,
+                lineName: isAuto ? "Local Auto" : undefined,
+                instruction: isAuto
+                  ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min)`
+                  : `Walk from ${originCoord.name} to ${destCoord.name}`,
+                coordinates: [
+                  [originCoord.lat, originCoord.lng],
+                  [destCoord.lat, destCoord.lng],
+                ],
+              },
+            ],
+          };
+          routes.push(directWalk);
+        }
+      }
+    }
+
+    // Universal Rule: If walking time is more than 10 mins on ANY route, replace with local auto (if auto is allowed):
+    if (allowedModes.has("auto")) {
+      routes.forEach((route) => {
+        let replacedWalk = false;
+
+        route.legs.forEach((leg) => {
+          if (leg.mode === "walk" && leg.durationMinutes > 10) {
+            const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
+            const autoMins = Math.max(3, Math.round(dist * 2.5));
+
+            leg.mode = "auto";
+            leg.durationMinutes = autoMins;
+            leg.distanceKm = dist;
+            leg.fare = null;
+            leg.lineName = "Local Auto";
+            leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min)`;
+            replacedWalk = true;
+          }
+        });
+
+        if (replacedWalk) {
+          route.summaryModes = [...new Set(route.legs.map((l) => l.mode))];
+          route.totalDurationMinutes = Number(
+            route.legs.reduce((sum, l) => sum + l.durationMinutes, 0).toFixed(1)
+          );
+        }
+
+        const isAllAuto = route.legs.every((l) => l.mode === "auto");
+        if (isAllAuto) {
+          route.totalFare = null;
+          route.title = "Local Auto";
+          if (route.tag === "ECO") {
+            route.tag = "COMFORT";
+          }
+          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
+        }
+      });
+    } else {
+      // Auto mode is disabled by user: filter out all routes that rely on auto
+      routes = routes.filter((r) => !r.legs.some((l) => l.mode === "auto"));
+    }
+
+    // Deduplicate: Keep at most one direct auto route and one direct walk route
+    const seenDirectTitles = new Set<string>();
+    routes = routes.filter((r) => {
+      const isDirectOnly = r.legs.every((l) => l.mode === "auto" || l.mode === "walk");
+      if (isDirectOnly) {
+        if (seenDirectTitles.has(r.title)) return false;
+        seenDirectTitles.add(r.title);
+      }
+      return true;
+    });
+
     if (routes.length === 0) {
+      const isOnlyMetro = allowedModes.has("metro") && allowedModes.size === 1;
+      const errorMsg = isOnlyMetro
+        ? `No direct Metro line serves ${destCoord.name} (${destCoord.name} does not have a Metro station). Please enable Bus or Walk to view available transit options.`
+        : "No feasible route found meeting your transportation modes. Please enable Bus or Walk.";
       return NextResponse.json(
-        { success: false, error: "No feasible route found meeting your transportation modes" },
+        { success: false, error: errorMsg },
         { status: 422 }
       );
     }
@@ -524,8 +867,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Rank routes
-    // Priority: Constraint satisfaction first -> Then requested priority or reliability
+    // Direct local auto must NEVER be on top or recommended if transit is available
     routes.sort((a, b) => {
+      const aIsDirectAuto = a.legs.every((l) => l.mode === "auto");
+      const bIsDirectAuto = b.legs.every((l) => l.mode === "auto");
+
+      // Push direct local auto after public transit routes:
+      if (aIsDirectAuto !== bIsDirectAuto) {
+        return aIsDirectAuto ? 1 : -1;
+      }
+
       const aSat = a.constraintsEvaluation?.satisfied !== false ? 1 : 0;
       const bSat = b.constraintsEvaluation?.satisfied !== false ? 1 : 0;
       if (aSat !== bSat) return bSat - aSat; // Satisfied routes first
@@ -536,8 +887,17 @@ export async function POST(request: NextRequest) {
       return a.totalDurationMinutes - b.totalDurationMinutes;
     });
 
-    // Ensure the top route carries the RECOMMENDED tag
-    routes[0].tag = "RECOMMENDED";
+    // Ensure the top route carries the RECOMMENDED tag ONLY if it is not direct local auto
+    if (routes.length > 0 && !routes[0].legs.every((l) => l.mode === "auto")) {
+      routes[0].tag = "RECOMMENDED";
+    }
+
+    // Guarantee: Direct local auto is never tagged RECOMMENDED
+    routes.forEach((r) => {
+      if (r.legs.every((l) => l.mode === "auto")) {
+        r.tag = "COMFORT";
+      }
+    });
 
     // 7. Calculate comparison if scenario was active
     if (scenarioApplied && baselineRecommendedRoute) {
@@ -621,11 +981,91 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const firstLeg = routes[0].legs[0];
-    const lastLeg = routes[0].legs.at(-1);
+    const unavailableModes: {
+      mode: TransitMode;
+      reason: string;
+      source: "dataset" | "api";
+    }[] = [];
 
-    const originCoordinates = firstLeg ? firstLeg.coordinates[0] || [28.6139, 77.209] : [28.6139, 77.209];
-    const destCoordinates = lastLeg ? lastLeg.coordinates.at(-1) || [28.6139, 77.209] : [28.6139, 77.209];
+    if (allowedModes.has("train")) {
+      const hasTrain = routes.some((r) => r.legs.some((l) => l.mode === "train"));
+      if (!hasTrain) {
+        let reason = "Train route requires recognized Indian Railways hub stations at both origin and destination.";
+        if (originStation && !destStation) {
+          reason = `${destCoord.name} does not have an Indian Railways station in the dataset.`;
+        } else if (!originStation && destStation) {
+          reason = `${originCoord.name} does not have an Indian Railways station in the dataset.`;
+        } else if (originStation && destStation) {
+          reason = `No direct trains available between ${originStation} and ${destStation} according to the Indian Railways schedule.`;
+        } else {
+          reason = `Neither ${originCoord.name} nor ${destCoord.name} is an Indian Railways mainline station (both are served by city transit).`;
+        }
+        unavailableModes.push({
+          mode: "train",
+          reason,
+          source: "api",
+        });
+      }
+    }
+
+    if (allowedModes.has("metro")) {
+      const hasMetro = routes.some((r) => r.legs.some((l) => l.mode === "metro"));
+      if (!hasMetro) {
+        let reason = `No direct or connecting Metro line serves ${destCoord.name} in the DMRC GTFS dataset.`;
+        if (destCoord.name.toLowerCase().includes("crossing")) {
+          reason = "Crossings Republik does not have a Metro station in the NCR GTFS dataset (nearest is Shaheed Sthal, ~6.2 km).";
+        }
+        unavailableModes.push({
+          mode: "metro",
+          reason,
+          source: "dataset",
+        });
+      }
+    }
+
+    if (allowedModes.has("bus")) {
+      const hasBus = routes.some((r) => r.legs.some((l) => l.mode === "bus"));
+      if (!hasBus) {
+        unavailableModes.push({
+          mode: "bus",
+          reason: directDistKm > 50
+            ? "Distance exceeds standard Delhi NCR bus transit coverage (>50 km)."
+            : "No active bus service found in the GTFS network dataset for this corridor.",
+          source: "dataset",
+        });
+      }
+    }
+
+    if (allowedModes.has("walk")) {
+      const hasWalk = routes.some((r) => r.legs.every((l) => l.mode === "walk"));
+      if (!hasWalk) {
+        const estWalkMin = Math.round(directDistKm * 12);
+        unavailableModes.push({
+          mode: "walk",
+          reason: `Walking time (~${estWalkMin} min) exceeds 10 minutes (replaced with Local Auto).`,
+          source: "dataset",
+        });
+      }
+    }
+
+    if (allowedModes.has("auto")) {
+      const hasAuto = routes.some((r) => r.legs.some((l) => l.mode === "auto"));
+      if (!hasAuto) {
+        unavailableModes.push({
+          mode: "auto",
+          reason: directDistKm > 50
+            ? "Distance exceeds standard local auto service range (>50 km)."
+            : "Direct walking under 10 minutes preferred; local auto not required for short hop.",
+          source: "dataset",
+        });
+      }
+    }
+
+    const firstLeg = routes[0]?.legs[0];
+    const lastLeg = routes[0]?.legs.at(-1);
+
+    const originCoordinates = firstLeg ? firstLeg.coordinates[0] || [originCoord.lat, originCoord.lng] : [originCoord.lat, originCoord.lng];
+    const destCoordinates = lastLeg ? lastLeg.coordinates.at(-1) || [destCoord.lat, destCoord.lng] : [destCoord.lat, destCoord.lng];
 
     return NextResponse.json(
       {
@@ -652,6 +1092,7 @@ export async function POST(request: NextRequest) {
             routes.find((c) => c.tag === "CHEAPEST")?.id || routes[0].id,
         },
         routes,
+        unavailableModes,
         scenarioApplied,
         scenarioDetails: scenario,
         comparison,

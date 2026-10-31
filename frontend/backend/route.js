@@ -384,6 +384,12 @@ function normalizeQuery(str) {
 }
 
 const STOP_ALIASES = {
+  "rajiv chowk (connaught place)": ["GTFS:50"],
+  "rajiv chowk connaught place": ["GTFS:50"],
+  "connaught place (rajiv chowk)": ["GTFS:50"],
+  "connaught place rajiv chowk": ["GTFS:50"],
+  "connaught place outer circle": ["GTFS:50"],
+  "karol bagh": ["GTFS:96"],
   cp: ["GTFS:50"],
   "c.p.": ["GTFS:50"],
   "c p": ["GTFS:50"],
@@ -419,8 +425,14 @@ const STOP_ALIASES = {
   "noida sector 62": ["GTFS:237"],
   "noida sec 62": ["GTFS:237"],
   "sector 62 noida": ["GTFS:237"],
-  ndls: ["GTFS:49"],
-  "new delhi railway station": ["GTFS:49"],
+  ndls: ["GTFS:49", "1243", "1640"],
+  "new delhi": ["GTFS:49", "1243", "1640"],
+  "new delhi railway station": ["GTFS:49", "1243", "1640"],
+  nzm: ["661", "2469", "GTFS:223"],
+  nizamuddin: ["661", "2469", "GTFS:223"],
+  "hazrat nizamuddin": ["661", "2469", "GTFS:223"],
+  "hazrat nizamuddin railway station": ["661", "2469", "GTFS:223"],
+  "nizamuddin railway station": ["661", "2469", "GTFS:223"],
   dli: ["GTFS:47"],
   "old delhi railway station": ["GTFS:47"],
   "huda city centre": ["GTFS:206"],
@@ -511,6 +523,18 @@ export function findStops(query) {
   }
 
   if (results.length === 0) {
+    if (/\(.*?\)/.test(query)) {
+      const mainPart = query.replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
+      if (mainPart && mainPart.toLowerCase() !== qRaw) {
+        const subResults = findStops(mainPart);
+        if (subResults.length > 0) return subResults;
+      }
+      const insideParens = query.match(/\((.*?)\)/)?.[1]?.trim();
+      if (insideParens && insideParens.toLowerCase() !== qRaw) {
+        const subResults = findStops(insideParens);
+        if (subResults.length > 0) return subResults;
+      }
+    }
     const cleaned = query
       .replace(/,\s*(?:delhi ncr|new delhi|delhi|noida|gurugram|gurgaon|ghaziabad|faridabad|india)\b/gi, "")
       .replace(/\b(?:metro station|subway station|bus station|bus stand|bus stop|bus terminal|metro|station|terminal|isbt)\b/gi, "")

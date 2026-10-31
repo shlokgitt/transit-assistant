@@ -7,7 +7,10 @@
       "C.P.",
       "Rajiv Chowk",
       "CP New Delhi",
-      "Connaught Place Delhi"
+      "Connaught Place Delhi",
+      "Rajiv Chowk (Connaught Place)",
+      "Rajiv Chowk Metro",
+      "Connaught Place (Rajiv Chowk)"
     ],
     "lat": 28.632896,
     "lon": 77.219574
@@ -178,7 +181,12 @@
     "name": "Raj Nagar Extension Ghaziabad",
     "aliases": [
       "Raj Nagar Extension",
-      "Raj Nagar Extension Ghaziabad"
+      "Raj Nagar Extension Ghaziabad",
+      "ghazibad",
+      "ghazibad railway station",
+      "ghazibad junction",
+      "ghaziabad rly stn",
+      "gzb"
     ],
     "lat": 28.7042,
     "lon": 77.4395
@@ -187,7 +195,12 @@
     "name": "Crossings Republik",
     "aliases": [
       "Crossings Republik",
-      "Crossing Republik Ghaziabad"
+      "Crossing Republik Ghaziabad",
+      "Crossing Republik",
+      "crossing republik",
+      "crossing republic",
+      "crossings republic",
+      "crossing republik ghaziabad"
     ],
     "lat": 28.6301,
     "lon": 77.4354
@@ -205,7 +218,12 @@
     "name": "Vasundhara Ghaziabad",
     "aliases": [
       "Vasundhara Ghaziabad",
-      "Vasundhara"
+      "Vasundhara",
+      "ghazibad",
+      "ghazibad railway station",
+      "ghazibad junction",
+      "ghaziabad rly stn",
+      "gzb"
     ],
     "lat": 28.661,
     "lon": 77.374
@@ -344,5 +362,125 @@
     ],
     "lat": 28.6924,
     "lon": 76.924
+  },
+  {
+    "name": "Ghaziabad Junction Railway Station",
+    "aliases": [
+      "Ghaziabad Junction Railway Station",
+      "Ghaziabad Railway Station",
+      "Ghaziabad Junction",
+      "GZB Railway Station",
+      "Ghaziabad Station",
+      "Ghaziabad",
+      "GZB Junction",
+      "GZB",
+      "ghazibad",
+      "ghazibad railway station",
+      "ghazibad junction",
+      "ghaziabad rly stn"
+    ],
+    "lat": 28.6644,
+    "lon": 77.4328
+  },
+  {
+    "name": "Gurgaon Railway Station",
+    "aliases": [
+      "Gurgaon Railway Station",
+      "Gurugram Railway Station",
+      "GGN Railway Station",
+      "Gurgaon Station",
+      "Gurgaon",
+      "Gurugram"
+    ],
+    "lat": 28.4722,
+    "lon": 77.0177
+  },
+  {
+    "name": "Faridabad Railway Station",
+    "aliases": [
+      "Faridabad Railway Station",
+      "FDB Railway Station",
+      "Faridabad Station",
+      "Faridabad"
+    ],
+    "lat": 28.4089,
+    "lon": 77.3178
+  },
+  {
+    "name": "Delhi Cantt Railway Station",
+    "aliases": [
+      "Delhi Cantt Railway Station",
+      "Delhi Cantt",
+      "DEC Railway Station",
+      "Delhi Cantonment"
+    ],
+    "lat": 28.5898,
+    "lon": 77.1322
+  },
+  {
+    "name": "Subzi Mandi Railway Station",
+    "aliases": [
+      "Subzi Mandi Railway Station",
+      "Sabzi Mandi Railway Station",
+      "SZM Railway Station",
+      "Subzi Mandi"
+    ],
+    "lat": 28.6756,
+    "lon": 77.2001
+  },
+  {
+    "name": "Shakurbasti Railway Station",
+    "aliases": [
+      "Shakurbasti Railway Station",
+      "Shakur Basti",
+      "SSB Railway Station"
+    ],
+    "lat": 28.6833,
+    "lon": 77.1264
+  },
+  {
+    "name": "Okhla Railway Station",
+    "aliases": [
+      "Okhla Railway Station",
+      "OKA Railway Station",
+      "Okhla Station"
+    ],
+    "lat": 28.5447,
+    "lon": 77.2714
+  },
+  {
+    "name": "Ballabgarh Railway Station",
+    "aliases": [
+      "Ballabgarh Railway Station",
+      "BVH Railway Station",
+      "Ballabgarh Station",
+      "Ballabhgarh"
+    ],
+    "lat": 28.3364,
+    "lon": 77.3298
+  },
+  {
+    "name": "Delhi Sarai Rohilla",
+    "aliases": [
+      "Delhi Sarai Rohilla",
+      "Sarai Rohilla Railway Station",
+      "DEE Railway Station",
+      "Sarai Rohilla"
+    ],
+    "lat": 28.6657,
+    "lon": 77.1878
+  },
+  {
+    "name": "Hazrat Nizamuddin Railway Station",
+    "aliases": [
+      "Hazrat Nizamuddin Railway Station",
+      "Hazrat Nizamuddin",
+      "Nizamuddin Railway Station",
+      "Nizamuddin",
+      "NZM",
+      "Hazarat Nizamuddin"
+    ],
+    "lat": 28.5889,
+    "lon": 77.2532
   }
 ]

@@ -158,7 +158,6 @@ const MODE_ICON: Record<string, React.ReactNode> = {
   bus: <VehicleIllustration mode="bus" size="sm" />,
   walk: <VehicleIllustration mode="walk" size="sm" />,
   auto: <VehicleIllustration mode="auto" size="sm" />,
-  cab: <VehicleIllustration mode="cab" size="sm" />,
 };
 
 /* ------------------------------------------------------------------ */
