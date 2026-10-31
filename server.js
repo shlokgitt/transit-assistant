@@ -22,16 +22,41 @@ app.use((_request, response, next) => {
 });
 app.use(express.json({ limit: "30kb" }));
 
-const savedRoutes = [
-  {
-    id: "r1",
-    name: "Home to Office",
-    from: "Karol Bagh",
-    to: "Gandhi Darshan",
-    preference: "fastest",
-    email: null,
-  },
-];
+const SAVED_FILE = path.join(ROOT_DIR, "data", "saved-routes.json");
+
+function saveSavedRoutes(routes) {
+  try {
+    fs.mkdirSync(path.dirname(SAVED_FILE), { recursive: true });
+    fs.writeFileSync(SAVED_FILE, JSON.stringify(routes, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error persisting saved routes:", err);
+  }
+}
+
+function loadSavedRoutes() {
+  try {
+    if (fs.existsSync(SAVED_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(SAVED_FILE, "utf8"));
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.error("Error loading saved routes:", err);
+  }
+  const defaults = [
+    {
+      id: "r1",
+      name: "Home to Office",
+      from: "Karol Bagh",
+      to: "Gandhi Darshan",
+      preference: "fastest",
+      email: null,
+    },
+  ];
+  saveSavedRoutes(defaults);
+  return defaults;
+}
+
+let savedRoutes = loadSavedRoutes();
 
 function normalizePreference(value) {
   return value === "cheapest" ? "cheapest" : "fastest";
@@ -94,14 +119,15 @@ app.post("/saved", (request, response) => {
   }
 
   const saved = {
-    id: `r${savedRoutes.length + 1}`,
+    id: `r_${Date.now().toString(36)}`,
     name: name.trim(),
     from: from.trim(),
     to: to.trim(),
     preference: normalizePreference(preference),
     email: normalizedEmail,
   };
-  savedRoutes.push(saved);
+  savedRoutes.unshift(saved);
+  saveSavedRoutes(savedRoutes);
   return response.status(201).type("application/json").json(saved);
 });
 
@@ -112,9 +138,21 @@ app.delete("/saved/:id/email", (request, response) => {
   }
 
   saved.email = null;
+  saveSavedRoutes(savedRoutes);
   return response.type("application/json").json(saved);
 });
+
 
+
+app.delete("/saved/:id", (request, response) => {
+  const index = savedRoutes.findIndex((r) => r.id === request.params.id);
+  if (index === -1) {
+    return response.status(404).json({ error: "Saved route not found" });
+  }
+  const [removed] = savedRoutes.splice(index, 1);
+  saveSavedRoutes(savedRoutes);
+  return response.type("application/json").json({ success: true, removed });
+});
 app.get("/route", (request, response) => {
   const from = typeof request.query.from === "string" ? request.query.from.trim() : "";
   const to = typeof request.query.to === "string" ? request.query.to.trim() : "";
