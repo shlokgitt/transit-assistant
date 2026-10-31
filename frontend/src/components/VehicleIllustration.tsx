@@ -29,7 +29,7 @@ const ICONS: Record<TransitMode, React.ComponentType<{ size?: number; strokeWidt
 const ASSETS: Partial<Record<TransitMode, string>> = {
   bus: "/transport/user-bus.png",
   metro: "/transport/user-metro.png",
-  auto: "/transport/user-car.png",
+  auto: "/transport/user-auto.png",
   walk: "/transport/delhi-walk.webp",
 };
 
