@@ -917,14 +917,14 @@ export default function Home() {
           {savedJourneys.map((journey) => (
             <article className="saved-card" key={journey.id}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                  <p className="eyebrow" style={{ margin: 0, fontWeight: 700, letterSpacing: "0.05em", color: "#60a5fa" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
                     {journey.name}
-                  </p>
+                  </h3>
                   <button
                     type="button"
                     className="icon-button"
-                    style={{ padding: "2px 4px", height: "auto", opacity: 0.65 }}
+                    style={{ padding: "4px 6px", height: "auto", borderRadius: "6px", background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                     title="Rename route"
                     onClick={() => {
                       const newName = window.prompt("Enter new name for this route:", journey.name);
@@ -933,12 +933,17 @@ export default function Home() {
                       }
                     }}
                   >
-                    <Pencil size={12} />
+                    <Pencil size={14} />
                   </button>
                 </div>
-                <h3>{getJourneyFrom(journey)} <span>→</span> {getJourneyTo(journey)}</h3>
-                <p className="muted-copy">Priority: {getJourneyPreference(journey)}</p>
-                {journey.email && <p className="alert-label">Alerts: {journey.email}</p>}
+                {journey.name.toLowerCase() !== `${getJourneyFrom(journey)} to ${getJourneyTo(journey)}`.toLowerCase() &&
+                 journey.name.toLowerCase() !== `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`.toLowerCase() && (
+                  <p style={{ margin: "0 0 8px 0", fontSize: "0.95rem", fontWeight: 500, color: "#94a3b8" }}>
+                    {getJourneyFrom(journey)} <span style={{ color: "#60a5fa" }}>→</span> {getJourneyTo(journey)}
+                  </p>
+                )}
+                <p className="muted-copy" style={{ marginTop: "2px" }}>Priority: {getJourneyPreference(journey)}</p>
+                {journey.email && <p className="alert-label" style={{ marginTop: "6px" }}>Alerts: {journey.email}</p>}
               </div>
               <div className="saved-actions">
                 <button className="quiet-button" onClick={() => openSavedJourney(journey)}>Recalculate</button>
