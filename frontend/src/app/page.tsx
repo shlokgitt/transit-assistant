@@ -12,6 +12,7 @@ import {
   GitCompareArrows,
   Map,
   Menu,
+  Pencil,
   RefreshCw,
   Route as RouteIcon,
   Save,
@@ -218,6 +219,7 @@ export default function Home() {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [customRouteName, setCustomRouteName] = useState("");
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(false);
   const [alertEmail, setAlertEmail] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -405,8 +407,9 @@ export default function Home() {
     setSaveError(null);
     setIsSaving(true);
     try {
+      const finalName = customRouteName.trim() || `${origin} to ${destination}`;
       const payload = {
-        name: `${origin} to ${destination}`,
+        name: finalName,
         from: origin,
         to: destination,
         preference: priority[0],
@@ -415,14 +418,26 @@ export default function Home() {
 
       let newJourney: SavedJourney;
       try {
-        const response = await fetch(`${SAVED_API_BASE}/saved`, {
+        let response = await fetch(`/api/v1/saved`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Unable to save route.");
-        newJourney = data as SavedJourney;
+        }).catch(() => null);
+
+        if (!response || !response.ok) {
+          response = await fetch(`${SAVED_API_BASE}/saved`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).catch(() => null);
+        }
+
+        if (response && response.ok) {
+          const data = await response.json();
+          newJourney = data as SavedJourney;
+        } else {
+          throw new Error("Unable to save to backend API");
+        }
       } catch (networkOrApiError) {
         console.warn("Backend save failed, saving locally:", networkOrApiError);
         newJourney = {
@@ -438,9 +453,10 @@ export default function Home() {
       const nextJourneys = [newJourney, ...savedJourneys.filter((j) => j.id !== newJourney.id)];
       persistSavedJourneys(nextJourneys);
       setIsSaveModalOpen(false);
+      setCustomRouteName("");
       setEmailAlertsEnabled(false);
       setAlertEmail("");
-      setSavedSuccessMessage("Journey saved successfully!");
+      setSavedSuccessMessage(`Route "${finalName}" saved successfully!`);
       setTimeout(() => setSavedSuccessMessage(null), 3500);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Unable to save route.");
@@ -502,8 +518,8 @@ export default function Home() {
           <div className="empty-panel error-panel"><TriangleAlert size={24} /><p>{routeError}</p><button className="text-button" onClick={() => setScreen("home")}>Change search</button></div>
         ) : routeResponse?.routes.length ? (
           <div className="route-list">
-            {routeResponse.routes.map((route) => (
-              <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
+            {routeResponse.routes.map((route) => (
+              <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
             ))}
 
             {routeResponse.unavailableModes && routeResponse.unavailableModes.length > 0 && (
@@ -565,6 +581,7 @@ export default function Home() {
                   type="button"
                   className="save-journey-button"
                   onClick={() => {
+                    setCustomRouteName(`${origin} to ${destination}`);
                     setSaveError(null);
                     setIsSaveModalOpen(true);
                   }}
@@ -626,7 +643,16 @@ export default function Home() {
           <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent Journeys</strong></div>
           {savedJourneys.slice(0, 3).map((journey) => (
             <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}>
-              <span>{getJourneyFrom(journey)} → {getJourneyTo(journey)}</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left" }}>
+                <strong style={{ fontWeight: 600, color: "var(--text-bright, #fff)" }}>
+                  {journey.name || `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`}
+                </strong>
+                {journey.name && journey.name !== `${getJourneyFrom(journey)} to ${getJourneyTo(journey)}` && (
+                  <small style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)" }}>
+                    {getJourneyFrom(journey)} → {getJourneyTo(journey)}
+                  </small>
+                )}
+              </span>
               <ChevronRight size={14} />
             </button>
           ))}
@@ -891,7 +917,25 @@ export default function Home() {
           {savedJourneys.map((journey) => (
             <article className="saved-card" key={journey.id}>
               <div>
-                <p className="eyebrow">{journey.name}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                  <p className="eyebrow" style={{ margin: 0, fontWeight: 700, letterSpacing: "0.05em", color: "#60a5fa" }}>
+                    {journey.name}
+                  </p>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    style={{ padding: "2px 4px", height: "auto", opacity: 0.65 }}
+                    title="Rename route"
+                    onClick={() => {
+                      const newName = window.prompt("Enter new name for this route:", journey.name);
+                      if (newName && newName.trim() && newName.trim() !== journey.name) {
+                        persistSavedJourneys(savedJourneys.map((j) => (j.id === journey.id ? { ...j, name: newName.trim() } : j)));
+                      }
+                    }}
+                  >
+                    <Pencil size={12} />
+                  </button>
+                </div>
                 <h3>{getJourneyFrom(journey)} <span>→</span> {getJourneyTo(journey)}</h3>
                 <p className="muted-copy">Priority: {getJourneyPreference(journey)}</p>
                 {journey.email && <p className="alert-label">Alerts: {journey.email}</p>}
@@ -961,6 +1005,24 @@ export default function Home() {
               >
                 <X size={15} />
               </button>
+            </div>
+            <div style={{ marginTop: "14px", marginBottom: "4px" }}>
+              <label className="field-label" htmlFor="route-custom-name">
+                Route Name
+              </label>
+              <input
+                id="route-custom-name"
+                className="email-field"
+                type="text"
+                value={customRouteName}
+                onChange={(event) => setCustomRouteName(event.target.value)}
+                placeholder={`e.g. Daily Office, College, or ${origin} to ${destination}`}
+                maxLength={60}
+                autoFocus
+              />
+              <p className="muted-copy" style={{ marginTop: "2px", fontSize: "0.75rem" }}>
+                Give your route a memorable custom name.
+              </p>
             </div>
             <label className="alert-checkbox">
               <input
