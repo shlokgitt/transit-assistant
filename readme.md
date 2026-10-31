@@ -24,7 +24,8 @@ This is a demo and development project. Results are based on repository datasets
 - **Backend:** Node.js, Express 5, custom graph/routing logic, CSV/JSON datasets.
 - **AI:** Groq SDK with tool calling for the Travel Chat feature.
 - **Data:** Metro, fare, delay, road-distance, and GTFS-derived data.
-- **Persistence:** The current `main` branch stores saved journeys in memory; they are lost when the backend restarts.
+- **Persistence:** Saved journeys are persisted to `data/saved-routes.json` and survive backend restarts. On Vercel serverless, routes are stored in `/tmp` per instance with client-side `localStorage` offline caching.
+- **Evaluation & Documentation:** See [docs/FINAL_PRESENTATION_DOSSIER.md](./docs/FINAL_PRESENTATION_DOSSIER.md) for judge presentation pillars and team contributions, and [docs/DATABASE_ARCHITECTURE.md](./docs/DATABASE_ARCHITECTURE.md) for database specifications.
 
 ## Repository structure
 
@@ -285,7 +286,7 @@ Delay and crowd values are simulated sample data, not guaranteed live informatio
 
 - walking route shows only straight line distance
 - Static fares, delays, and travel times can become stale.
-- Saved journeys are lost when the current backend restarts.
+- Saved journeys are persisted to `data/saved-routes.json` and survive backend restarts. On Vercel, routes are stored in `/tmp` per instance with client-side `localStorage` offline caching.
 - Live status depends on an external API and key.
 - AI answers can be incomplete; structured route results should be trusted over free-form prose.
 - Production observability, authentication, rate limiting, and automated deployment checks are incomplete.

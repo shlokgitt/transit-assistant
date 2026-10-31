@@ -436,8 +436,20 @@ const STOP_ALIASES = {
   dli: ["GTFS:47"],
   "old delhi railway station": ["GTFS:47"],
   "huda city centre": ["GTFS:206"],
-  "igi airport": ["GTFS:6"],
-  "t3 airport": ["GTFS:6"],
+  "igi airport": ["GTFS:154"],
+  "igl airport": ["GTFS:154"],
+  "igi": ["GTFS:154"],
+  "igl": ["GTFS:154"],
+  "airport": ["GTFS:154", "GTFS:191"],
+  "delhi airport": ["GTFS:154", "GTFS:191"],
+  "t3 airport": ["GTFS:154"],
+  "t3": ["GTFS:154"],
+  "terminal 3": ["GTFS:154"],
+  "t1 airport": ["GTFS:191"],
+  "t1": ["GTFS:191"],
+  "terminal 1": ["GTFS:191"],
+  "pari chowk": ["GTFS:516"],
+  "pari chowk metro": ["GTFS:516"],
   aiims: ["GTFS:183"],
   iit: ["GTFS:414"],
   "iit delhi": ["GTFS:414"],
@@ -838,8 +850,11 @@ export function plan(fromIds, toIds, opts = {}) {
   }
 
   let endKey = null;
+  const MAX_ITERATIONS = 500000;
+  let iterations = 0;
 
   while (heap.size) {
+    if (++iterations > MAX_ITERATIONS) break;
     const [score, key] = heap.pop();
 
     if (score !== dist.get(key)) continue;
@@ -951,6 +966,9 @@ export function plan(fromIds, toIds, opts = {}) {
         }
 
         if (activeBus) {
+          if (activeBus.routeId === "metro:NoidaAqua" && activeBus.stationCount > 25) {
+            continue;
+          }
           nextActive = {
             ...activeBus,
             distanceKm: activeBus.distanceKm + legDistanceKm,
