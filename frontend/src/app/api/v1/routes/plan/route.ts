@@ -632,7 +632,7 @@ if (!("error" in primaryPlannerResponse)) {
             ) || trainData.data.trains[0];
 
           const origStn = trainData.data.station;
-          const destStnCoord = resolveCoordinates(body.city, body.destination.query);
+          const destStnCoord = destCoord;
           const railDistKm = Math.round(
             Math.sqrt(
               Math.pow((destStnCoord.lat - origStn.lat) * 111, 2) +
