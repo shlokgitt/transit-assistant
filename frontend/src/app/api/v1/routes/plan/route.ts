@@ -30,6 +30,7 @@ import {
   planMetroByName,
   planWalkingByName,
   planByName,
+  findStops,
   stopCoordinates,
   stopName,
   evaluateRouteConstraints,
@@ -558,8 +559,28 @@ if (!("error" in primaryPlannerResponse)) {
 
     routes.push(...candidateByTitle.values());
 
-    const originCoord = resolveCoordinates(body.city, body.origin.query, body.origin.lat, body.origin.lng);
-    const destCoord = resolveCoordinates(body.city, body.destination.query, body.destination.lat, body.destination.lng);
+    const resolveLocationCoords = (query: string, explicitLat?: number, explicitLng?: number) => {
+      if (explicitLat && explicitLng) {
+        return { name: query, lat: explicitLat, lng: explicitLng };
+      }
+      try {
+        const matches = findStops(query);
+        if (matches && matches.length > 0) {
+          const best = matches[0];
+          return {
+            name: best.name || query,
+            lat: Number(best.lat),
+            lng: Number(best.lon !== undefined ? best.lon : best.lng),
+          };
+        }
+      } catch (err) {
+        console.warn("findStops lookup error:", err);
+      }
+      return resolveCoordinates(body.city, query, explicitLat, explicitLng);
+    };
+
+    const originCoord = resolveLocationCoords(body.origin.query, body.origin.lat, body.origin.lng);
+    const destCoord = resolveLocationCoords(body.destination.query, body.destination.lat, body.destination.lng);
 
     // 1. Check for Railway Stations in Origin or Destination
     const originStation = detectStationCode(body.origin.query);
@@ -716,8 +737,8 @@ if (!("error" in primaryPlannerResponse)) {
 
     // 4. Bus routes come strictly from GTFS dataset (no synthetic fallback)
 
-    // 4. Direct transport options: Local Auto (up to 25.0 km) & Direct Walk (up to 2.5 km)
-    if (allowedModes.has("auto") && directDistKm <= 25.0) {
+    // 4. Direct transport options: Local Auto (up to 45.0 km) & Direct Walk (up to 2.5 km)
+    if (allowedModes.has("auto") && directDistKm <= 45.0) {
       const hasDirectAuto = routes.some((r) =>
         r.legs.every((l) => l.mode === "auto")
       );
@@ -878,14 +899,17 @@ if (!("error" in primaryPlannerResponse)) {
       const missingModes: string[] = [];
       if (!allowedModes.has("auto")) missingModes.push("Auto");
       if (!allowedModes.has("bus")) missingModes.push("Bus");
+      if (!allowedModes.has("metro")) missingModes.push("Metro");
       if (!allowedModes.has("walk")) missingModes.push("Walk");
-      const suggestions = missingModes.length > 0 ? missingModes.join(", ") : "Auto, Bus, or Walk";
+      const suggestions = missingModes.length > 0 ? missingModes.join(", ") : "additional transportation modes";
 
       let errorMsg: string;
       if (isOnlyMetro) {
         errorMsg = `No direct Metro line serves this route (${originCoord.name} ➔ ${destCoord.name}). Local Auto can be used for point-to-point travel (~${roadDist} km by road) or feeder connection. Please enable Auto, Bus, or Walk to view available transit options.`;
-      } else {
+      } else if (!allowedModes.has("auto") && directDistKm <= 45.0) {
         errorMsg = `No feasible route found meeting your transportation modes. Local Auto can be used for this journey (~${roadDist} km by road). Please enable ${suggestions} to view available transit options.`;
+      } else {
+        errorMsg = `No feasible route found meeting your transportation modes. Please enable ${suggestions} to view available transit options.`;
       }
 
       return NextResponse.json(
