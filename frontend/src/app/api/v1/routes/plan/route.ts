@@ -716,66 +716,98 @@ if (!("error" in primaryPlannerResponse)) {
 
     // 4. Bus routes come strictly from GTFS dataset (no synthetic fallback)
 
-    if (allowedModes.has("walk") || allowedModes.has("auto")) {
-      const hasDirectRoute = routes.some((r) =>
-        r.legs.every((l) => l.mode === "walk" || l.mode === "auto")
+    // 4. Direct transport options: Local Auto (up to 25.0 km) & Direct Walk (up to 2.5 km)
+    if (allowedModes.has("auto") && directDistKm <= 25.0) {
+      const hasDirectAuto = routes.some((r) =>
+        r.legs.every((l) => l.mode === "auto")
       );
-      if (!hasDirectRoute && directDistKm <= 7.0) {
+      if (!hasDirectAuto) {
         const roadDist = Math.round(directDistKm * 1.30 * 10) / 10;
+        const autoMins = Math.max(3, Math.round(roadDist * 2.5));
+        const directAuto: RouteOption = {
+          id: "route_direct_auto",
+          title: "Local Auto",
+          summary: `Local auto road transit (${roadDist} km by road)`,
+          totalDurationMinutes: autoMins,
+          totalDistanceKm: roadDist,
+          distanceSource: "road",
+          totalFare: null,
+          summaryModes: ["auto"],
+          tag: "COMFORT",
+          carbonEmissionsKg: Math.round(roadDist * 0.12 * 10) / 10,
+          caloriesBurned: 0,
+          transfersCount: 0,
+          crowdLevel: "low",
+          delayMinutes: 0,
+          onTimeReliability: 99,
+          recommendationReason: `Direct local auto (~${autoMins} min) via road with point-to-point travel and no transit transfers.`,
+          legs: [
+            {
+              legIndex: 0,
+              mode: "auto",
+              from: originCoord.name,
+              to: destCoord.name,
+              durationMinutes: autoMins,
+              distanceKm: roadDist,
+              distanceSource: "road",
+              fare: null,
+              lineName: "Local Auto",
+              instruction: `Take local auto via road from ${originCoord.name} to ${destCoord.name} (~${autoMins} min, ${roadDist} km by road)`,
+              coordinates: [
+                [originCoord.lat, originCoord.lng],
+                [destCoord.lat, destCoord.lng],
+              ],
+            },
+          ],
+        };
+        routes.push(directAuto);
+      }
+    }
+
+    if (allowedModes.has("walk") && directDistKm <= 2.5) {
+      const hasDirectWalk = routes.some((r) =>
+        r.legs.every((l) => l.mode === "walk")
+      );
+      if (!hasDirectWalk) {
         const walkDist = Math.round(directDistKm * 1.25 * 10) / 10;
         const walkMins = Math.round(walkDist * 12);
-        const isAuto = walkMins > 10;
-        if ((isAuto && allowedModes.has("auto")) || (!isAuto && allowedModes.has("walk"))) {
-          const autoMins = Math.max(3, Math.round(roadDist * 2.5));
-          const autoFare = Math.max(25, Math.round(roadDist * 12 + 10));
-          const directLegMode: TransitMode = isAuto ? "auto" : "walk";
-          const directDuration = isAuto ? autoMins : walkMins;
-          const directDistance = isAuto ? roadDist : walkDist;
-          const directFare = isAuto ? null : 0;
-          const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
-          const directSummary = isAuto ? `Local auto road transit (${roadDist} km by road)` : `Pedestrian walk route (${walkDist} km)`;
-          const directWalk: RouteOption = {
-            id: isAuto ? "route_direct_auto" : "route_direct_walk",
-            title: directTitle,
-            summary: directSummary,
-            totalDurationMinutes: directDuration,
-            totalDistanceKm: directDistance,
-            distanceSource: isAuto ? "road" : "straight-line",
-            totalFare: directFare,
-            summaryModes: [directLegMode],
-            tag: isAuto ? "COMFORT" : "ECO",
-            carbonEmissionsKg: isAuto ? Math.round(roadDist * 0.12 * 10) / 10 : 0,
-            caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
-            transfersCount: 0,
-            crowdLevel: "low",
-            delayMinutes: 0,
-            onTimeReliability: 99,
-            recommendationReason: isAuto
-              ? `Direct local auto (~${autoMins} min) via road with point-to-point travel and no transit transfers.`
-              : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
-            legs: [
-              {
-                legIndex: 0,
-                mode: directLegMode,
-                from: originCoord.name,
-                to: destCoord.name,
-                durationMinutes: directDuration,
-                distanceKm: directDistance,
-                distanceSource: isAuto ? "road" : "straight-line",
-                fare: directFare,
-                lineName: isAuto ? "Local Auto" : undefined,
-                instruction: isAuto
-                  ? `Take local auto via road from ${originCoord.name} to ${destCoord.name} (~${autoMins} min, ${roadDist} km by road)`
-                  : `Walk from ${originCoord.name} to ${destCoord.name}`,
-                coordinates: [
-                  [originCoord.lat, originCoord.lng],
-                  [destCoord.lat, destCoord.lng],
-                ],
-              },
-            ],
-          };
-          routes.push(directWalk);
-        }
+        const directWalk: RouteOption = {
+          id: "route_direct_walk",
+          title: `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`,
+          summary: `Pedestrian walk route (${walkDist} km)`,
+          totalDurationMinutes: walkMins,
+          totalDistanceKm: walkDist,
+          distanceSource: "straight-line",
+          totalFare: 0,
+          summaryModes: ["walk"],
+          tag: "ECO",
+          carbonEmissionsKg: 0,
+          caloriesBurned: Math.round(walkDist * 55),
+          transfersCount: 0,
+          crowdLevel: "low",
+          delayMinutes: 0,
+          onTimeReliability: 99,
+          recommendationReason: `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
+          legs: [
+            {
+              legIndex: 0,
+              mode: "walk",
+              from: originCoord.name,
+              to: destCoord.name,
+              durationMinutes: walkMins,
+              distanceKm: walkDist,
+              distanceSource: "straight-line",
+              fare: 0,
+              lineName: undefined,
+              instruction: `Walk from ${originCoord.name} to ${destCoord.name}`,
+              coordinates: [
+                [originCoord.lat, originCoord.lng],
+                [destCoord.lat, destCoord.lng],
+              ],
+            },
+          ],
+        };
+        routes.push(directWalk);
       }
     }
 
@@ -841,9 +873,21 @@ if (!("error" in primaryPlannerResponse)) {
 
     if (routes.length === 0) {
       const isOnlyMetro = allowedModes.has("metro") && allowedModes.size === 1;
-      const errorMsg = isOnlyMetro
-        ? `No direct Metro line serves ${destCoord.name} (${destCoord.name} does not have a Metro station). Please enable Bus or Walk to view available transit options.`
-        : "No feasible route found meeting your transportation modes. Please enable Bus or Walk.";
+      const roadDist = Math.round(directDistKm * 1.30 * 10) / 10;
+      
+      const missingModes: string[] = [];
+      if (!allowedModes.has("auto")) missingModes.push("Auto");
+      if (!allowedModes.has("bus")) missingModes.push("Bus");
+      if (!allowedModes.has("walk")) missingModes.push("Walk");
+      const suggestions = missingModes.length > 0 ? missingModes.join(", ") : "Auto, Bus, or Walk";
+
+      let errorMsg: string;
+      if (isOnlyMetro) {
+        errorMsg = `No direct Metro line serves this route (${originCoord.name} ➔ ${destCoord.name}). Local Auto can be used for point-to-point travel (~${roadDist} km by road) or feeder connection. Please enable Auto, Bus, or Walk to view available transit options.`;
+      } else {
+        errorMsg = `No feasible route found meeting your transportation modes. Local Auto can be used for this journey (~${roadDist} km by road). Please enable ${suggestions} to view available transit options.`;
+      }
+
       return NextResponse.json(
         { success: false, error: errorMsg },
         { status: 422 }
