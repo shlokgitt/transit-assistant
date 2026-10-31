@@ -68,6 +68,12 @@ function getJourneyPreference(journey: SavedJourney): RoutingPriority {
   return journey.preference || (journey as unknown as { priority?: RoutingPriority }).priority || "fastest";
 }
 
+function formatRouteName(name: string): string {
+  if (!name) return "";
+  // Capitalize each word for Title/Camel Case formatting (e.g. "college" -> "College", "home to office" -> "Home To Office")
+  return name.replace(/\b([a-z])/g, (_, char) => char.toUpperCase());
+}
+
 const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
   { id: "home", label: "Plan a Trip", icon: <TripNavIcon type="plan" /> },
   { id: "results", label: "Results", icon: <TripNavIcon type="results" /> },
@@ -407,7 +413,7 @@ export default function Home() {
     setSaveError(null);
     setIsSaving(true);
     try {
-      const finalName = customRouteName.trim() || `${origin} to ${destination}`;
+      const finalName = formatRouteName(customRouteName.trim() || `${origin} to ${destination}`);
       const payload = {
         name: finalName,
         from: origin,
@@ -644,8 +650,8 @@ export default function Home() {
           {savedJourneys.slice(0, 3).map((journey) => (
             <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}>
               <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left" }}>
-                <strong style={{ fontWeight: 600, color: "var(--text-bright, #fff)" }}>
-                  {journey.name || `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`}
+                <strong style={{ fontWeight: 600, color: "var(--text-bright, #fff)", textTransform: "capitalize" }}>
+                  {formatRouteName(journey.name || `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`)}
                 </strong>
                 {journey.name && journey.name !== `${getJourneyFrom(journey)} to ${getJourneyTo(journey)}` && (
                   <small style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)" }}>
@@ -918,8 +924,8 @@ export default function Home() {
             <article className="saved-card" key={journey.id}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                  <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
-                    {journey.name}
+                  <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em", textTransform: "capitalize" }}>
+                    {formatRouteName(journey.name)}
                   </h3>
                   <button
                     type="button"
@@ -927,9 +933,9 @@ export default function Home() {
                     style={{ padding: "4px 6px", height: "auto", borderRadius: "6px", background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                     title="Rename route"
                     onClick={() => {
-                      const newName = window.prompt("Enter new name for this route:", journey.name);
+                      const newName = window.prompt("Enter new name for this route:", formatRouteName(journey.name));
                       if (newName && newName.trim() && newName.trim() !== journey.name) {
-                        persistSavedJourneys(savedJourneys.map((j) => (j.id === journey.id ? { ...j, name: newName.trim() } : j)));
+                        persistSavedJourneys(savedJourneys.map((j) => (j.id === journey.id ? { ...j, name: formatRouteName(newName.trim()) } : j)));
                       }
                     }}
                   >

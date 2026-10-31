@@ -170,21 +170,22 @@ function buildPlannerRoute(
   const isDirectWalkingResult = id === "route_real_walking" || id === "route_direct_walk";
 
   const processedLegs: PlannerLeg[] = plannerResponse.legs.map((leg) => {
-    // If walking time is more than 10 mins, replace with local auto:
+    // If walking time is more than 10 mins, replace with local auto (measured by road):
     if (leg.mode === "walk" && leg.minutes > 10) {
-      const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.minutes / 12) * 10) / 10);
-      const autoMinutes = Math.max(3, Math.round(dist * 2.5));
-      const autoFare = Math.max(25, Math.round(dist * 12 + 10));
+      const straightDist = leg.distanceKm || Math.max(0.8, Math.round((leg.minutes / 12) * 10) / 10);
+      const roadDist = Math.round(straightDist * 1.30 * 10) / 10;
+      const autoMinutes = Math.max(3, Math.round(roadDist * 2.5));
+      const autoFare = Math.max(25, Math.round(roadDist * 12 + 10));
 
       return {
         ...leg,
         mode: "auto" as const,
         minutes: autoMinutes,
-        distanceKm: dist,
+        distanceKm: roadDist,
         distanceSource: "road" as const,
         fare: null,
         lineName: "Local Auto",
-        instruction: `Take local auto to ${leg.to} (~${autoMinutes} min)`,
+        instruction: `Take local auto via road to ${leg.to} (~${autoMinutes} min, ${roadDist} km by road)`,
         route: undefined,
       };
     }
@@ -260,8 +261,10 @@ function buildPlannerRoute(
     summary: processedLegs.map((leg) => leg.mode).join(" ➔ "),
     summaryModes: routeModes,
     totalDurationMinutes: totalMinutes,
-    totalDistanceKm: plannerResponse.totalDistanceKm,
-    distanceSource: plannerResponse.distanceSource,
+    totalDistanceKm: isAllAuto
+      ? Math.round(processedLegs.reduce((sum, leg) => sum + (leg.distanceKm || 0), 0) * 10) / 10
+      : plannerResponse.totalDistanceKm,
+    distanceSource: isAllAuto ? "road" : plannerResponse.distanceSource,
     totalFare,
     carbonEmissionsKg: estimatedCarbonKg(processedLegs),
     caloriesBurned: 0,
@@ -718,35 +721,37 @@ if (!("error" in primaryPlannerResponse)) {
         r.legs.every((l) => l.mode === "walk" || l.mode === "auto")
       );
       if (!hasDirectRoute && directDistKm <= 7.0) {
-        const walkDist = Math.round(directDistKm * 1.2 * 10) / 10;
+        const roadDist = Math.round(directDistKm * 1.30 * 10) / 10;
+        const walkDist = Math.round(directDistKm * 1.25 * 10) / 10;
         const walkMins = Math.round(walkDist * 12);
         const isAuto = walkMins > 10;
         if ((isAuto && allowedModes.has("auto")) || (!isAuto && allowedModes.has("walk"))) {
-          const autoMins = Math.max(3, Math.round(walkDist * 2.5));
-          const autoFare = Math.max(25, Math.round(walkDist * 12 + 10));
+          const autoMins = Math.max(3, Math.round(roadDist * 2.5));
+          const autoFare = Math.max(25, Math.round(roadDist * 12 + 10));
           const directLegMode: TransitMode = isAuto ? "auto" : "walk";
           const directDuration = isAuto ? autoMins : walkMins;
+          const directDistance = isAuto ? roadDist : walkDist;
           const directFare = isAuto ? null : 0;
           const directTitle = isAuto ? "Local Auto" : `Direct Walk (${originCoord.name} ➔ ${destCoord.name})`;
-          const directSummary = isAuto ? `Local auto transit (${walkDist} km)` : `Pedestrian walk route (${walkDist} km)`;
+          const directSummary = isAuto ? `Local auto road transit (${roadDist} km by road)` : `Pedestrian walk route (${walkDist} km)`;
           const directWalk: RouteOption = {
             id: isAuto ? "route_direct_auto" : "route_direct_walk",
             title: directTitle,
             summary: directSummary,
             totalDurationMinutes: directDuration,
-            totalDistanceKm: walkDist,
-            distanceSource: "straight-line",
+            totalDistanceKm: directDistance,
+            distanceSource: isAuto ? "road" : "straight-line",
             totalFare: directFare,
             summaryModes: [directLegMode],
             tag: isAuto ? "COMFORT" : "ECO",
-            carbonEmissionsKg: isAuto ? Math.round(walkDist * 0.08 * 10) / 10 : 0,
+            carbonEmissionsKg: isAuto ? Math.round(roadDist * 0.12 * 10) / 10 : 0,
             caloriesBurned: isAuto ? 0 : Math.round(walkDist * 55),
             transfersCount: 0,
             crowdLevel: "low",
             delayMinutes: 0,
             onTimeReliability: 99,
             recommendationReason: isAuto
-              ? `Direct local auto (~${autoMins} min) with point-to-point travel and no transit transfers.`
+              ? `Direct local auto (~${autoMins} min) via road with point-to-point travel and no transit transfers.`
               : `Direct pedestrian walking route between ${originCoord.name} and ${destCoord.name}`,
             legs: [
               {
@@ -755,11 +760,12 @@ if (!("error" in primaryPlannerResponse)) {
                 from: originCoord.name,
                 to: destCoord.name,
                 durationMinutes: directDuration,
-                distanceKm: walkDist,
+                distanceKm: directDistance,
+                distanceSource: isAuto ? "road" : "straight-line",
                 fare: directFare,
                 lineName: isAuto ? "Local Auto" : undefined,
                 instruction: isAuto
-                  ? `Take local auto from ${originCoord.name} to ${destCoord.name} (~${autoMins} min)`
+                  ? `Take local auto via road from ${originCoord.name} to ${destCoord.name} (~${autoMins} min, ${roadDist} km by road)`
                   : `Walk from ${originCoord.name} to ${destCoord.name}`,
                 coordinates: [
                   [originCoord.lat, originCoord.lng],
@@ -780,15 +786,17 @@ if (!("error" in primaryPlannerResponse)) {
 
         route.legs.forEach((leg) => {
           if (leg.mode === "walk" && leg.durationMinutes > 10) {
-            const dist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
-            const autoMins = Math.max(3, Math.round(dist * 2.5));
+            const straightDist = leg.distanceKm || Math.max(0.8, Math.round((leg.durationMinutes / 12) * 10) / 10);
+            const roadDist = Math.round(straightDist * 1.30 * 10) / 10;
+            const autoMins = Math.max(3, Math.round(roadDist * 2.5));
 
             leg.mode = "auto";
             leg.durationMinutes = autoMins;
-            leg.distanceKm = dist;
+            leg.distanceKm = roadDist;
+            leg.distanceSource = "road";
             leg.fare = null;
             leg.lineName = "Local Auto";
-            leg.instruction = `Take local auto to ${leg.to} (~${autoMins} min)`;
+            leg.instruction = `Take local auto via road to ${leg.to} (~${autoMins} min, ${roadDist} km by road)`;
             replacedWalk = true;
           }
         });
@@ -804,10 +812,15 @@ if (!("error" in primaryPlannerResponse)) {
         if (isAllAuto) {
           route.totalFare = null;
           route.title = "Local Auto";
+          route.distanceSource = "road";
+          route.totalDistanceKm = Math.round(
+            route.legs.reduce((sum, l) => sum + (l.distanceKm || 0), 0) * 10
+          ) / 10;
           if (route.tag === "ECO") {
             route.tag = "COMFORT";
           }
-          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) with point-to-point travel and no transit transfers.`;
+          route.carbonEmissionsKg = Math.round(route.totalDistanceKm * 0.12 * 10) / 10;
+          route.recommendationReason = `Direct local auto (~${route.totalDurationMinutes} min) via road with point-to-point travel and no transit transfers.`;
         }
       });
     } else {
