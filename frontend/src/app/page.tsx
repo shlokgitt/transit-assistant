@@ -12,6 +12,7 @@ import {
   GitCompareArrows,
   Map,
   Menu,
+  Pencil,
   RefreshCw,
   Route as RouteIcon,
   Save,
@@ -65,6 +66,12 @@ function getJourneyTo(journey: SavedJourney): string {
 
 function getJourneyPreference(journey: SavedJourney): RoutingPriority {
   return journey.preference || (journey as unknown as { priority?: RoutingPriority }).priority || "fastest";
+}
+
+function formatRouteName(name: string): string {
+  if (!name) return "";
+  // Capitalize each word for Title/Camel Case formatting (e.g. "college" -> "College", "home to office" -> "Home To Office")
+  return name.replace(/\b([a-z])/g, (_, char) => char.toUpperCase());
 }
 
 const NAV_ITEMS: { id: Screen; label: string; icon: React.ReactNode }[] = [
@@ -218,6 +225,7 @@ export default function Home() {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [customRouteName, setCustomRouteName] = useState("");
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(false);
   const [alertEmail, setAlertEmail] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -405,8 +413,9 @@ export default function Home() {
     setSaveError(null);
     setIsSaving(true);
     try {
+      const finalName = formatRouteName(customRouteName.trim() || `${origin} to ${destination}`);
       const payload = {
-        name: `${origin} to ${destination}`,
+        name: finalName,
         from: origin,
         to: destination,
         preference: priority[0],
@@ -415,14 +424,26 @@ export default function Home() {
 
       let newJourney: SavedJourney;
       try {
-        const response = await fetch(`${SAVED_API_BASE}/saved`, {
+        let response = await fetch(`/api/v1/saved`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Unable to save route.");
-        newJourney = data as SavedJourney;
+        }).catch(() => null);
+
+        if (!response || !response.ok) {
+          response = await fetch(`${SAVED_API_BASE}/saved`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).catch(() => null);
+        }
+
+        if (response && response.ok) {
+          const data = await response.json();
+          newJourney = data as SavedJourney;
+        } else {
+          throw new Error("Unable to save to backend API");
+        }
       } catch (networkOrApiError) {
         console.warn("Backend save failed, saving locally:", networkOrApiError);
         newJourney = {
@@ -438,9 +459,10 @@ export default function Home() {
       const nextJourneys = [newJourney, ...savedJourneys.filter((j) => j.id !== newJourney.id)];
       persistSavedJourneys(nextJourneys);
       setIsSaveModalOpen(false);
+      setCustomRouteName("");
       setEmailAlertsEnabled(false);
       setAlertEmail("");
-      setSavedSuccessMessage("Journey saved successfully!");
+      setSavedSuccessMessage(`Route "${finalName}" saved successfully!`);
       setTimeout(() => setSavedSuccessMessage(null), 3500);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Unable to save route.");
@@ -502,8 +524,8 @@ export default function Home() {
           <div className="empty-panel error-panel"><TriangleAlert size={24} /><p>{routeError}</p><button className="text-button" onClick={() => setScreen("home")}>Change search</button></div>
         ) : routeResponse?.routes.length ? (
           <div className="route-list">
-            {routeResponse.routes.map((route) => (
-              <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
+            {routeResponse.routes.map((route) => (
+              <RouteCard key={route.id} route={route} isSelected={route.id === selectedRouteId} onSelect={() => { setSelectedRouteId(route.id); setSelectedLegIndex(null); }} />
             ))}
 
             {routeResponse.unavailableModes && routeResponse.unavailableModes.length > 0 && (
@@ -565,6 +587,7 @@ export default function Home() {
                   type="button"
                   className="save-journey-button"
                   onClick={() => {
+                    setCustomRouteName(`${origin} to ${destination}`);
                     setSaveError(null);
                     setIsSaveModalOpen(true);
                   }}
@@ -626,7 +649,16 @@ export default function Home() {
           <div className="aside-card-heading"><Clock3 size={16} /><strong>Recent Journeys</strong></div>
           {savedJourneys.slice(0, 3).map((journey) => (
             <button className="recent-item" key={journey.id} onClick={() => openSavedJourney(journey)}>
-              <span>{getJourneyFrom(journey)} → {getJourneyTo(journey)}</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left" }}>
+                <strong style={{ fontWeight: 600, color: "var(--text-bright, #fff)", textTransform: "capitalize" }}>
+                  {formatRouteName(journey.name || `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`)}
+                </strong>
+                {journey.name && journey.name !== `${getJourneyFrom(journey)} to ${getJourneyTo(journey)}` && (
+                  <small style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)" }}>
+                    {getJourneyFrom(journey)} → {getJourneyTo(journey)}
+                  </small>
+                )}
+              </span>
               <ChevronRight size={14} />
             </button>
           ))}
@@ -891,10 +923,33 @@ export default function Home() {
           {savedJourneys.map((journey) => (
             <article className="saved-card" key={journey.id}>
               <div>
-                <p className="eyebrow">{journey.name}</p>
-                <h3>{getJourneyFrom(journey)} <span>→</span> {getJourneyTo(journey)}</h3>
-                <p className="muted-copy">Priority: {getJourneyPreference(journey)}</p>
-                {journey.email && <p className="alert-label">Alerts: {journey.email}</p>}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em", textTransform: "capitalize" }}>
+                    {formatRouteName(journey.name)}
+                  </h3>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    style={{ padding: "4px 6px", height: "auto", borderRadius: "6px", background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#94a3b8", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    title="Rename route"
+                    onClick={() => {
+                      const newName = window.prompt("Enter new name for this route:", formatRouteName(journey.name));
+                      if (newName && newName.trim() && newName.trim() !== journey.name) {
+                        persistSavedJourneys(savedJourneys.map((j) => (j.id === journey.id ? { ...j, name: formatRouteName(newName.trim()) } : j)));
+                      }
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </div>
+                {journey.name.toLowerCase() !== `${getJourneyFrom(journey)} to ${getJourneyTo(journey)}`.toLowerCase() &&
+                 journey.name.toLowerCase() !== `${getJourneyFrom(journey)} → ${getJourneyTo(journey)}`.toLowerCase() && (
+                  <p style={{ margin: "0 0 8px 0", fontSize: "0.95rem", fontWeight: 500, color: "#94a3b8" }}>
+                    {getJourneyFrom(journey)} <span style={{ color: "#60a5fa" }}>→</span> {getJourneyTo(journey)}
+                  </p>
+                )}
+                <p className="muted-copy" style={{ marginTop: "2px" }}>Priority: {getJourneyPreference(journey)}</p>
+                {journey.email && <p className="alert-label" style={{ marginTop: "6px" }}>Alerts: {journey.email}</p>}
               </div>
               <div className="saved-actions">
                 <button className="quiet-button" onClick={() => openSavedJourney(journey)}>Recalculate</button>
@@ -961,6 +1016,24 @@ export default function Home() {
               >
                 <X size={15} />
               </button>
+            </div>
+            <div style={{ marginTop: "14px", marginBottom: "4px" }}>
+              <label className="field-label" htmlFor="route-custom-name">
+                Route Name
+              </label>
+              <input
+                id="route-custom-name"
+                className="email-field"
+                type="text"
+                value={customRouteName}
+                onChange={(event) => setCustomRouteName(event.target.value)}
+                placeholder={`e.g. Daily Office, College, or ${origin} to ${destination}`}
+                maxLength={60}
+                autoFocus
+              />
+              <p className="muted-copy" style={{ marginTop: "2px", fontSize: "0.75rem" }}>
+                Give your route a memorable custom name.
+              </p>
             </div>
             <label className="alert-checkbox">
               <input

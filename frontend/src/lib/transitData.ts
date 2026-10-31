@@ -136,6 +136,9 @@ export const STOPS_DB: Record<string, StopItem[]> = {
     { id: "del_oka_rly", name: "Okhla Railway Station", type: "train", line: "Indian Railways (OKA)", lineColor: "#38bdf8", lat: 28.5447, lng: 77.2714, city: "delhi" },
     { id: "del_bvh_rly", name: "Ballabgarh Railway Station", type: "train", line: "Indian Railways (BVH)", lineColor: "#38bdf8", lat: 28.3364, lng: 77.3298, city: "delhi" },
     { id: "del_cross_rep", name: "Crossings Republik", type: "bus", line: "NCR City Transit", lineColor: "#C47A44", lat: 28.6301, lng: 77.4354, city: "delhi", popular: true },
+    { id: "del_nec_m", name: "Noida Electronic City Metro", type: "metro", line: "Blue Line (Noida Main Line)", lineColor: "#0066cc", lat: 28.628685, lng: 77.375229, city: "delhi", popular: true },
+    { id: "del_sec62_m", name: "Noida Sector 62", type: "metro", line: "Blue Line", lineColor: "#0066cc", lat: 28.6215, lng: 77.3638, city: "delhi", popular: true },
+    { id: "del_shaheed_m", name: "Shaheed Sthal (New Bus Adda) Metro", type: "metro", line: "Red Line", lineColor: "#ef4444", lat: 28.6710, lng: 77.4170, city: "delhi", popular: true },
   ],
   mumbai: [
     { id: "mum_csmt", name: "Chhatrapati Shivaji Terminus (CSMT)", type: "landmark", lat: 18.9401, lng: 72.8355, city: "mumbai", popular: true },

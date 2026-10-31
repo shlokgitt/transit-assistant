@@ -259,6 +259,11 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
                   <span style={{ color: "#cbd5e1" }}>{leg.from}</span>
                   <ChevronRight size={10} color="#64748b" />
                   <span style={{ color: "#cbd5e1" }}>{leg.to}</span>
+                  {leg.mode === "auto" && leg.distanceKm && (
+                    <span style={{ fontSize: "0.72rem", color: "#38bdf8", marginLeft: "2px", fontWeight: 500 }}>
+                      ({leg.distanceKm} km by road)
+                    </span>
+                  )}
                   {leg.fare !== undefined && leg.fare !== null && leg.fare > 0 && (
                     <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#34d399", fontWeight: 600 }}>
                       ₹{leg.fare}
@@ -452,8 +457,8 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
             <span className="stat-value" style={{ fontSize: "1.05rem" }}>
               {route.totalDistanceKm}km
               {route.distanceSource && (
-                <small style={{ display: "block", fontSize: "0.55rem", color: "#64748b" }}>
-                  {route.distanceSource === "road" ? "road" : "estimated"}
+                <small style={{ display: "block", fontSize: "0.55rem", color: route.distanceSource === "road" ? "#38bdf8" : "#64748b", fontWeight: route.distanceSource === "road" ? 600 : 400 }}>
+                  {route.distanceSource === "road" ? "by road" : "estimated"}
                 </small>
               )}
             </span>
