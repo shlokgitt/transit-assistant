@@ -1,8 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 :root {
-  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-main: Arial, Helvetica, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   /* Color Palette */
   --bg-dark: #070a13;
@@ -270,17 +268,14 @@ code {
   position: relative;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, #0e172a 0%, #070a13 100%);
+  background: #10191e;
   overflow: hidden;
 }
 
 .map-grid-overlay {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(59, 130, 246, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-image: none;
   pointer-events: none;
 }
 
@@ -541,21 +536,21 @@ code {
   gap: 8px;
   padding: 13px 20px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+  background: #38bdf8;
   border: none;
   color: #ffffff;
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
 }
 
 .btn-primary::before {
-  content: '';
+  display: none;
   position: absolute;
   top: 0;
   left: -100%;
@@ -571,7 +566,7 @@ code {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.65);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
 }
 
 .btn-primary:disabled {
@@ -584,10 +579,9 @@ code {
    GRADIENT TEXT
    =================================== */
 .gradient-text {
-  background: linear-gradient(135deg, #ffffff 20%, #93c5fd 60%, #67e8f9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  color: #d9eef5;
+  -webkit-text-fill-color: currentColor;
 }
 
 /* ===================================
@@ -653,10 +647,7 @@ code {
 .stats-ribbon-item span:first-child {
   font-size: 1.05rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #60a5fa, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #38bdf8;
 }
 
 .stats-ribbon-item span:last-child {
@@ -920,7 +911,7 @@ main,
 }
 
 .brand strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.05rem;
   letter-spacing: -0.03em;
 }
@@ -1083,7 +1074,7 @@ main,
 .page-heading h2 {
   max-width: 720px;
   color: var(--sa-ink);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: clamp(2.2rem, 5vw, 4.7rem);
   line-height: 0.98;
   letter-spacing: -0.06em;
@@ -1164,7 +1155,7 @@ main,
 .route-note h3 {
   max-width: 300px;
   margin: 18px 0 14px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.65rem;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -1494,7 +1485,7 @@ main,
 }
 
 .map-summary strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.25rem;
 }
 
@@ -1547,7 +1538,7 @@ main,
 
 .chat-screen-intro h3 {
   margin-bottom: 4px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.15rem;
 }
 
@@ -1636,7 +1627,7 @@ main,
 
 .comparison-row strong {
   color: var(--sa-ink);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.5rem;
 }
 
@@ -1650,7 +1641,7 @@ main,
 
 .large-empty h3 {
   color: var(--sa-ink);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.3rem;
 }
 
@@ -1669,7 +1660,7 @@ main,
 
 .saved-card h3 {
   margin-bottom: 7px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Trebuchet MS", Arial, sans-serif;
   font-size: 1.1rem;
 }
 
@@ -2591,7 +2582,7 @@ pre {
   padding: 8px;
   border: 1px solid #777B7D;
   border-radius: 48px;
-  background: linear-gradient(145deg, #777B7D 0%, #3B3E40 18%, #17191A 55%, #5E6264 100%);
+  background: #303538;
   box-shadow: 0 26px 56px rgba(0, 0, 0, 0.48), inset 0 0 0 3px #8C9091;
 }
 
@@ -2694,6 +2685,8 @@ pre {
   border-color: #5A554B !important;
   box-shadow: none !important;
 }
+
+
 
 .home-grid .planner-device .planner-mode-grid {
   min-width: 0;
@@ -3465,7 +3458,7 @@ pre {
     padding: 8px !important;
     border: 2px solid #5A554B !important;
     border-radius: 36px !important;
-    background: linear-gradient(145deg, #444749 0%, #222425 40%, #151617 100%) !important;
+    background: #303538 !important;
     box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #6E7274 !important;
     box-sizing: border-box !important;
   }
@@ -3838,6 +3831,193 @@ pre {
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
+  }
+}
+
+/* Transit Route visual cleanup: flat charcoal surfaces, cool neutrals, and a
+   distinctive but restrained heading voice. */
+:root {
+  --ui-bg: #242321;
+  --ui-surface: #2b2c2d;
+  --ui-elevated: #333638;
+  --ui-border: #5a554b;
+  --ui-amber: #f59e0b;
+  --ui-lime: #7fa6b6;
+  --ui-text: #94a3b8;
+  --ui-heading: #d9eef5;
+  --ui-muted: #7fa6b6;
+  --ui-danger: #f07d72;
+  --bg-dark: #242321;
+  --bg-surface: #2b2c2d;
+  --bg-card: #2b2c2d;
+  --bg-glass: #2b2c2d;
+  --text-primary: #d9eef5;
+  --text-secondary: #94a3b8;
+  --text-muted: #7fa6b6;
+  --font-main: Arial, Helvetica, sans-serif;
+  --font-display: "Trebuchet MS", Arial, Helvetica, sans-serif;
+}
+
+body,
+.sa-app {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text) !important;
+  font-family: var(--font-main) !important;
+}
+
+.sa-app h1,
+.sa-app h2,
+.sa-app h3,
+.sa-app h4,
+.planner-device-heading,
+.brand strong {
+  font-family: var(--font-display) !important;
+  color: var(--ui-heading);
+  letter-spacing: -0.02em !important;
+}
+
+.sa-app .page-heading h2 {
+  letter-spacing: -0.025em !important;
+}
+
+.glass-panel,
+.glass-card,
+.search-panel,
+.aside-card,
+.map-detail-card,
+.empty-panel,
+.chat-screen-card,
+.saved-card {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+.search-panel {
+  background: var(--ui-surface) !important;
+}
+
+.primary-button,
+.save-journey-button,
+.btn-primary,
+.search-panel button[type="submit"] {
+  background: #38bdf8 !important;
+  color: #242321 !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28) !important;
+}
+
+.primary-button:hover,
+.save-journey-button:hover,
+.btn-primary:hover,
+.search-panel button[type="submit"]:hover {
+  background: #67cef2 !important;
+  color: #242321 !important;
+}
+
+.btn-primary::before {
+  display: none !important;
+}
+
+.gradient-text {
+  background: none !important;
+  color: var(--ui-heading) !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.home-grid .planner-device {
+  background: #303538 !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42), inset 0 0 0 3px #596166 !important;
+}
+
+.home-grid .planner-device-screen {
+  background: #1d2224 !important;
+}
+
+.home-grid .planner-device .search-panel {
+  background: #2b2c2d !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+.home-grid .planner-device-heading small {
+  color: #38bdf8 !important;
+}
+
+.map-canvas-container {
+  background: #10191e !important;
+}
+
+.map-grid-overlay {
+  background-image: none !important;
+}
+
+.feature-card,
+.features-section {
+  background: #242321 !important;
+}
+
+.feature-card::before,
+.features-section::before,
+.features-section::after {
+  background: none !important;
+}
+
+.modal-backdrop,
+.leaflet-control-attribution,
+.leaflet-popup-content-wrapper,
+.mobile-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.sa-app [style*="#94a3b8"],
+.sa-app [style*="#64748b"],
+.sa-app [style*="#cbd5e1"],
+.sa-app [style*="#e2e8f0"],
+.sa-app [style*="#f1f5f9"] {
+  color: var(--ui-muted) !important;
+}
+
+.sa-app [style*="linear-gradient"] {
+  background: var(--ui-surface) !important;
+}
+
+.sa-app .search-panel [style*="linear-gradient"],
+.sa-app .search-panel button[type="submit"] {
+  background: #38bdf8 !important;
+}
+
+.sa-app .search-panel input,
+.sa-app .search-panel textarea,
+.sa-app .search-panel select {
+  color: var(--ui-heading) !important;
+}
+
+.sa-app .page-heading h2,
+.sa-app .compact-heading h2,
+.sa-app .simple-screen .page-heading h2 {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--ui-heading) !important;
+}
+
+@media (max-width: 900px) {
+  .home-grid .planner-device {
+    background: #303538 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-actions .header-save[title="View live bus positions and estimates"] {
+    display: none !important;
+  }
+
+  .header-actions {
+    margin-left: auto;
   }
 }
 

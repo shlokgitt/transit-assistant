@@ -471,7 +471,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               width: "34px",
               height: "34px",
               borderRadius: "10px",
-              background: "linear-gradient(135deg, #1d4ed8, #0891b2)",
+              background: "#38bdf8",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -483,10 +483,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               <h3 style={{
                 fontSize: "0.92rem",
                 fontWeight: 800,
-                background: "linear-gradient(90deg, #fff 0%, #93c5fd 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                color: "#d9eef5",
                 lineHeight: 1.2,
               }}>
                 Transit Route AI

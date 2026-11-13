@@ -95,12 +95,11 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
         className={`t-tilt-card glass-card ${isSelected ? "active" : ""}`}
         style={{ padding: "16px", cursor: "pointer", position: "relative", overflow: "hidden" }}
       >
-        {/* Selected glow accent line */}
+        {/* Selected route marker */}
         {isSelected && (
           <div style={{
-            position: "absolute", top: 0, left: 0, bottom: 0, width: "3px",
-            background: "linear-gradient(180deg, #06b6d4, #3b82f6)",
-            borderRadius: "0 0 0 0",
+            position: "absolute", top: 0, left: 0, bottom: 0, width: "1px",
+            background: "#38bdf8",
           }} />
         )}
 
@@ -138,7 +137,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
               gap: "6px",
               padding: "7px 10px",
               borderRadius: "8px",
-              background: "linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.08))",
+              background: "rgba(56, 189, 248, 0.1)",
               border: "1px solid rgba(56, 189, 248, 0.25)",
               marginBottom: "8px",
               fontSize: "0.72rem",
@@ -418,7 +417,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
             </span>
           </div>
           <div className="crowd-bar">
-            <div className="crowd-fill" style={{ width: `${crowd.fill}%`, background: `linear-gradient(90deg, ${crowd.color}88, ${crowd.color})` }} />
+            <div className="crowd-fill" style={{ width: `${crowd.fill}%`, background: crowd.color }} />
           </div>
         </div>
 

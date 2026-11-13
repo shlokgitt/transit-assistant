@@ -7,7 +7,6 @@ import {
   Search,
   SlidersHorizontal,
   ShieldAlert,
-  Sparkles,
   Clock,
 } from "lucide-react";
 import {
@@ -211,9 +210,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         minWidth: 0,
         boxSizing: "border-box",
         overflowX: "hidden",
-        background: "rgba(14, 21, 37, 0.85)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--border-glass)",
+        background: "var(--ui-surface)",
+        border: "1px solid var(--ui-border)",
+        borderRadius: "12px",
       }}
     >
       {/* Route Inputs with Swap Button */}
@@ -459,7 +458,6 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
       {/* City Presets Quick Pills */}
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-          <Sparkles size={12} color="#f59e0b" />
           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
             Popular City Routes
           </span>
@@ -577,9 +575,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   padding: "7px 10px",
                   borderRadius: "8px",
                   background: isSelected
-                    ? "linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(6, 182, 212, 0.15))"
+                    ? "rgba(56, 189, 248, 0.18)"
                     : "rgba(255, 255, 255, 0.03)",
-                  border: isSelected ? "1px solid rgba(59, 130, 246, 0.5)" : "1px solid rgba(255, 255, 255, 0.06)",
+                  border: isSelected ? "1px solid #38bdf8" : "1px solid rgba(255, 255, 255, 0.06)",
                   color: isSelected ? "#38bdf8" : "var(--text-secondary)",
                   cursor: "pointer",
                   fontSize: "0.75rem",
@@ -649,10 +647,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 padding: "2px 8px 2px 4px",
                 borderRadius: "999px",
                 background: constraintsEnabled
-                  ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.2))"
+                  ? "rgba(56, 189, 248, 0.18)"
                   : "rgba(255, 255, 255, 0.08)",
                 border: constraintsEnabled
-                  ? "1px solid rgba(16, 185, 129, 0.5)"
+                  ? "1px solid #38bdf8"
                   : "1px solid rgba(255, 255, 255, 0.15)",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
@@ -738,7 +736,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                   type="button"
                   onClick={() => onToggleConstraintsEnabled?.(true)}
                   style={{
-                    background: "linear-gradient(135deg, #10b981, #06b6d4)",
+                    background: "#38bdf8",
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "4px",
@@ -962,15 +960,15 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
           boxSizing: "border-box",
           padding: "13px 16px",
           borderRadius: "10px",
-          background: "linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)",
+          background: "#38bdf8",
           border: "none",
-          color: "#ffffff",
+          color: "#242321",
           fontSize: "0.9rem",
           fontWeight: 700,
           letterSpacing: "0.02em",
           cursor: isLoading || !origin.trim() || !destination.trim() ? "not-allowed" : "pointer",
           opacity: isLoading || !origin.trim() || !destination.trim() ? 0.6 : 1,
-          boxShadow: "0 4px 18px rgba(37, 99, 235, 0.4)",
+          boxShadow: "0 6px 16px rgba(0, 0, 0, 0.28)",
           transition: "all 0.2s ease",
           marginTop: "4px",
         }}

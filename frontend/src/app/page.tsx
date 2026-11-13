@@ -17,7 +17,6 @@ import {
   Route as RouteIcon,
   Save,
   Settings2,
-  Sparkles,
   TrainFront,
   TriangleAlert,
   X,
@@ -794,7 +793,6 @@ export default function Home() {
               disabled={simIsLoading || !origin.trim()}
               onClick={() => void handleSimulate()}
             >
-              <Sparkles size={15} />
               {simIsLoading ? "Simulating…" : "Apply & Simulate"}
             </button>
             <button
@@ -848,7 +846,7 @@ export default function Home() {
 
                 {/* Comparison explanation */}
                 {comparison && (
-                  <p className="muted-copy" style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", borderLeft: "3px solid rgba(251, 191, 36, 0.4)", fontSize: "0.72rem" }}>
+                  <p className="muted-copy" style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", border: "1px solid rgba(251, 191, 36, 0.4)", fontSize: "0.72rem" }}>
                     {comparison.impactExplanation}
                   </p>
                 )}

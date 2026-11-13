@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Sparkles,
   Plus,
   Send,
   Compass,
@@ -95,7 +94,7 @@ const GEMINI_SUGGESTIONS = [
     prompt: "What is the fastest metro route avoiding crowded stations during peak hours?",
   },
   {
-    icon: <Sparkles size={17} color="#c084fc" />,
+    icon: <BookOpen size={17} color="#38bdf8" />,
     label: "Check DMRC metro fare slabs and Smart Card discounts",
     prompt: "What are the DMRC metro fare slabs, Sunday discounts, and Smart Card savings?",
   },
