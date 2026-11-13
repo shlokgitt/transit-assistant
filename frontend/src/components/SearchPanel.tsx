@@ -513,6 +513,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
               <button
                 key={m.id}
                 onClick={() => selectMode(m.id)}
+                className={`planner-mode-button ${isSelected ? "is-selected" : ""}`}
                 style={{
                   display: "flex",
                   alignItems: "center",

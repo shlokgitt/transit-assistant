@@ -70,6 +70,23 @@ type PlannerResponse = {
   scenarioDetails?: unknown;
 };
 
+function platformGuidanceForLeg(leg: PlannerLeg): string | undefined {
+  if (leg.mode !== "metro") return undefined;
+
+  const stationNames = `${leg.from} ${leg.to}`.toLowerCase();
+  if (!stationNames.includes("mandi house")) return undefined;
+
+  const lineName = `${leg.lineName || ""} ${leg.route || ""}`.toLowerCase();
+  if (lineName.includes("blue") || lineName.includes("delhi3")) {
+    return "Platforms 1–2 · Blue Line (confirm direction on station signage)";
+  }
+  if (lineName.includes("violet") || lineName.includes("delhi6")) {
+    return "Platforms 3–4 · Violet Line (confirm direction on station signage)";
+  }
+
+  return "Mandi House interchange platforms · confirm line and direction on station signage";
+}
+
 function normalizeRoutingPriority(
   priority?: RoutingPriority
 ): "fastest" | "cheapest" {
@@ -298,6 +315,7 @@ function buildPlannerRoute(
         routeNumber: leg.mode === "bus" ? leg.route : undefined,
         fromStopId: leg.mode === "bus" ? leg.fromId : undefined,
         toStopId: leg.mode === "bus" ? leg.toId : undefined,
+        platform: platformGuidanceForLeg(leg),
         scheduledTiming:
           leg.mode === "bus" && leg.route
             ? getScheduledBusTiming(leg.route, leg.fromId, leg.toId) || undefined

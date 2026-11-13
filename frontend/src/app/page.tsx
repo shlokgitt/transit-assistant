@@ -200,15 +200,7 @@ export default function Home() {
   const [selectedCity, setSelectedCity] = useState("delhi");
   const [origin, setOrigin] = useState("Karol Bagh");
   const [destination, setDestination] = useState("Gandhi Darshan");
-  const [selectedModes, setSelectedModes] = useState<TransitMode[]>([
-    "metro",
-    "bus",
-"train",
-    "auto",
-
-
-    "walk",
-  ]);
+      const [selectedModes, setSelectedModes] = useState<TransitMode[]>(["metro"]);
   const [priority, setPriority] = useState<RoutingPriority[]>(["fastest"]);
   const [avoidCrowded, setAvoidCrowded] = useState(false);
   const [period, setPeriod] = useState<"peak" | "offpeak">("peak");
@@ -500,6 +492,22 @@ export default function Home() {
         </div>
         <div className="result-toolbar">
           <span>{routeResponse?.routes.length || 0} option{routeResponse?.routes.length === 1 ? "" : "s"}</span>
+          <div className="result-toolbar-actions">
+            {routeResponse?.timestamp && (
+              <span className="route-data-freshness">
+                Updated {new Date(routeResponse.timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              </span>
+            )}
+            <button
+              type="button"
+              className="refresh-route-button"
+              onClick={() => void handlePlanRoute()}
+              disabled={isLoading}
+            >
+              <RefreshCw size={13} className={isLoading ? "spin" : ""} />
+              Refresh route
+            </button>
+          </div>
           <div className="mobile-view-tabs" role="tablist">
             <button
               type="button"
@@ -517,6 +525,18 @@ export default function Home() {
             </button>
           </div>
         </div>
+        {routeResponse && (
+          <div className="trip-brief">
+            <div>
+              <span className="trip-brief-label">Your trip</span>
+              <strong>{origin} <span>to</span> {destination}</strong>
+            </div>
+            <div className="trip-brief-meta">
+              <span>{routeResponse.routes.length} route options</span>
+              <span>Estimated times and fares</span>
+            </div>
+          </div>
+        )}
         {isLoading ? (
           <div className="empty-panel"><RefreshCw className="spin" size={22} /><p>Finding practical routes…</p></div>
         ) : routeError ? (
@@ -632,7 +652,7 @@ export default function Home() {
               <span>Plan Your Journey</span>
               <small>Delhi NCR</small>
             </div>
-            <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length === 1 ? current : current.filter((item) => item !== mode)) : [...current, mode])} priority={priority} onChangePriority={(next) => setPriority((current) => current.includes(next) ? (current.length > 1 ? current.filter((item) => item !== next) : current) : (current.length < 2 ? [...current, next] : [current[1], next]))} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
+            <SearchPanel city={city} origin={origin} destination={destination} onChangeOrigin={setOrigin} onChangeDestination={setDestination} onSwap={() => { setOrigin(destination); setDestination(origin); }} selectedModes={selectedModes} onToggleMode={(mode) => setSelectedModes((current) => current.includes(mode) ? (current.length > 1 ? current.filter((item) => item !== mode) : current) : [...current, mode])} priority={priority} onChangePriority={(next) => setPriority((current) => current.includes(next) ? (current.length > 1 ? current.filter((item) => item !== next) : current) : (current.length < 2 ? [...current, next] : [current[1], next]))} avoidCrowded={avoidCrowded} onToggleAvoidCrowded={() => setAvoidCrowded((value) => !value)} onSearch={() => void handlePlanRoute()} isLoading={isLoading} onSelectPreset={(from, to) => { setOrigin(from); setDestination(to); }} constraints={constraints} onChangeConstraints={(c) => setConstraints(c)} constraintsEnabled={constraintsEnabled} onToggleConstraintsEnabled={setConstraintsEnabled} />
           </div>
           <div className="planner-device-home" />
         </div>

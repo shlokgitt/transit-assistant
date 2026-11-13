@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import { Clock, Navigation, Users, Leaf, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useRef } from "react";
+import { Clock, Navigation, Users, Leaf, ChevronRight, ExternalLink } from "lucide-react";
 import { RouteOption, TransitMode } from "@/types/transit";
 import { VehicleIllustration } from "@/components/VehicleIllustration";
 
@@ -37,12 +37,20 @@ const getCrowdConfig = (level: string) => {
 const formatMode = (mode: TransitMode) => mode.charAt(0).toUpperCase() + mode.slice(1);
 
 export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelect }) => {
-  const [expandedLegs, setExpandedLegs] = useState<Record<number, boolean>>({});
   const tiltRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const tagCfg = TAG_CONFIG[route.tag] || { label: route.tag };
   const crowd = getCrowdConfig(route.crowdLevel);
   const tagClass = `tag-${route.tag.toLowerCase().replace("_", "-")}`;
+
+  const openFullRoute = (legIndex: number) => {
+    try {
+      window.localStorage.setItem(`transit-route:${route.id}`, JSON.stringify(route));
+      window.open(`/route-details?routeId=${encodeURIComponent(route.id)}&leg=${legIndex}`, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error("Unable to open route details:", error);
+    }
+  };
 
   const resetTilt = () => {
     const tilt = tiltRef.current;
@@ -223,19 +231,8 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
           })()}
         </div>
 
-        {/* Stop-to-stop journey and interchange details */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "5px",
-            marginBottom: "12px",
-            padding: "8px 10px",
-            borderRadius: "8px",
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(255,255,255,0.05)",
-          }}
-        >
+        {/* Four-stop preview with full route details on a dedicated page */}
+        <div className="route-preview-panel">
           {route.legs.map((leg, i) => {
             const previousLeg = route.legs[i - 1];
             const interchange =
@@ -243,168 +240,73 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isSelected, onSelec
               previousLeg?.mode === "metro" &&
               leg.mode === "metro" &&
               previousLeg.lineName !== leg.lineName;
+            const allStops = [leg.from, ...(leg.intermediateStops || []), leg.to];
+            const previewStops = allStops.length > 4
+              ? [allStops[0], allStops[1], allStops[2], allStops[allStops.length - 1]]
+              : allStops;
+            const hiddenStopCount = Math.max(0, allStops.length - previewStops.length);
 
             return (
-              <React.Fragment key={`detail-${i}`}>
+              <div key={`detail-${i}`} className="route-leg-preview">
                 {interchange && (
-                  <span style={{ fontSize: "0.66rem", color: "#fbbf24", fontWeight: 700 }}>
-                    🔁 Interchange at {previousLeg.to}
-                  </span>
+                  <div className="route-interchange">
+                    <span aria-hidden="true">↔</span>
+                    <span>
+                      <strong>Interchange at {previousLeg.to}</strong>
+                      <small>
+                        Arrive: {previousLeg.platform || "Platform information unavailable"} · Continue: {leg.platform || "check station signage"}
+                      </small>
+                    </span>
+                  </div>
                 )}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", lineHeight: 1.35 }}>
+                <div className="route-leg-heading">
                   <span style={{ color: MODE_COLOR[leg.mode], fontWeight: 700 }}>
                     {leg.mode === "auto" ? (leg.lineName || "Auto") : formatMode(leg.mode)}
                   </span>
-                  <span style={{ color: "#cbd5e1" }}>{leg.from}</span>
-                  <ChevronRight size={10} color="#64748b" />
-                  <span style={{ color: "#cbd5e1" }}>{leg.to}</span>
-                  {leg.mode === "auto" && leg.distanceKm && (
-                    <span style={{ fontSize: "0.72rem", color: "#38bdf8", marginLeft: "2px", fontWeight: 500 }}>
-                      ({leg.distanceKm} km by road)
-                    </span>
-                  )}
+                  <span className="route-leg-endpoints">
+                    {leg.from} <ChevronRight size={11} /> {leg.to}
+                  </span>
                   {leg.fare !== undefined && leg.fare !== null && leg.fare > 0 && (
-                    <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#34d399", fontWeight: 600 }}>
-                      ₹{leg.fare}
-                    </span>
+                    <span className="route-leg-fare">₹{leg.fare}</span>
                   )}
                 </div>
-
-                {leg.mode === "bus" && leg.scheduledTiming && (
-                  <div
-                    style={{
-                      marginTop: "6px",
-                      padding: "6px 8px",
-                      borderRadius: "6px",
-                      background: "rgba(16, 185, 129, 0.08)",
-                      border: "1px solid rgba(16, 185, 129, 0.25)",
-                      color: "#a7f3d0",
-                      fontSize: "0.78rem",
-                      lineHeight: 1.4,
+                <div className="route-stop-preview" aria-label={`${formatMode(leg.mode)} stop preview`}>
+                  {previewStops.map((stop, stopIndex) => (
+                    <React.Fragment key={`${i}-${stopIndex}-${stop}`}>
+                      <span className={`route-stop-chip ${stopIndex === 0 || stopIndex === previewStops.length - 1 ? "is-endpoint" : ""}`}>
+                        <span className="route-stop-dot" style={{ background: MODE_COLOR[leg.mode] }} />
+                        {stop}
+                      </span>
+                      {stopIndex < previewStops.length - 1 && <ChevronRight size={11} className="route-stop-arrow" />}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="route-leg-actions">
+                  <span className="route-stop-count">
+                    {allStops.length} stops · {leg.durationMinutes} min
+                    {hiddenStopCount > 0 ? ` · ${hiddenStopCount} more in full route` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    className="route-expand-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openFullRoute(i);
                     }}
                   >
-                    <strong style={{ color: "#d1fae5" }}>Scheduled bus</strong>
-                    <span style={{ display: "block", marginTop: "3px", fontSize: "0.8rem" }}>
-                      Departs {leg.scheduledTiming.departureTime}
-                      {" → "}arrives {leg.scheduledTiming.arrivalTime}
-                    </span>
-                    <span style={{ display: "block", color: "#718078", marginTop: "2px" }}>
-                      {leg.scheduledTiming.note}
+                    <ExternalLink size={13} />
+                    View full {formatMode(leg.mode)} route
+                  </button>
+                </div>
+                {leg.scheduledTiming && (
+                  <div className="route-timing-preview">
+                    <strong>{leg.mode === "bus" ? "Scheduled timing" : "Live schedule"}</strong>
+                    <span>
+                      Departs {leg.scheduledTiming.departureTime} · Arrives {leg.scheduledTiming.arrivalTime}
                     </span>
                   </div>
                 )}
-
-                {leg.mode === "train" && leg.scheduledTiming && (
-                  <div
-                    style={{
-                      marginTop: "6px",
-                      padding: "8px 10px",
-                      borderRadius: "6px",
-                      background: "rgba(56, 189, 248, 0.08)",
-                      border: "1px solid rgba(56, 189, 248, 0.25)",
-                      color: "#bae6fd",
-                      fontSize: "0.78rem",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <strong style={{ color: "#38bdf8" }}>🚆 Live Rail Schedule</strong>
-                      <span style={{ fontWeight: 700, color: "#38bdf8", fontSize: "0.8rem" }}>
-                        Departs {leg.scheduledTiming.departureTime} ➔ Arrives {leg.scheduledTiming.arrivalTime}
-                      </span>
-                    </div>
-                    {leg.scheduledTiming.note && (
-                      <span style={{ display: "block", color: "#94a3b8", marginTop: "3px", fontSize: "0.74rem" }}>
-                        {leg.scheduledTiming.note}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {(leg.mode === "bus" || leg.mode === "metro") &&
-                  leg.intermediateStops &&
-                  leg.intermediateStops.length > 0 && (
-                    <div style={{ marginTop: "7px" }}>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setExpandedLegs((current) => ({
-                            ...current,
-                            [i]: !current[i],
-                          }));
-                        }}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          padding: "3px 0",
-                          border: 0,
-                          color: MODE_COLOR[leg.mode],
-                          background: "transparent",
-                          cursor: "pointer",
-                          fontSize: "0.74rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {expandedLegs[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                        {leg.intermediateStops.length} stops · view route
-                      </button>
-                      {expandedLegs[i] && (
-                        <div
-                          onClick={(event) => event.stopPropagation()}
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "5px",
-                            marginTop: "4px",
-                            padding: "8px 10px",
-                            borderLeft: `2px solid ${MODE_COLOR[leg.mode]}`,
-                            borderRadius: "0 7px 7px 0",
-                            background: "rgba(255,255,255,0.035)",
-                          }}
-                        >
-                          {[leg.from, ...leg.intermediateStops, leg.to].map((stop, stopIndex, stops) => {
-                            const estimatedMinutes = Math.round(
-                              (leg.durationMinutes * stopIndex) / Math.max(stops.length - 1, 1)
-                            );
-                            return (
-                              <div
-                                key={`${i}-${stopIndex}-${stop}`}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: "10px",
-                                  color: stopIndex === 0 || stopIndex === stops.length - 1 ? "#f1f5f9" : "#aebbb2",
-                                  fontSize: "0.74rem",
-                                }}
-                              >
-                                <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                                  <span
-                                    style={{
-                                      width: stopIndex === 0 || stopIndex === stops.length - 1 ? "7px" : "5px",
-                                      height: stopIndex === 0 || stopIndex === stops.length - 1 ? "7px" : "5px",
-                                      borderRadius: "50%",
-                                      background: MODE_COLOR[leg.mode],
-                                      flexShrink: 0,
-                                    }}
-                                  />
-                                  {stop}
-                                </span>
-                                <span style={{ color: "#718078", whiteSpace: "nowrap" }}>
-                                  {estimatedMinutes} min
-                                </span>
-                              </div>
-                            );
-                          })}
-                          <span style={{ marginTop: "2px", color: "#718078", fontSize: "0.58rem" }}>
-                            Stop times are estimated from route duration.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </React.Fragment>
+              </div>
             );
           })}
         </div>
